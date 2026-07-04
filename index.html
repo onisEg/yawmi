@@ -355,7 +355,7 @@ nav.bottom button.on{color:var(--gold)}
 <nav class="bottom">
   <button data-tab="today" class="on"><span class="ic">☀</span>اليوم</button>
   <button data-tab="tasks"><span class="ic">☑</span>المهام</button>
-  <button data-tab="exp"><span class="ic">﷼</span>المصاريف</button>
+  <button data-tab="exp"><span class="ic" id="navCurr">﷼</span>المصاريف</button>
   <button data-tab="dash"><span class="ic">◔</span>نظرة</button>
 </nav>
 
@@ -705,6 +705,13 @@ document.querySelectorAll('nav.bottom button').forEach(b=>{
 });
 
 /* ================= settings ================= */
+function updateNavCurr(){
+  const el = $('#navCurr');
+  el.textContent = settings.currency;
+  el.style.fontSize = settings.currency.length > 1 ? '14px' : '20px';
+  el.style.fontWeight = '700';
+  el.style.lineHeight = '1.4';
+}
 $('#gearBtn').onclick = ()=>{
   $('#setHabits').value = settings.habits.join('\n');
   $('#setCats').value = settings.cats.join('\n');
@@ -720,6 +727,7 @@ $('#saveSettings').onclick = ()=>{
   settings.currency = $('#setCurr').value.trim() || 'ج.م';
   store(K.set, settings);
   $('#overlay').classList.remove('show');
+  updateNavCurr();
   renderToday(); toast('الإعدادات اتحفظت ✓');
 };
 
@@ -756,6 +764,7 @@ $('#importFile').onchange = e=>{
 };
 
 /* ================= init ================= */
+updateNavCurr();
 renderToday();
 if('serviceWorker' in navigator && (location.protocol==='https:' || location.hostname==='localhost')){
   navigator.serviceWorker.register('sw.js');
