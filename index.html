@@ -254,6 +254,31 @@ nav.bottom button.on{color:var(--gold)}
   opacity:0; transition:opacity .3s; pointer-events:none; z-index:60;
 }
 #toast.show{opacity:1}
+
+/* ---------- banners ---------- */
+.banner{
+  background:var(--gold-soft); border:1px solid var(--gold); color:var(--gold);
+  border-radius:12px; padding:10px 14px; font-size:14px; margin-bottom:10px;
+  display:flex; align-items:center; gap:10px;
+}
+.bbtn{background:var(--gold); color:#1A150A; border:none; border-radius:8px; padding:6px 12px; font-family:inherit; font-size:13px; font-weight:500; cursor:pointer; white-space:nowrap}
+.bx{background:none; border:none; color:var(--gold); cursor:pointer; font-size:15px; padding:2px 4px}
+
+/* ---------- lock screen ---------- */
+#lockScreen{
+  position:fixed; inset:0; background:var(--bg); z-index:100;
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:16px;
+  padding:20px;
+}
+
+/* ---------- weekly review & search ---------- */
+.rlbl{display:block; font-size:13px; color:var(--muted); margin:12px 0 6px}
+.rta{min-height:56px}
+.sres{padding:10px 4px; border-bottom:1px solid var(--line); cursor:pointer}
+.sres:last-child{border-bottom:none}
+.sres .d{font-size:12px; color:var(--gold)}
+.sres .s{font-size:13px; color:var(--muted); line-height:1.6}
+.streak{float:left; color:var(--gold); font-size:13px; font-weight:400}
 </style>
 </head>
 <body>
@@ -266,6 +291,7 @@ nav.bottom button.on{color:var(--gold)}
 <main>
   <!-- ============ اليوم ============ -->
   <section id="tab-today" class="tab active">
+    <div id="banners" style="padding-top:12px"></div>
     <div class="daynav">
       <button class="navb" id="nextDayBtn" aria-label="اليوم التالي">‹</button>
       <div class="datewrap">
@@ -292,7 +318,7 @@ nav.bottom button.on{color:var(--gold)}
     </div>
 
     <div class="card">
-      <h3>الصلوات</h3>
+      <h3 id="prayH3">الصلوات</h3>
       <div class="beads" id="beads"></div>
     </div>
 
@@ -319,6 +345,11 @@ nav.bottom button.on{color:var(--gold)}
       <h3>يومياتي</h3>
       <textarea id="journalInp" placeholder="اكتب عن يومك... اللي حصل، اللي حسيت بيه، اللي نفسك فيه"></textarea>
     </div>
+
+    <div class="card hidden" id="otdCard">
+      <h3>في يوم زي ده 🕰</h3>
+      <div id="otdList"></div>
+    </div>
   </section>
 
   <!-- ============ المهام ============ -->
@@ -341,6 +372,7 @@ nav.bottom button.on{color:var(--gold)}
     <div class="exptotal">
       <div class="num" id="expTotal">0</div>
       <div class="lbl">إجمالي مصاريف الشهر</div>
+      <div class="lbl" id="expRemain" style="margin-top:4px"></div>
     </div>
     <div class="addrow">
       <input type="number" id="expAmt" inputmode="decimal" placeholder="المبلغ">
@@ -383,6 +415,23 @@ nav.bottom button.on{color:var(--gold)}
       <div class="sub" style="font-size:13px;color:var(--muted);text-align:center;margin-top:10px" id="weekAvg"></div>
     </div>
     <div class="grid2" id="monthStats"></div>
+
+    <div class="card">
+      <h3>المراجعة الأسبوعية <span id="revWeek" style="color:var(--faint); font-weight:400"></span></h3>
+      <div id="revSummary" style="font-size:13px; color:var(--muted); margin-bottom:4px"></div>
+      <label class="rlbl" for="rev1">إيه اللي نجح الأسبوع ده؟</label>
+      <textarea class="rta" id="rev1"></textarea>
+      <label class="rlbl" for="rev2">إيه اللي وقعك أو اتأخرت فيه؟</label>
+      <textarea class="rta" id="rev2"></textarea>
+      <label class="rlbl" for="rev3">أهم حاجة الأسبوع الجاي؟</label>
+      <textarea class="rta" id="rev3"></textarea>
+    </div>
+
+    <div class="card">
+      <h3>دوّر في يومياتك</h3>
+      <input type="text" id="searchInp" placeholder="اكتب كلمة من اللي فات...">
+      <div id="searchRes"></div>
+    </div>
   </section>
 </main>
 
@@ -398,10 +447,17 @@ nav.bottom button.on{color:var(--gold)}
     <h2>الإعدادات</h2>
     <label for="setHabits">العادات (كل عادة في سطر)</label>
     <textarea id="setHabits"></textarea>
-    <label for="setCats">تصنيفات المصاريف (كل تصنيف في سطر)</label>
+    <label for="setCats">تصنيفات المصاريف (كل تصنيف في سطر — تقدر تحدد ميزانية كده: أكل: 2000)</label>
     <textarea id="setCats"></textarea>
+    <label for="setIncome">الدخل الشهري (اختياري — عشان تشوف فاضلك كام)</label>
+    <input type="number" id="setIncome" inputmode="decimal" placeholder="—" style="width:150px">
     <label for="setCurr">العملة</label>
     <input type="text" id="setCurr" style="width:110px">
+    <label for="setPin">رقم سري لقفل التطبيق</label>
+    <div style="display:flex; gap:8px; align-items:center">
+      <input type="password" id="setPin" inputmode="numeric" style="width:170px">
+      <button class="btn ghost hidden" id="removePin" style="flex:0; padding:10px 14px; font-size:13px">إلغاء القفل</button>
+    </div>
     <div class="btnrow">
       <button class="btn ghost" id="exportBtn">تصدير نسخة احتياطية</button>
       <button class="btn ghost" id="importBtn">استيراد نسخة</button>
@@ -414,11 +470,18 @@ nav.bottom button.on{color:var(--gold)}
   </div>
 </div>
 
+<div id="lockScreen" class="hidden">
+  <span class="brand" style="font-size:36px">يومي</span>
+  <input type="password" id="lockPin" inputmode="numeric" placeholder="الرقم السري" style="max-width:200px; text-align:center; font-size:18px; letter-spacing:4px">
+  <button class="btn primary" id="unlockBtn" style="max-width:200px; width:100%">فتح</button>
+  <div id="lockErr" style="color:var(--red); font-size:13px; height:20px"></div>
+</div>
+
 <div id="toast">تم الحفظ ✓</div>
 
 <script>
 /* ================= state ================= */
-const K = {days:'yawmi_days', tasks:'yawmi_tasks', exp:'yawmi_exp', obl:'yawmi_obl', set:'yawmi_settings'};
+const K = {days:'yawmi_days', tasks:'yawmi_tasks', exp:'yawmi_exp', obl:'yawmi_obl', rev:'yawmi_rev', set:'yawmi_settings'};
 const load = (k,d)=>{ try{ const v = JSON.parse(localStorage.getItem(k)); return v ?? d; }catch(e){ return d; } };
 const store = (k,v)=> localStorage.setItem(k, JSON.stringify(v));
 
@@ -426,12 +489,14 @@ let days = load(K.days, {});
 let tasks = load(K.tasks, []);
 let exps = load(K.exp, []);
 let obls = load(K.obl, []);
+let revs = load(K.rev, {});
 let settings = Object.assign(
   {habits:['قراءة','رياضة','أذكار الصباح','أذكار المساء'],
    cats:['أكل','مواصلات','اشتراكات','خروجات','تانية'],
-   currency:'ج.م'},
+   currency:'ج.م', income:0},
   load(K.set, {})
 );
+settings.budgets = settings.budgets || {};
 
 const PRAYERS = ['الفجر','الظهر','العصر','المغرب','العشاء'];
 const MOODS = ['😔','😕','🙂','😄','🤩'];
@@ -506,7 +571,8 @@ function renderToday(){
   settings.habits.forEach(h=>{
     const c = document.createElement('button');
     c.className = 'chip' + (rec.h[h] ? ' on' : '');
-    c.textContent = h;
+    const n = streak(k=>{ const r = days[k]; return !!(r && r.h && r.h[h]); }, viewDate);
+    c.textContent = n >= 2 ? `${h} 🔥${n}` : h;
     c.onclick = ()=>{ rec.h[h] = !rec.h[h]; saveDays(); renderToday(); };
     chips.appendChild(c);
   });
@@ -534,6 +600,38 @@ function renderToday(){
   const pr = rec.p.reduce((a,b)=>a+(b?1:0),0);
   const hd = settings.habits.filter(h=>rec.h[h]).length;
   $('#scoreSub').textContent = `${pr} من ٥ صلوات · ${hd} من ${settings.habits.length} عادات`;
+
+  // prayer streak (كل الخمسة)
+  const pn = streak(k=>{ const r = days[k]; return !!(r && r.p && r.p.reduce((a,b)=>a+(b?1:0),0) === 5); }, viewDate);
+  $('#prayH3').innerHTML = 'الصلوات' + (pn >= 2 ? `<span class="streak">🔥 ${pn} يوم كاملين</span>` : '');
+
+  // في يوم زي ده
+  const mmdd = viewDate.slice(5);
+  const otd = Object.keys(days)
+    .filter(k => k !== viewDate && k.slice(5) === mmdd && (days[k].j || days[k].l))
+    .sort().reverse();
+  $('#otdCard').classList.toggle('hidden', !otd.length);
+  const ol = $('#otdList');
+  ol.innerHTML = '';
+  otd.forEach(k=>{
+    const el = document.createElement('div');
+    el.className = 'sres';
+    const txt = (days[k].j || days[k].l || '').slice(0, 90);
+    el.innerHTML = `<div class="d">${k.slice(0,4)} — من ${new Date().getFullYear() - Number(k.slice(0,4))} سنة</div><div class="s"></div>`;
+    el.querySelector('.s').textContent = txt + (txt.length >= 90 ? '…' : '');
+    el.onclick = ()=>{ viewDate = k; renderToday(); window.scrollTo({top:0}); };
+    ol.appendChild(el);
+  });
+
+  renderBanners();
+}
+
+function streak(test, anchor){
+  let n = 0;
+  const d = new Date(anchor + 'T12:00:00');
+  if(!test(iso(d))) d.setDate(d.getDate() - 1);
+  while(test(iso(d))){ n++; d.setDate(d.getDate() - 1); if(n > 3650) break; }
+  return n;
 }
 
 function shiftDay(n){
@@ -631,6 +729,14 @@ function renderExp(){
   const monthExp = exps.filter(e=>e.d.startsWith(mk)).sort((a,b)=> b.d.localeCompare(a.d) || b.id-a.id);
   const total = monthExp.reduce((a,e)=>a+e.a,0);
   $('#expTotal').textContent = total.toLocaleString('ar-EG') + ' ' + settings.currency;
+  const rem = $('#expRemain');
+  if(settings.income > 0 && expMonthOffset === 0){
+    const left = settings.income - total;
+    rem.textContent = left >= 0
+      ? `فاضلك ${left.toLocaleString('ar-EG')} من دخل ${settings.income.toLocaleString('ar-EG')} ${settings.currency}`
+      : `عديت دخلك بـ ${Math.abs(left).toLocaleString('ar-EG')} ${settings.currency} ⚠`;
+    rem.style.color = left >= 0 ? 'var(--teal)' : 'var(--red)';
+  } else rem.textContent = '';
 
   // category bars
   const byCat = {};
@@ -638,11 +744,19 @@ function renderExp(){
   const cats = Object.entries(byCat).sort((a,b)=>b[1]-a[1]);
   const bars = $('#catBars');
   $('#catBarsCard').classList.toggle('hidden', !cats.length);
-  bars.innerHTML = cats.map(([c,v])=>`
+  bars.innerHTML = cats.map(([c,v])=>{
+    const b = settings.budgets[c];
+    const pct = b ? v/b : (total ? v/total : 0);
+    const over = b && pct >= 0.9;
+    const lbl = b
+      ? `${v.toLocaleString('ar-EG')} من ${b.toLocaleString('ar-EG')} ${settings.currency}${pct>1?' ⚠':''}`
+      : `${v.toLocaleString('ar-EG')} ${settings.currency}`;
+    return `
     <div class="catbar">
-      <div class="row"><span>${c}</span><span>${v.toLocaleString('ar-EG')} ${settings.currency}</span></div>
-      <div class="track"><div class="fill" style="width:${total? (v/total*100).toFixed(1) : 0}%"></div></div>
-    </div>`).join('');
+      <div class="row"><span>${c}</span><span ${over?'style="color:var(--red)"':''}>${lbl}</span></div>
+      <div class="track"><div class="fill" style="width:${Math.min(pct*100,100).toFixed(1)}%${over?';background:var(--red)':''}"></div></div>
+    </div>`;
+  }).join('');
 
   const list = $('#expList');
   list.innerHTML = '';
@@ -802,6 +916,24 @@ function renderDash(){
     <div class="stat"><div class="num">${prTotal? Math.round(prDone/prTotal*100) : 0}٪</div><div class="lbl">التزام الصلوات</div></div>
     <div class="stat"><div class="num" ${lateOblSum?'style="color:var(--red)"':''}>${lateOblSum.toLocaleString('ar-EG')}</div><div class="lbl">التزامات متأخرة (${settings.currency})</div></div>
     <div class="stat"><div class="num">${allOblSum.toLocaleString('ar-EG')}</div><div class="lbl">إجمالي عليك (${settings.currency})</div></div>`;
+
+  // weekly review
+  const wk = weekKeyOf();
+  $('#revWeek').textContent = 'من الجمعة ' + wk.slice(5).split('-').reverse().join('/');
+  const r = revs[wk] || {};
+  $('#rev1').value = r.q1 || '';
+  $('#rev2').value = r.q2 || '';
+  $('#rev3').value = r.q3 || '';
+  const wkExp = exps.filter(e => e.d >= wk).reduce((a,e)=>a+e.a,0);
+  $('#revSummary').textContent = cnt
+    ? `أسبوعك: متوسط ${(sum/cnt).toFixed(1)} من 10 · صرفت ${wkExp.toLocaleString('ar-EG')} ${settings.currency}`
+    : '';
+}
+
+function weekKeyOf(){
+  const d = new Date();
+  d.setDate(d.getDate() - ((d.getDay() - 5 + 7) % 7));
+  return iso(d);
 }
 
 /* ================= tabs ================= */
@@ -829,17 +961,41 @@ function updateNavCurr(){
 }
 $('#gearBtn').onclick = ()=>{
   $('#setHabits').value = settings.habits.join('\n');
-  $('#setCats').value = settings.cats.join('\n');
+  $('#setCats').value = settings.cats.map(c => settings.budgets[c] ? `${c}: ${settings.budgets[c]}` : c).join('\n');
+  $('#setIncome').value = settings.income || '';
   $('#setCurr').value = settings.currency;
+  $('#setPin').value = '';
+  $('#setPin').placeholder = settings.pinH ? 'مفعّل ✓ — اكتب رقم جديد للتغيير' : 'غير مفعّل';
+  $('#removePin').classList.toggle('hidden', !settings.pinH);
   $('#overlay').classList.add('show');
+};
+$('#removePin').onclick = ()=>{
+  if(!confirm('تلغي قفل التطبيق؟')) return;
+  delete settings.pinH;
+  store(K.set, settings);
+  $('#setPin').placeholder = 'غير مفعّل';
+  $('#removePin').classList.add('hidden');
+  toast('القفل اتلغى');
 };
 $('#closeModal').onclick = ()=> $('#overlay').classList.remove('show');
 $('#overlay').onclick = e=>{ if(e.target.id==='overlay') $('#overlay').classList.remove('show'); };
-$('#saveSettings').onclick = ()=>{
+$('#saveSettings').onclick = async ()=>{
   settings.habits = $('#setHabits').value.split('\n').map(s=>s.trim()).filter(Boolean).slice(0,8);
-  settings.cats = $('#setCats').value.split('\n').map(s=>s.trim()).filter(Boolean);
+  settings.cats = []; settings.budgets = {};
+  $('#setCats').value.split('\n').map(s=>s.trim()).filter(Boolean).forEach(l=>{
+    const ix = l.indexOf(':') >= 0 ? l.indexOf(':') : l.indexOf('：');
+    if(ix > 0){
+      const name = l.slice(0, ix).trim();
+      const b = parseFloat(l.slice(ix+1).trim());
+      settings.cats.push(name);
+      if(b > 0) settings.budgets[name] = b;
+    } else settings.cats.push(l);
+  });
   if(!settings.cats.length) settings.cats = ['عام'];
+  settings.income = parseFloat($('#setIncome').value) || 0;
   settings.currency = $('#setCurr').value.trim() || 'ج.م';
+  const newPin = $('#setPin').value.trim();
+  if(newPin) settings.pinH = await pinHash(newPin);
   store(K.set, settings);
   $('#overlay').classList.remove('show');
   updateNavCurr();
@@ -847,16 +1003,18 @@ $('#saveSettings').onclick = ()=>{
 };
 
 /* ================= backup ================= */
-$('#exportBtn').onclick = ()=>{
-  const data = {v:1, exported:new Date().toISOString(), days, tasks, exps, obls, settings};
+function doExport(){
+  const data = {v:1, exported:new Date().toISOString(), days, tasks, exps, obls, revs, settings};
   const blob = new Blob([JSON.stringify(data,null,1)], {type:'application/json'});
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
   a.download = `yawmi-backup-${todayISO()}.json`;
   a.click();
   URL.revokeObjectURL(a.href);
+  localStorage.setItem('yawmi_lastexp', todayISO());
   toast('اتصدرت النسخة ✓');
-};
+}
+$('#exportBtn').onclick = doExport;
 $('#importBtn').onclick = ()=> $('#importFile').click();
 $('#importFile').onchange = e=>{
   const f = e.target.files[0];
@@ -867,9 +1025,10 @@ $('#importFile').onchange = e=>{
       const data = JSON.parse(r.result);
       if(!data.days && !data.tasks) throw 0;
       if(!confirm('الاستيراد هيستبدل البيانات الحالية. متأكد؟')) return;
-      days = data.days||{}; tasks = data.tasks||[]; exps = data.exps||[]; obls = data.obls||[];
+      days = data.days||{}; tasks = data.tasks||[]; exps = data.exps||[]; obls = data.obls||[]; revs = data.revs||{};
       settings = Object.assign(settings, data.settings||{});
-      store(K.days,days); store(K.tasks,tasks); store(K.exp,exps); store(K.obl,obls); store(K.set,settings);
+      settings.budgets = settings.budgets || {};
+      store(K.days,days); store(K.tasks,tasks); store(K.exp,exps); store(K.obl,obls); store(K.rev,revs); store(K.set,settings);
       $('#overlay').classList.remove('show');
       renderToday(); toast('اتسترجعت البيانات ✓');
     }catch(err){ alert('الملف ده مش نسخة احتياطية صالحة'); }
@@ -878,9 +1037,105 @@ $('#importFile').onchange = e=>{
   e.target.value = '';
 };
 
+/* ================= banners ================= */
+function renderBanners(){
+  const wrap = $('#banners');
+  wrap.innerHTML = '';
+  // تذكير النسخة الاحتياطية
+  const last = localStorage.getItem('yawmi_lastexp');
+  const snooze = localStorage.getItem('yawmi_snooze');
+  const daysSince = last ? Math.floor((Date.now() - new Date(last+'T12:00:00').getTime()) / 86400000) : null;
+  if(Object.keys(days).length >= 3 && (!last || daysSince >= 7) && snooze !== todayISO()){
+    const b = document.createElement('div');
+    b.className = 'banner';
+    b.innerHTML = `<span style="flex:1">${last ? `آخر نسخة احتياطية من ${daysSince} يوم` : 'لسه معملتش نسخة احتياطية من بياناتك'} ⚠</span><button class="bbtn">صدّر دلوقتي</button><button class="bx" aria-label="إخفاء">✕</button>`;
+    b.querySelector('.bbtn').onclick = ()=>{ doExport(); renderBanners(); };
+    b.querySelector('.bx').onclick = ()=>{ localStorage.setItem('yawmi_snooze', todayISO()); renderBanners(); };
+    wrap.appendChild(b);
+  }
+  // تذكير المراجعة يوم الجمعة
+  const wk = weekKeyOf();
+  const r = revs[wk];
+  if(new Date().getDay() === 5 && !(r && (r.q1 || r.q2 || r.q3))){
+    const b = document.createElement('div');
+    b.className = 'banner';
+    b.style.cursor = 'pointer';
+    b.innerHTML = '<span style="flex:1">النهارده الجمعة — وقت المراجعة الأسبوعية ✍</span><span>‹</span>';
+    b.onclick = ()=> document.querySelector('nav.bottom button[data-tab=dash]').click();
+    wrap.appendChild(b);
+  }
+}
+
+/* ================= weekly review autosave ================= */
+let revDebounce;
+['rev1','rev2','rev3'].forEach((id,i)=>{
+  $('#'+id).addEventListener('input', e=>{
+    const wk = weekKeyOf();
+    revs[wk] = revs[wk] || {};
+    revs[wk]['q'+(i+1)] = e.target.value;
+    clearTimeout(revDebounce);
+    revDebounce = setTimeout(()=>{ store(K.rev, revs); toast(); }, 600);
+  });
+});
+
+/* ================= journal search ================= */
+$('#searchInp').addEventListener('input', e=>{
+  const q = e.target.value.trim();
+  const res = $('#searchRes');
+  res.innerHTML = '';
+  if(q.length < 2) return;
+  const hits = Object.keys(days)
+    .filter(k => (days[k].j || '').includes(q) || (days[k].l || '').includes(q))
+    .sort().reverse().slice(0, 20);
+  if(!hits.length){ res.innerHTML = '<div class="empty" style="padding:12px 0">مفيش نتايج</div>'; return; }
+  hits.forEach(k=>{
+    const txt = (days[k].j || '') + ' ' + (days[k].l || '');
+    const ix = txt.indexOf(q);
+    const snip = txt.slice(Math.max(0, ix - 30), ix + 60);
+    const el = document.createElement('div');
+    el.className = 'sres';
+    el.innerHTML = `<div class="d">${fmtDate(k)}</div><div class="s"></div>`;
+    el.querySelector('.s').textContent = '…' + snip + '…';
+    el.onclick = ()=>{
+      viewDate = k;
+      document.querySelector('nav.bottom button[data-tab=today]').click();
+    };
+    res.appendChild(el);
+  });
+});
+
+/* ================= PIN lock ================= */
+async function pinHash(s){
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode('yawmi::' + s));
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+function showLock(){
+  if(!settings.pinH) return;
+  $('#lockScreen').classList.remove('hidden');
+  $('#lockPin').value = '';
+  setTimeout(()=> $('#lockPin').focus(), 100);
+}
+$('#unlockBtn').onclick = async ()=>{
+  const h = await pinHash($('#lockPin').value.trim());
+  if(h === settings.pinH){
+    $('#lockScreen').classList.add('hidden');
+    $('#lockErr').textContent = '';
+  } else {
+    $('#lockErr').textContent = 'الرقم غلط، جرب تاني';
+    $('#lockPin').value = '';
+  }
+};
+$('#lockPin').addEventListener('keydown', e=>{ if(e.key === 'Enter') $('#unlockBtn').click(); });
+let hiddenAt = 0;
+document.addEventListener('visibilitychange', ()=>{
+  if(document.hidden) hiddenAt = Date.now();
+  else if(settings.pinH && hiddenAt && Date.now() - hiddenAt > 120000) showLock();
+});
+
 /* ================= init ================= */
 updateNavCurr();
 renderToday();
+showLock();
 if('serviceWorker' in navigator && (location.protocol==='https:' || location.hostname==='localhost')){
   navigator.serviceWorker.register('sw.js');
 }
