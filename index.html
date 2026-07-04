@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#14161F">
+<script>(function(){var t=localStorage.getItem('yawmi_theme')||'dark';document.documentElement.setAttribute('data-theme',t);if(t==='light')document.querySelector('meta[name=theme-color]').setAttribute('content','#F5F3EC');})();</script>
 <title>يومي</title>
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
@@ -16,7 +17,14 @@
   --bg:#14161F; --card:#1C1F2B; --card2:#232736; --line:#2C3143;
   --text:#ECEAE2; --muted:#9299AE; --faint:#5C6379;
   --gold:#D9A441; --gold-soft:#3A3220; --teal:#5FB89E; --red:#D97066;
+  --nav-bg:rgba(20,22,31,.92);
   --r:14px;
+}
+:root[data-theme="light"]{
+  --bg:#F5F3EC; --card:#FFFFFF; --card2:#EFEDE4; --line:#E0DDD0;
+  --text:#2A2C33; --muted:#6E7280; --faint:#A3A79E;
+  --gold:#9E7220; --gold-soft:#F3E7C8; --teal:#3E9B7E; --red:#C9584E;
+  --nav-bg:rgba(245,243,236,.92);
 }
 *{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
 html,body{margin:0; padding:0}
@@ -127,8 +135,8 @@ input[type=text],input[type=number],input[type=date],textarea,select{
 }
 input:focus,textarea:focus,select:focus{border-color:var(--gold)}
 textarea{min-height:120px; resize:vertical; line-height:1.9}
-input[type=date]{color-scheme:dark}
-input[type=number]{color-scheme:dark}
+input[type=date]{color-scheme:dark light}
+input[type=number]{color-scheme:dark light}
 ::placeholder{color:var(--faint)}
 
 /* ---------- tasks ---------- */
@@ -214,7 +222,7 @@ input[type=number]{color-scheme:dark}
 /* ---------- bottom nav ---------- */
 nav.bottom{
   position:fixed; bottom:0; right:0; left:0;
-  background:rgba(20,22,31,.92); backdrop-filter:blur(12px);
+  background:var(--nav-bg); backdrop-filter:blur(12px);
   border-top:1px solid var(--line);
   display:flex; padding:8px 8px calc(8px + env(safe-area-inset-bottom));
 }
@@ -285,7 +293,10 @@ nav.bottom button.on{color:var(--gold)}
 
 <header class="top">
   <span class="brand">يومي</span>
-  <button class="iconbtn" id="gearBtn" aria-label="الإعدادات">⚙</button>
+  <div>
+    <button class="iconbtn" id="themeBtn" aria-label="تبديل الوضع">◐</button>
+    <button class="iconbtn" id="gearBtn" aria-label="الإعدادات">⚙</button>
+  </div>
 </header>
 
 <main>
@@ -995,7 +1006,7 @@ $('#saveSettings').onclick = async ()=>{
   settings.income = parseFloat($('#setIncome').value) || 0;
   settings.currency = $('#setCurr').value.trim() || 'ج.م';
   const newPin = $('#setPin').value.trim();
-  if(newPin) settings.pinH = await pinHash(newPin);
+  if(newPin) settings.pinH = fallbackHash(newPin);
   store(K.set, settings);
   $('#overlay').classList.remove('show');
   updateNavCurr();
@@ -1105,9 +1116,24 @@ $('#searchInp').addEventListener('input', e=>{
 });
 
 /* ================= PIN lock ================= */
+function fallbackHash(s){
+  let h1 = 0x811c9dc5, h2 = 0x1000193;
+  const str = 'yawmi::' + s;
+  for(let i=0;i<str.length;i++){
+    const c = str.charCodeAt(i);
+    h1 = Math.imul(h1 ^ c, 0x01000193) >>> 0;
+    h2 = Math.imul(h2 + c, 0x85ebca6b) >>> 0;
+  }
+  return 'fb' + h1.toString(16).padStart(8,'0') + h2.toString(16).padStart(8,'0');
+}
 async function pinHash(s){
-  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode('yawmi::' + s));
-  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+  try{
+    if(crypto && crypto.subtle){
+      const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode('yawmi::' + s));
+      return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+    }
+  }catch(e){}
+  return fallbackHash(s);
 }
 function showLock(){
   if(!settings.pinH) return;
@@ -1116,8 +1142,9 @@ function showLock(){
   setTimeout(()=> $('#lockPin').focus(), 100);
 }
 $('#unlockBtn').onclick = async ()=>{
-  const h = await pinHash($('#lockPin').value.trim());
-  if(h === settings.pinH){
+  const pin = $('#lockPin').value.trim();
+  const h = await pinHash(pin);
+  if(h === settings.pinH || fallbackHash(pin) === settings.pinH){
     $('#lockScreen').classList.add('hidden');
     $('#lockErr').textContent = '';
   } else {
@@ -1131,6 +1158,19 @@ document.addEventListener('visibilitychange', ()=>{
   if(document.hidden) hiddenAt = Date.now();
   else if(settings.pinH && hiddenAt && Date.now() - hiddenAt > 120000) showLock();
 });
+
+/* ================= theme ================= */
+function applyTheme(t){
+  document.documentElement.setAttribute('data-theme', t);
+  document.querySelector('meta[name=theme-color]').setAttribute('content', t === 'light' ? '#F5F3EC' : '#14161F');
+  $('#themeBtn').textContent = t === 'light' ? '☾' : '☀';
+  localStorage.setItem('yawmi_theme', t);
+}
+$('#themeBtn').onclick = ()=>{
+  const cur = document.documentElement.getAttribute('data-theme');
+  applyTheme(cur === 'light' ? 'dark' : 'light');
+};
+applyTheme(localStorage.getItem('yawmi_theme') || 'dark');
 
 /* ================= init ================= */
 updateNavCurr();
