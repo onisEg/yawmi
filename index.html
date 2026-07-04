@@ -500,6 +500,7 @@ nav.bottom button.on{color:var(--gold)}
     <select id="setLockMins" style="width:180px">
       <option value="0">فوراً</option>
       <option value="1">دقيقة</option>
+      <option value="2">دقيقتين</option>
       <option value="5">٥ دقائق</option>
       <option value="10">١٠ دقائق</option>
       <option value="30">نص ساعة</option>
@@ -1031,7 +1032,7 @@ $('#gearBtn').onclick = ()=>{
   $('#setCurr').value = settings.currency;
   $('#setPin').value = '';
   $('#pinStatus').textContent = settings.pinH ? 'مفعّل ✓ — اكتب رقم جديد لو عايز تغيّره' : 'غير مفعّل — اكتب رقم عشان تفعّله';
-  $('#setLockMins').value = String(settings.lockMins != null ? settings.lockMins : 5);
+  $('#setLockMins').value = String(settings.lockMins != null ? settings.lockMins : 2);
   $('#removePin').classList.toggle('hidden', !settings.pinH);
   $('#overlay').classList.add('show');
 };
@@ -1242,7 +1243,7 @@ $('#keypad').addEventListener('click', e=>{
 });
 let hiddenAt = 0;
 function markActive(){ localStorage.setItem('yawmi_active', Date.now()); }
-function lockTimeoutMs(){ return (settings.lockMins != null ? settings.lockMins : 5) * 60000; }
+function lockTimeoutMs(){ return (settings.lockMins != null ? settings.lockMins : 2) * 60000; }
 document.addEventListener('visibilitychange', ()=>{
   if(document.hidden){ hiddenAt = Date.now(); markActive(); }
   else if(settings.pinH && hiddenAt && Date.now() - hiddenAt > lockTimeoutMs()) showLock();
