@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#14161F">
-<script>(function(){var t=localStorage.getItem('yawmi_theme')||'dark';document.documentElement.setAttribute('data-theme',t);if(t==='light')document.querySelector('meta[name=theme-color]').setAttribute('content','#F5F3EC');})();</script>
+<meta name="theme-color" content="#F5F3EC">
+<script>(function(){var t=localStorage.getItem('yawmi_theme')||'light';document.documentElement.setAttribute('data-theme',t);document.querySelector('meta[name=theme-color]').setAttribute('content',t==='light'?'#F5F3EC':'#14161F');})();</script>
 <title>يومي</title>
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
@@ -490,11 +490,36 @@ nav.bottom button.on{color:var(--gold)}
     <input type="number" id="setIncome" inputmode="decimal" placeholder="—" style="width:150px">
     <label for="setCurr">العملة</label>
     <input type="text" id="setCurr" style="width:110px">
-    <label for="setPin">رقم سري لقفل التطبيق (من ٤ لـ ٦ أرقام)</label>
-    <div style="display:flex; gap:8px; align-items:center">
-      <input type="password" id="setPin" inputmode="numeric" style="width:170px">
-      <button class="btn ghost hidden" id="removePin" style="flex:0; padding:10px 14px; font-size:13px">إلغاء القفل</button>
+    <label>رقم سري لقفل التطبيق (من ٤ لـ ٦ أرقام)</label>
+    <div id="pinSetter">
+      <div id="pinStatus" style="font-size:13px; color:var(--muted); margin-bottom:10px"></div>
+      <div class="dots" id="setDots" style="justify-content:center; margin-bottom:14px"></div>
+      <div class="keypad" id="setKeypad" style="max-width:240px; margin:0 auto">
+        <button class="key" data-k="1">1</button>
+        <button class="key" data-k="2">2</button>
+        <button class="key" data-k="3">3</button>
+        <button class="key" data-k="4">4</button>
+        <button class="key" data-k="5">5</button>
+        <button class="key" data-k="6">6</button>
+        <button class="key" data-k="7">7</button>
+        <button class="key" data-k="8">8</button>
+        <button class="key" data-k="9">9</button>
+        <button class="key fn" data-k="clear">مسح</button>
+        <button class="key" data-k="0">0</button>
+        <button class="key fn" data-k="back">⌫</button>
+      </div>
+      <div style="text-align:center; margin-top:10px">
+        <button class="btn ghost hidden" id="removePin" style="display:inline-block; padding:8px 18px; font-size:13px">إلغاء القفل</button>
+      </div>
     </div>
+    <label for="setLockMins">يقفل تلقائي بعد</label>
+    <select id="setLockMins" style="width:180px">
+      <option value="0">فوراً</option>
+      <option value="1">دقيقة</option>
+      <option value="5">٥ دقائق</option>
+      <option value="10">١٠ دقائق</option>
+      <option value="30">نص ساعة</option>
+    </select>
     <div class="btnrow">
       <button class="btn ghost" id="exportBtn">تصدير نسخة احتياطية</button>
       <button class="btn ghost" id="importBtn">استيراد نسخة</button>
@@ -1020,19 +1045,45 @@ $('#gearBtn').onclick = ()=>{
   $('#setCats').value = settings.cats.map(c => settings.budgets[c] ? `${c}: ${settings.budgets[c]}` : c).join('\n');
   $('#setIncome').value = settings.income || '';
   $('#setCurr').value = settings.currency;
-  $('#setPin').value = '';
-  $('#setPin').placeholder = settings.pinH ? 'مفعّل ✓ — اكتب رقم جديد للتغيير' : 'غير مفعّل';
+  $('#setLockMins').value = String(settings.lockMins != null ? settings.lockMins : 5);
+  pinDraft = '';
+  renderPinSetter();
   $('#removePin').classList.toggle('hidden', !settings.pinH);
   $('#overlay').classList.add('show');
 };
 $('#removePin').onclick = ()=>{
   if(!confirm('تلغي قفل التطبيق؟')) return;
-  delete settings.pinH;
+  delete settings.pinH; delete settings.pinLen;
   store(K.set, settings);
-  $('#setPin').placeholder = 'غير مفعّل';
+  pinDraft = '';
+  renderPinSetter();
   $('#removePin').classList.add('hidden');
   toast('القفل اتلغى');
 };
+
+/* PIN setter keypad (in settings) */
+let pinDraft = '';
+function renderPinSetter(){
+  const status = $('#pinStatus');
+  if(pinDraft.length){
+    status.textContent = `رقم جديد: ${pinDraft.length} أرقام` + (pinDraft.length >= 4 ? ' — احفظ الإعدادات عشان يتفعّل' : ' (الأقل ٤)');
+    status.style.color = pinDraft.length >= 4 ? 'var(--teal)' : 'var(--muted)';
+  } else {
+    status.textContent = settings.pinH ? 'مفعّل ✓ — اكتب رقم جديد لو عايز تغيّره' : 'غير مفعّل — اكتب رقم عشان تفعّله';
+    status.style.color = 'var(--muted)';
+  }
+  const dwrap = $('#setDots');
+  const n = Math.max(pinDraft.length, 4);
+  dwrap.innerHTML = Array.from({length:n}, (_,i)=>`<div class="dot${i<pinDraft.length?' filled':''}"></div>`).join('');
+}
+$('#setKeypad').addEventListener('click', e=>{
+  const btn = e.target.closest('.key'); if(!btn) return;
+  const k = btn.dataset.k;
+  if(k === 'back') pinDraft = pinDraft.slice(0,-1);
+  else if(k === 'clear') pinDraft = '';
+  else if(pinDraft.length < 6) pinDraft += k;
+  renderPinSetter();
+});
 $('#closeModal').onclick = ()=> $('#overlay').classList.remove('show');
 $('#overlay').onclick = e=>{ if(e.target.id==='overlay') $('#overlay').classList.remove('show'); };
 $('#saveSettings').onclick = async ()=>{
@@ -1050,8 +1101,9 @@ $('#saveSettings').onclick = async ()=>{
   if(!settings.cats.length) settings.cats = ['عام'];
   settings.income = parseFloat($('#setIncome').value) || 0;
   settings.currency = $('#setCurr').value.trim() || 'ج.م';
-  const newPin = $('#setPin').value.trim();
-  if(newPin){ settings.pinH = fallbackHash(newPin); settings.pinLen = newPin.length; }
+  if(pinDraft.length >= 4){ settings.pinH = fallbackHash(pinDraft); settings.pinLen = pinDraft.length; }
+  else if(pinDraft.length > 0){ alert('الرقم السري لازم يكون ٤ أرقام على الأقل'); return; }
+  settings.lockMins = parseInt($('#setLockMins').value, 10);
   store(K.set, settings);
   $('#overlay').classList.remove('show');
   updateNavCurr();
@@ -1225,10 +1277,14 @@ $('#keypad').addEventListener('click', e=>{
   }
 });
 let hiddenAt = 0;
+function markActive(){ localStorage.setItem('yawmi_active', Date.now()); }
+function lockTimeoutMs(){ return (settings.lockMins != null ? settings.lockMins : 5) * 60000; }
 document.addEventListener('visibilitychange', ()=>{
-  if(document.hidden) hiddenAt = Date.now();
-  else if(settings.pinH && hiddenAt && Date.now() - hiddenAt > 120000) showLock();
+  if(document.hidden){ hiddenAt = Date.now(); markActive(); }
+  else if(settings.pinH && hiddenAt && Date.now() - hiddenAt > lockTimeoutMs()) showLock();
 });
+setInterval(markActive, 30000);
+['click','keydown','input'].forEach(ev=> document.addEventListener(ev, markActive, {passive:true}));
 
 /* ================= theme ================= */
 function applyTheme(t){
@@ -1241,12 +1297,17 @@ $('#themeBtn').onclick = ()=>{
   const cur = document.documentElement.getAttribute('data-theme');
   applyTheme(cur === 'light' ? 'dark' : 'light');
 };
-applyTheme(localStorage.getItem('yawmi_theme') || 'dark');
+applyTheme(localStorage.getItem('yawmi_theme') || 'light');
 
 /* ================= init ================= */
 updateNavCurr();
 renderToday();
-showLock();
+(function initLock(){
+  if(!settings.pinH) return;
+  const last = parseInt(localStorage.getItem('yawmi_active') || '0', 10);
+  if(!last || Date.now() - last > lockTimeoutMs()) showLock();
+})();
+markActive();
 if('serviceWorker' in navigator && (location.protocol==='https:' || location.hostname==='localhost')){
   navigator.serviceWorker.register('sw.js');
 }
