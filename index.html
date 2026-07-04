@@ -335,6 +335,23 @@ nav.bottom button.on{color:var(--gold)}
 .addproj{display:flex; gap:8px; margin-top:12px}
 .addproj input{flex:1; font-size:14px}
 .goaldel{background:none; border:none; color:var(--faint); font-size:15px; cursor:pointer; padding:2px 4px}
+
+/* ---------- history table ---------- */
+.histctrl{display:flex; gap:8px; margin-bottom:12px}
+.histctrl select{flex:1}
+.histrow{
+  display:flex; align-items:center; gap:10px; padding:11px 4px;
+  border-top:1px solid var(--line); cursor:pointer;
+}
+.histrow:hover{background:var(--card2)}
+.histrow:first-child{border-top:none}
+.histdate{font-size:13px; font-weight:500; white-space:nowrap; width:88px; flex-shrink:0}
+.histmood{font-size:16px; width:22px; text-align:center; flex-shrink:0; filter:grayscale(.2)}
+.histsnip{flex:1; font-size:13px; color:var(--muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0}
+.histmini{display:flex; gap:5px; flex-shrink:0}
+.histmini .m{font-size:11px; color:var(--faint)}
+.histmini .m.on{color:var(--gold)}
+.histmore{text-align:center; padding:12px 0 2px; color:var(--gold); font-size:13px; cursor:pointer}
 </style>
 </head>
 <body>
@@ -503,6 +520,14 @@ nav.bottom button.on{color:var(--gold)}
       <h3>دوّر في يومياتك</h3>
       <input type="text" id="searchInp" placeholder="اكتب كلمة من اللي فات...">
       <div id="searchRes"></div>
+    </div>
+
+    <div class="card">
+      <h3>كل الأيام</h3>
+      <div class="histctrl">
+        <select id="histMonth"></select>
+      </div>
+      <div id="histList"></div>
     </div>
   </section>
 </main>
@@ -1116,6 +1141,7 @@ function renderDash(){
   $('#revSummary').textContent = cnt
     ? `أسبوعك: متوسط ${(sum/cnt).toFixed(1)} من 10 · صرفت ${wkExp.toLocaleString('ar-EG')} ${settings.currency}`
     : '';
+  renderHistory();
 }
 
 function weekKeyOf(){
@@ -1299,6 +1325,69 @@ $('#searchInp').addEventListener('input', e=>{
     res.appendChild(el);
   });
 });
+
+/* ================= history table ================= */
+const MOOD_EMO = ['','😔','😕','🙂','😄','🤩'];
+let histLimit = 30;
+function dayHasContent(r){
+  return r && (r.j || r.l || (r.p && r.p.some(x=>x)) || (r.h && Object.values(r.h).some(x=>x)) || r.m || r.s);
+}
+function renderHistory(){
+  const sel = $('#histMonth');
+  // build month options from existing days
+  const months = [...new Set(Object.keys(days).filter(k=>dayHasContent(days[k])).map(k=>k.slice(0,7)))].sort().reverse();
+  const prev = sel.value;
+  sel.innerHTML = '<option value="">كل الشهور</option>' + months.map(m=>{
+    const d = new Date(m+'-15T12:00:00');
+    const lbl = new Intl.DateTimeFormat('ar-EG',{month:'long', year:'numeric'}).format(d);
+    return `<option value="${m}">${lbl}</option>`;
+  }).join('');
+  if(prev && months.includes(prev)) sel.value = prev;
+
+  const filter = sel.value;
+  let keys = Object.keys(days).filter(k=>dayHasContent(days[k]));
+  if(filter) keys = keys.filter(k=>k.startsWith(filter));
+  keys.sort().reverse();
+
+  const list = $('#histList');
+  list.innerHTML = '';
+  if(!keys.length){ list.innerHTML = '<div class="empty">مفيش أيام مسجلة لسه</div>'; return; }
+
+  const shown = keys.slice(0, histLimit);
+  shown.forEach(k=>{
+    const r = days[k];
+    const d = new Date(k+'T12:00:00');
+    const dlabel = new Intl.DateTimeFormat('ar-EG',{day:'numeric', month:'short'}).format(d);
+    const wd = new Intl.DateTimeFormat('ar-EG',{weekday:'short'}).format(d);
+    const snip = (r.j || r.l || '').slice(0, 60);
+    const pr = r.p ? r.p.reduce((a,b)=>a+(b?1:0),0) : 0;
+    const hd = r.h ? Object.values(r.h).filter(Boolean).length : 0;
+    const row = document.createElement('div');
+    row.className = 'histrow';
+    row.innerHTML = `
+      <span class="histdate">${wd} ${dlabel}</span>
+      <span class="histmood">${r.m ? MOOD_EMO[r.m] : ''}</span>
+      <span class="histsnip"></span>
+      <span class="histmini">
+        <span class="m ${pr===5?'on':''}">🕌${pr}</span>
+        <span class="m ${hd?'on':''}">✓${hd}</span>
+      </span>`;
+    row.querySelector('.histsnip').textContent = snip || '—';
+    row.onclick = ()=>{
+      viewDate = k;
+      document.querySelector('nav.bottom button[data-tab=today]').click();
+    };
+    list.appendChild(row);
+  });
+  if(keys.length > histLimit){
+    const more = document.createElement('div');
+    more.className = 'histmore';
+    more.textContent = `عرض المزيد (${keys.length - histLimit} يوم كمان)`;
+    more.onclick = ()=>{ histLimit += 30; renderHistory(); };
+    list.appendChild(more);
+  }
+}
+$('#histMonth').addEventListener('change', ()=>{ histLimit = 30; renderHistory(); });
 
 /* ================= PIN lock ================= */
 function fallbackHash(s){
