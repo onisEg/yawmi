@@ -313,6 +313,28 @@ nav.bottom button.on{color:var(--gold)}
 .sres .d{font-size:12px; color:var(--gold)}
 .sres .s{font-size:13px; color:var(--muted); line-height:1.6}
 .streak{float:left; color:var(--gold); font-size:13px; font-weight:400}
+
+/* ---------- goals & projects ---------- */
+.goalcard{background:var(--card); border:1px solid var(--line); border-radius:var(--r); padding:16px; margin-bottom:14px}
+.goalhead{display:flex; align-items:flex-start; gap:10px; margin-bottom:4px}
+.goaltitle{flex:1; font-size:16px; font-weight:500; line-height:1.5}
+.qbadge{background:var(--gold-soft); color:var(--gold); font-size:12px; border-radius:999px; padding:3px 10px; white-space:nowrap}
+.gprog{display:flex; align-items:center; gap:10px; margin:10px 0}
+.gprog .track{flex:1; height:8px; background:var(--card2); border-radius:4px; overflow:hidden}
+.gprog .fill{height:100%; background:var(--gold); border-radius:4px; transition:width .4s ease}
+.gprog .pct{font-size:13px; color:var(--muted); white-space:nowrap; min-width:34px; text-align:left}
+.projrow{display:flex; align-items:center; gap:10px; padding:9px 0; border-top:1px solid var(--line)}
+.projname{flex:1; font-size:14px; min-width:0; line-height:1.5}
+.projname.done{color:var(--faint); text-decoration:line-through}
+.projname.paused{color:var(--faint)}
+.pstate{background:var(--card2); border:1px solid var(--line); color:var(--muted); border-radius:8px; padding:4px 10px; font-family:inherit; font-size:12px; cursor:pointer; white-space:nowrap}
+.pstate.done{background:var(--gold-soft); border-color:var(--gold); color:var(--gold)}
+.pminus{background:none; border:1px solid var(--line); color:var(--muted); border-radius:8px; width:28px; height:28px; cursor:pointer; font-size:14px; flex-shrink:0}
+.pplus{background:none; border:1px solid var(--line); color:var(--muted); border-radius:8px; width:28px; height:28px; cursor:pointer; font-size:16px; flex-shrink:0}
+.pctnum{font-size:12px; color:var(--muted); min-width:34px; text-align:center}
+.addproj{display:flex; gap:8px; margin-top:12px}
+.addproj input{flex:1; font-size:14px}
+.goaldel{background:none; border:none; color:var(--faint); font-size:15px; cursor:pointer; padding:2px 4px}
 </style>
 </head>
 <body>
@@ -399,6 +421,19 @@ nav.bottom button.on{color:var(--gold)}
     <div id="taskList"></div>
   </section>
 
+  <!-- ============ الأهداف ============ -->
+  <section id="tab-goals" class="tab">
+    <div class="addrow" style="margin-top:14px">
+      <input type="text" id="goalTitle" placeholder="هدف جديد... (أتعلم إنجليزي)">
+      <select id="goalQ" style="width:70px; flex-shrink:0">
+        <option value="">—</option>
+        <option>Q1</option><option>Q2</option><option>Q3</option><option>Q4</option>
+      </select>
+      <button class="addbtn" id="addGoalBtn" aria-label="إضافة هدف">+</button>
+    </div>
+    <div id="goalList"></div>
+  </section>
+
   <!-- ============ المصاريف ============ -->
   <section id="tab-exp" class="tab">
     <div class="monthnav" style="margin-top:14px">
@@ -475,6 +510,7 @@ nav.bottom button.on{color:var(--gold)}
 <nav class="bottom">
   <button data-tab="today" class="on"><span class="ic">☀</span>اليوم</button>
   <button data-tab="tasks"><span class="ic">☑</span>المهام</button>
+  <button data-tab="goals"><span class="ic">◎</span>الأهداف</button>
   <button data-tab="exp"><span class="ic" id="navCurr">﷼</span>المصاريف</button>
   <button data-tab="dash"><span class="ic">◔</span>نظرة</button>
 </nav>
@@ -547,7 +583,7 @@ nav.bottom button.on{color:var(--gold)}
 
 <script>
 /* ================= state ================= */
-const K = {days:'yawmi_days', tasks:'yawmi_tasks', exp:'yawmi_exp', obl:'yawmi_obl', rev:'yawmi_rev', set:'yawmi_settings'};
+const K = {days:'yawmi_days', tasks:'yawmi_tasks', exp:'yawmi_exp', obl:'yawmi_obl', rev:'yawmi_rev', goals:'yawmi_goals', set:'yawmi_settings'};
 const load = (k,d)=>{ try{ const v = JSON.parse(localStorage.getItem(k)); return v ?? d; }catch(e){ return d; } };
 const store = (k,v)=> localStorage.setItem(k, JSON.stringify(v));
 
@@ -556,6 +592,7 @@ let tasks = load(K.tasks, []);
 let exps = load(K.exp, []);
 let obls = load(K.obl, []);
 let revs = load(K.rev, {});
+let goals = load(K.goals, []);
 let settings = Object.assign(
   {habits:['قراءة','رياضة','أذكار الصباح','أذكار المساء'],
    cats:['أكل','مواصلات','اشتراكات','خروجات','تانية'],
@@ -929,6 +966,91 @@ $('#addOblBtn').onclick = ()=>{
   toast('اتضاف الالتزام ✓');
 };
 
+/* ================= goals & projects ================= */
+function goalPct(g){
+  if(!g.projects || !g.projects.length) return 0;
+  return Math.round(g.projects.reduce((a,p)=>a+p.pct,0) / g.projects.length);
+}
+function renderGoals(){
+  const list = $('#goalList');
+  list.innerHTML = '';
+  if(!goals.length){
+    list.innerHTML = '<div class="empty">مفيش أهداف لسه. ضيف أول هدف من فوق ☝</div>';
+    return;
+  }
+  goals.forEach(g=>{
+    const pct = goalPct(g);
+    const card = document.createElement('div');
+    card.className = 'goalcard';
+    card.innerHTML = `
+      <div class="goalhead">
+        <div class="goaltitle"></div>
+        ${g.q ? `<span class="qbadge">${g.q}</span>` : ''}
+        <button class="goaldel" aria-label="حذف الهدف">✕</button>
+      </div>
+      <div class="gprog">
+        <div class="track"><div class="fill" style="width:${pct}%"></div></div>
+        <span class="pct">${pct}٪</span>
+      </div>
+      <div class="projs"></div>
+      <div class="addproj">
+        <input type="text" class="projInp" placeholder="ضيف مشروع تحت الهدف ده...">
+        <button class="addbtn projAdd" aria-label="إضافة مشروع">+</button>
+      </div>`;
+    card.querySelector('.goaltitle').textContent = g.t;
+    card.querySelector('.goaldel').onclick = ()=>{
+      if(!confirm(`تمسح هدف "${g.t}" وكل مشاريعه؟`)) return;
+      goals = goals.filter(x=>x.id !== g.id);
+      store(K.goals, goals); renderGoals();
+    };
+    // projects
+    const pwrap = card.querySelector('.projs');
+    (g.projects || []).forEach(p=>{
+      const done = p.pct >= 100;
+      const row = document.createElement('div');
+      row.className = 'projrow';
+      row.innerHTML = `
+        <span class="projname ${done?'done':''}"></span>
+        <button class="pstate ${done?'done':''}">${done?'خلص ✓':'شغال'}</button>
+        <button class="pminus" aria-label="أقل">−</button>
+        <span class="pctnum">${p.pct}٪</span>
+        <button class="pplus" aria-label="أكتر">+</button>
+        <button class="goaldel projdel" aria-label="حذف المشروع">✕</button>`;
+      row.querySelector('.projname').textContent = p.t;
+      const bump = d => { p.pct = Math.max(0, Math.min(100, p.pct + d)); store(K.goals, goals); renderGoals(); };
+      row.querySelector('.pminus').onclick = ()=> bump(-25);
+      row.querySelector('.pplus').onclick = ()=> bump(25);
+      row.querySelector('.pstate').onclick = ()=>{ p.pct = done ? 75 : 100; store(K.goals, goals); renderGoals(); };
+      row.querySelector('.projdel').onclick = ()=>{
+        g.projects = g.projects.filter(x=>x.id !== p.id);
+        store(K.goals, goals); renderGoals();
+      };
+      pwrap.appendChild(row);
+    });
+    // add project
+    const inp = card.querySelector('.projInp');
+    const addP = ()=>{
+      const t = inp.value.trim();
+      if(!t) return;
+      g.projects = g.projects || [];
+      g.projects.push({id:Date.now(), t, pct:0});
+      store(K.goals, goals); renderGoals();
+    };
+    card.querySelector('.projAdd').onclick = addP;
+    inp.addEventListener('keydown', e=>{ if(e.key==='Enter') addP(); });
+    list.appendChild(card);
+  });
+}
+$('#addGoalBtn').onclick = ()=>{
+  const t = $('#goalTitle').value.trim();
+  if(!t) return;
+  goals.push({id:Date.now(), t, q:$('#goalQ').value, projects:[]});
+  store(K.goals, goals);
+  $('#goalTitle').value=''; $('#goalQ').value='';
+  renderGoals(); toast('اتضاف الهدف ✓');
+};
+$('#goalTitle').addEventListener('keydown', e=>{ if(e.key==='Enter') $('#addGoalBtn').click(); });
+
 /* ================= dashboard ================= */
 function renderDash(){
   const t0 = todayISO();
@@ -1011,6 +1133,7 @@ document.querySelectorAll('nav.bottom button').forEach(b=>{
     $('#tab-'+b.dataset.tab).classList.add('active');
     if(b.dataset.tab==='today') renderToday();
     if(b.dataset.tab==='tasks') renderTasks();
+    if(b.dataset.tab==='goals') renderGoals();
     if(b.dataset.tab==='exp') renderExp();
     if(b.dataset.tab==='dash') renderDash();
     window.scrollTo({top:0});
@@ -1077,7 +1200,7 @@ $('#saveSettings').onclick = async ()=>{
 
 /* ================= backup ================= */
 function doExport(){
-  const data = {v:1, exported:new Date().toISOString(), days, tasks, exps, obls, revs, settings};
+  const data = {v:1, exported:new Date().toISOString(), days, tasks, exps, obls, revs, goals, settings};
   const blob = new Blob([JSON.stringify(data,null,1)], {type:'application/json'});
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
@@ -1098,10 +1221,10 @@ $('#importFile').onchange = e=>{
       const data = JSON.parse(r.result);
       if(!data.days && !data.tasks) throw 0;
       if(!confirm('الاستيراد هيستبدل البيانات الحالية. متأكد؟')) return;
-      days = data.days||{}; tasks = data.tasks||[]; exps = data.exps||[]; obls = data.obls||[]; revs = data.revs||{};
+      days = data.days||{}; tasks = data.tasks||[]; exps = data.exps||[]; obls = data.obls||[]; revs = data.revs||{}; goals = data.goals||[];
       settings = Object.assign(settings, data.settings||{});
       settings.budgets = settings.budgets || {};
-      store(K.days,days); store(K.tasks,tasks); store(K.exp,exps); store(K.obl,obls); store(K.rev,revs); store(K.set,settings);
+      store(K.days,days); store(K.tasks,tasks); store(K.exp,exps); store(K.obl,obls); store(K.rev,revs); store(K.goals,goals); store(K.set,settings);
       $('#overlay').classList.remove('show');
       renderToday(); toast('اتسترجعت البيانات ✓');
     }catch(err){ alert('الملف ده مش نسخة احتياطية صالحة'); }
