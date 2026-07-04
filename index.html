@@ -490,27 +490,11 @@ nav.bottom button.on{color:var(--gold)}
     <input type="number" id="setIncome" inputmode="decimal" placeholder="—" style="width:150px">
     <label for="setCurr">العملة</label>
     <input type="text" id="setCurr" style="width:110px">
-    <label>رقم سري لقفل التطبيق (من ٤ لـ ٦ أرقام)</label>
-    <div id="pinSetter">
-      <div id="pinStatus" style="font-size:13px; color:var(--muted); margin-bottom:10px"></div>
-      <div class="dots" id="setDots" style="justify-content:center; margin-bottom:14px"></div>
-      <div class="keypad" id="setKeypad" style="max-width:240px; margin:0 auto">
-        <button class="key" data-k="1">1</button>
-        <button class="key" data-k="2">2</button>
-        <button class="key" data-k="3">3</button>
-        <button class="key" data-k="4">4</button>
-        <button class="key" data-k="5">5</button>
-        <button class="key" data-k="6">6</button>
-        <button class="key" data-k="7">7</button>
-        <button class="key" data-k="8">8</button>
-        <button class="key" data-k="9">9</button>
-        <button class="key fn" data-k="clear">مسح</button>
-        <button class="key" data-k="0">0</button>
-        <button class="key fn" data-k="back">⌫</button>
-      </div>
-      <div style="text-align:center; margin-top:10px">
-        <button class="btn ghost hidden" id="removePin" style="display:inline-block; padding:8px 18px; font-size:13px">إلغاء القفل</button>
-      </div>
+    <label for="setPin">رقم سري لقفل التطبيق (من ٤ لـ ٦ أرقام)</label>
+    <div id="pinStatus" style="font-size:13px; color:var(--muted); margin-bottom:8px"></div>
+    <div style="display:flex; gap:8px; align-items:center">
+      <input type="password" id="setPin" inputmode="numeric" maxlength="6" placeholder="••••" style="width:150px; text-align:center; letter-spacing:6px; font-size:18px">
+      <button class="btn ghost hidden" id="removePin" style="flex:0; padding:10px 16px; font-size:13px; white-space:nowrap">إلغاء القفل</button>
     </div>
     <label for="setLockMins">يقفل تلقائي بعد</label>
     <select id="setLockMins" style="width:180px">
@@ -1045,9 +1029,9 @@ $('#gearBtn').onclick = ()=>{
   $('#setCats').value = settings.cats.map(c => settings.budgets[c] ? `${c}: ${settings.budgets[c]}` : c).join('\n');
   $('#setIncome').value = settings.income || '';
   $('#setCurr').value = settings.currency;
+  $('#setPin').value = '';
+  $('#pinStatus').textContent = settings.pinH ? 'مفعّل ✓ — اكتب رقم جديد لو عايز تغيّره' : 'غير مفعّل — اكتب رقم عشان تفعّله';
   $('#setLockMins').value = String(settings.lockMins != null ? settings.lockMins : 5);
-  pinDraft = '';
-  renderPinSetter();
   $('#removePin').classList.toggle('hidden', !settings.pinH);
   $('#overlay').classList.add('show');
 };
@@ -1055,34 +1039,13 @@ $('#removePin').onclick = ()=>{
   if(!confirm('تلغي قفل التطبيق؟')) return;
   delete settings.pinH; delete settings.pinLen;
   store(K.set, settings);
-  pinDraft = '';
-  renderPinSetter();
+  $('#setPin').value = '';
+  $('#pinStatus').textContent = 'غير مفعّل — اكتب رقم عشان تفعّله';
   $('#removePin').classList.add('hidden');
   toast('القفل اتلغى');
 };
-
-/* PIN setter keypad (in settings) */
-let pinDraft = '';
-function renderPinSetter(){
-  const status = $('#pinStatus');
-  if(pinDraft.length){
-    status.textContent = `رقم جديد: ${pinDraft.length} أرقام` + (pinDraft.length >= 4 ? ' — احفظ الإعدادات عشان يتفعّل' : ' (الأقل ٤)');
-    status.style.color = pinDraft.length >= 4 ? 'var(--teal)' : 'var(--muted)';
-  } else {
-    status.textContent = settings.pinH ? 'مفعّل ✓ — اكتب رقم جديد لو عايز تغيّره' : 'غير مفعّل — اكتب رقم عشان تفعّله';
-    status.style.color = 'var(--muted)';
-  }
-  const dwrap = $('#setDots');
-  const n = Math.max(pinDraft.length, 4);
-  dwrap.innerHTML = Array.from({length:n}, (_,i)=>`<div class="dot${i<pinDraft.length?' filled':''}"></div>`).join('');
-}
-$('#setKeypad').addEventListener('click', e=>{
-  const btn = e.target.closest('.key'); if(!btn) return;
-  const k = btn.dataset.k;
-  if(k === 'back') pinDraft = pinDraft.slice(0,-1);
-  else if(k === 'clear') pinDraft = '';
-  else if(pinDraft.length < 6) pinDraft += k;
-  renderPinSetter();
+$('#setPin').addEventListener('input', e=>{
+  e.target.value = e.target.value.replace(/\D/g,'').slice(0,6);
 });
 $('#closeModal').onclick = ()=> $('#overlay').classList.remove('show');
 $('#overlay').onclick = e=>{ if(e.target.id==='overlay') $('#overlay').classList.remove('show'); };
@@ -1101,8 +1064,9 @@ $('#saveSettings').onclick = async ()=>{
   if(!settings.cats.length) settings.cats = ['عام'];
   settings.income = parseFloat($('#setIncome').value) || 0;
   settings.currency = $('#setCurr').value.trim() || 'ج.م';
-  if(pinDraft.length >= 4){ settings.pinH = fallbackHash(pinDraft); settings.pinLen = pinDraft.length; }
-  else if(pinDraft.length > 0){ alert('الرقم السري لازم يكون ٤ أرقام على الأقل'); return; }
+  const newPin = $('#setPin').value.replace(/\D/g,'');
+  if(newPin.length >= 4){ settings.pinH = fallbackHash(newPin); settings.pinLen = newPin.length; }
+  else if(newPin.length > 0){ alert('الرقم السري لازم يكون ٤ أرقام على الأقل'); return; }
   settings.lockMins = parseInt($('#setLockMins').value, 10);
   store(K.set, settings);
   $('#overlay').classList.remove('show');
