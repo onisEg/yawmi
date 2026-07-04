@@ -275,9 +275,35 @@ nav.bottom button.on{color:var(--gold)}
 /* ---------- lock screen ---------- */
 #lockScreen{
   position:fixed; inset:0; background:var(--bg); z-index:100;
-  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:16px;
-  padding:20px;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  padding:24px;
 }
+.lockcard{width:100%; max-width:300px; display:flex; flex-direction:column; align-items:center}
+.lockicon{
+  width:60px; height:60px; border-radius:50%; background:var(--gold-soft);
+  display:flex; align-items:center; justify-content:center; font-size:26px; color:var(--gold);
+  margin-bottom:14px;
+}
+.lockttl{font-size:16px; color:var(--muted); margin-bottom:22px}
+.dots{display:flex; gap:14px; height:16px; margin-bottom:8px}
+.dots .dot{
+  width:13px; height:13px; border-radius:50%; border:1.5px solid var(--faint);
+  transition:all .15s ease;
+}
+.dots .dot.filled{background:var(--gold); border-color:var(--gold)}
+.dots.shake{animation:shake .4s}
+@keyframes shake{0%,100%{transform:translateX(0)} 25%{transform:translateX(-8px)} 75%{transform:translateX(8px)}}
+.lockerr{color:var(--red); font-size:13px; height:22px; margin-bottom:14px; text-align:center}
+.keypad{display:grid; grid-template-columns:repeat(3,1fr); gap:14px; width:100%}
+.key{
+  aspect-ratio:1; border:none; background:var(--card); border:1px solid var(--line);
+  border-radius:50%; color:var(--text); font-family:inherit; font-size:24px; font-weight:500;
+  cursor:pointer; display:flex; align-items:center; justify-content:center;
+  transition:background .1s;
+}
+.key:active{background:var(--card2)}
+.key.fn{background:none; border:none; font-size:15px; color:var(--muted)}
+.key.fn:active{background:var(--card2)}
 
 /* ---------- weekly review & search ---------- */
 .rlbl{display:block; font-size:13px; color:var(--muted); margin:12px 0 6px}
@@ -464,7 +490,7 @@ nav.bottom button.on{color:var(--gold)}
     <input type="number" id="setIncome" inputmode="decimal" placeholder="—" style="width:150px">
     <label for="setCurr">العملة</label>
     <input type="text" id="setCurr" style="width:110px">
-    <label for="setPin">رقم سري لقفل التطبيق</label>
+    <label for="setPin">رقم سري لقفل التطبيق (من ٤ لـ ٦ أرقام)</label>
     <div style="display:flex; gap:8px; align-items:center">
       <input type="password" id="setPin" inputmode="numeric" style="width:170px">
       <button class="btn ghost hidden" id="removePin" style="flex:0; padding:10px 14px; font-size:13px">إلغاء القفل</button>
@@ -482,10 +508,29 @@ nav.bottom button.on{color:var(--gold)}
 </div>
 
 <div id="lockScreen" class="hidden">
-  <span class="brand" style="font-size:36px">يومي</span>
-  <input type="password" id="lockPin" inputmode="numeric" placeholder="الرقم السري" style="max-width:200px; text-align:center; font-size:18px; letter-spacing:4px">
-  <button class="btn primary" id="unlockBtn" style="max-width:200px; width:100%">فتح</button>
-  <div id="lockErr" style="color:var(--red); font-size:13px; height:20px"></div>
+  <div class="lockcard">
+    <div class="lockicon">🔒</div>
+    <div class="lockttl">اكتب الرقم السري</div>
+    <div class="dots" id="lockDots">
+      <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+      <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+    </div>
+    <div class="lockerr" id="lockErr"></div>
+    <div class="keypad" id="keypad">
+      <button class="key" data-k="1">1</button>
+      <button class="key" data-k="2">2</button>
+      <button class="key" data-k="3">3</button>
+      <button class="key" data-k="4">4</button>
+      <button class="key" data-k="5">5</button>
+      <button class="key" data-k="6">6</button>
+      <button class="key" data-k="7">7</button>
+      <button class="key" data-k="8">8</button>
+      <button class="key" data-k="9">9</button>
+      <button class="key fn" data-k="clear">مسح</button>
+      <button class="key" data-k="0">0</button>
+      <button class="key fn" data-k="back">⌫</button>
+    </div>
+  </div>
 </div>
 
 <div id="toast">تم الحفظ ✓</div>
@@ -1006,7 +1051,7 @@ $('#saveSettings').onclick = async ()=>{
   settings.income = parseFloat($('#setIncome').value) || 0;
   settings.currency = $('#setCurr').value.trim() || 'ج.م';
   const newPin = $('#setPin').value.trim();
-  if(newPin) settings.pinH = fallbackHash(newPin);
+  if(newPin){ settings.pinH = fallbackHash(newPin); settings.pinLen = newPin.length; }
   store(K.set, settings);
   $('#overlay').classList.remove('show');
   updateNavCurr();
@@ -1135,24 +1180,50 @@ async function pinHash(s){
   }catch(e){}
   return fallbackHash(s);
 }
+let lockEntry = '';
+function renderDots(){
+  const dots = $('#lockDots').children;
+  for(let i=0;i<dots.length;i++) dots[i].classList.toggle('filled', i < lockEntry.length);
+}
 function showLock(){
   if(!settings.pinH) return;
+  lockEntry = '';
+  const n = settings.pinLen || 6;
+  $('#lockDots').innerHTML = Array.from({length:n}, ()=>'<div class="dot"></div>').join('');
+  renderDots();
+  $('#lockErr').textContent = '';
   $('#lockScreen').classList.remove('hidden');
-  $('#lockPin').value = '';
-  setTimeout(()=> $('#lockPin').focus(), 100);
 }
-$('#unlockBtn').onclick = async ()=>{
-  const pin = $('#lockPin').value.trim();
-  const h = await pinHash(pin);
-  if(h === settings.pinH || fallbackHash(pin) === settings.pinH){
+function tryUnlock(){
+  if(fallbackHash(lockEntry) === settings.pinH){
     $('#lockScreen').classList.add('hidden');
-    $('#lockErr').textContent = '';
+    lockEntry = '';
   } else {
+    const d = $('#lockDots');
+    d.classList.add('shake');
     $('#lockErr').textContent = 'الرقم غلط، جرب تاني';
-    $('#lockPin').value = '';
+    setTimeout(()=>{ d.classList.remove('shake'); lockEntry=''; renderDots(); }, 400);
   }
-};
-$('#lockPin').addEventListener('keydown', e=>{ if(e.key === 'Enter') $('#unlockBtn').click(); });
+}
+$('#keypad').addEventListener('click', e=>{
+  const btn = e.target.closest('.key');
+  if(!btn) return;
+  const k = btn.dataset.k;
+  if(k === 'back') lockEntry = lockEntry.slice(0, -1);
+  else if(k === 'clear') lockEntry = '';
+  else if(lockEntry.length < 6){
+    lockEntry += k;
+    $('#lockErr').textContent = '';
+  }
+  renderDots();
+  if(k === 'back' || k === 'clear') return;
+  if(settings.pinLen){
+    if(lockEntry.length >= settings.pinLen) setTimeout(tryUnlock, 130);
+  } else if(lockEntry.length >= 4){
+    // legacy PIN without stored length: silently check each keystroke
+    setTimeout(()=>{ if(fallbackHash(lockEntry) === settings.pinH) tryUnlock(); }, 100);
+  }
+});
 let hiddenAt = 0;
 document.addEventListener('visibilitychange', ()=>{
   if(document.hidden) hiddenAt = Date.now();
