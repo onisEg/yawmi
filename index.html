@@ -6,6 +6,19 @@
 <meta name="theme-color" content="#F5F3EC">
 <script>(function(){var t=localStorage.getItem('yawmi_theme')||'light';document.documentElement.setAttribute('data-theme',t);document.querySelector('meta[name=theme-color]').setAttribute('content',t==='light'?'#F5F3EC':'#14161F');})();</script>
 <title>يومي</title>
+<meta name="description" content="تطبيق لمتابعة يومك وعباداتك وعاداتك ومهامك ومصاريفك وأهدافك — كله بالعربي وشغال أوفلاين.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="يومي — متابعة يومك وعباداتك">
+<meta property="og:description" content="متابعة يومك وعباداتك وعاداتك ومهامك ومصاريفك وأهدافك، وكتابة اليوميات — كله بالعربي وشغال أوفلاين.">
+<meta property="og:image" content="https://oniseg.github.io/yawmi/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:url" content="https://oniseg.github.io/yawmi/">
+<meta property="og:locale" content="ar_AR">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="يومي — متابعة يومك وعباداتك">
+<meta name="twitter:description" content="متابعة يومك وعباداتك وعاداتك ومهامك ومصاريفك وأهدافك — كله بالعربي.">
+<meta name="twitter:image" content="https://oniseg.github.io/yawmi/og-image.png">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="icon" href="icon-192.png">
@@ -345,6 +358,11 @@ nav.bottom button.on{color:var(--gold)}
 }
 .histrow:hover{background:var(--card2)}
 .histrow:first-child{border-top:none}
+.histrow.past{background:var(--card2)}
+.histrow.past .histdate{color:var(--muted)}
+.histrow.past .histsnip{color:var(--faint)}
+.histrow.today{border-right:3px solid var(--gold); padding-right:8px}
+.histrow.today .histdate{color:var(--gold)}
 .histdate{font-size:13px; font-weight:500; white-space:nowrap; width:88px; flex-shrink:0}
 .histmood{font-size:16px; width:22px; text-align:center; flex-shrink:0; filter:grayscale(.2)}
 .histsnip{flex:1; font-size:13px; color:var(--muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0}
@@ -1363,7 +1381,8 @@ function renderHistory(){
     const pr = r.p ? r.p.reduce((a,b)=>a+(b?1:0),0) : 0;
     const hd = r.h ? Object.values(r.h).filter(Boolean).length : 0;
     const row = document.createElement('div');
-    row.className = 'histrow';
+    const isToday = k === todayISO();
+    row.className = 'histrow' + (isToday ? ' today' : (k < todayISO() ? ' past' : ''));
     row.innerHTML = `
       <span class="histdate">${wd} ${dlabel}</span>
       <span class="histmood">${r.m ? MOOD_EMO[r.m] : ''}</span>
