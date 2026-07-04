@@ -182,6 +182,24 @@ input[type=number]{color-scheme:dark}
 .eamt{font-weight:700; white-space:nowrap}
 .edate{font-size:11px; color:var(--faint); white-space:nowrap}
 
+/* ---------- obligations ---------- */
+.oitem{
+  display:flex; align-items:center; gap:10px; background:var(--card2);
+  border:1px solid var(--line); border-radius:12px; padding:10px 12px; margin-bottom:8px;
+}
+.oitem.late{border-color:var(--red)}
+.ottl{flex:1; font-size:14px; min-width:0; line-height:1.5}
+.ottl .sub{color:var(--muted); font-size:12px}
+.ottl .sub .amt{color:var(--gold); font-weight:700}
+.ottl .sub .late{color:var(--red); font-weight:500}
+.orec{color:var(--gold)}
+.opay{
+  background:var(--teal); color:#0E2A22; border:none; border-radius:8px;
+  padding:7px 13px; font-family:inherit; font-size:13px; font-weight:500;
+  cursor:pointer; white-space:nowrap;
+}
+#oblTotal{font-weight:700; color:var(--red)}
+
 /* ---------- dashboard ---------- */
 .grid2{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:14px}
 .stat{background:var(--card); border:1px solid var(--line); border-radius:var(--r); padding:14px; text-align:center}
@@ -332,6 +350,22 @@ nav.bottom button.on{color:var(--gold)}
     <div class="addrow" style="margin-top:-8px">
       <input type="text" id="expNote" placeholder="ملاحظة (اختياري)...">
     </div>
+    <div class="card">
+      <h3 style="display:flex;justify-content:space-between;align-items:center">الالتزامات والديون <span id="oblTotal"></span></h3>
+      <div id="oblList"></div>
+      <div class="addrow" style="margin:12px 0 0">
+        <input type="text" id="oblTitle" placeholder="التزام أو دين... (فاتورة، سلفة، كورس)">
+      </div>
+      <div class="addrow" style="margin-top:8px; margin-bottom:0">
+        <input type="number" id="oblAmt" inputmode="decimal" placeholder="المبلغ">
+        <input type="date" id="oblDue" aria-label="ميعاد الدفع">
+        <button class="addbtn" id="addOblBtn" aria-label="إضافة التزام">+</button>
+      </div>
+      <label class="inline" style="margin-top:12px; font-size:14px; color:var(--muted); cursor:pointer">
+        <input type="checkbox" id="oblRec" style="width:auto; accent-color:var(--gold)">
+        بيتكرر كل شهر (زي كورس أو مصروف ثابت)
+      </label>
+    </div>
     <div class="card" id="catBarsCard">
       <h3>حسب التصنيف</h3>
       <div id="catBars"></div>
@@ -384,13 +418,14 @@ nav.bottom button.on{color:var(--gold)}
 
 <script>
 /* ================= state ================= */
-const K = {days:'yawmi_days', tasks:'yawmi_tasks', exp:'yawmi_exp', set:'yawmi_settings'};
+const K = {days:'yawmi_days', tasks:'yawmi_tasks', exp:'yawmi_exp', obl:'yawmi_obl', set:'yawmi_settings'};
 const load = (k,d)=>{ try{ const v = JSON.parse(localStorage.getItem(k)); return v ?? d; }catch(e){ return d; } };
 const store = (k,v)=> localStorage.setItem(k, JSON.stringify(v));
 
 let days = load(K.days, {});
 let tasks = load(K.tasks, []);
 let exps = load(K.exp, []);
+let obls = load(K.obl, []);
 let settings = Object.assign(
   {habits:['قراءة','رياضة','أذكار الصباح','أذكار المساء'],
    cats:['أكل','مواصلات','اشتراكات','خروجات','تانية'],
@@ -585,6 +620,7 @@ function monthKey(offset){
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
 }
 function renderExp(){
+  renderObls();
   const mk = monthKey(expMonthOffset);
   const d = new Date(mk+'-15T12:00:00');
   $('#expMonthLabel').textContent = new Intl.DateTimeFormat('ar-EG',{month:'long', year:'numeric'}).format(d);
@@ -638,6 +674,81 @@ $('#addExpBtn').onclick = ()=>{
 $('#prevMonthBtn').onclick = ()=>{ expMonthOffset--; renderExp(); };
 $('#nextMonthBtn').onclick = ()=>{ if(expMonthOffset<0){ expMonthOffset++; renderExp(); } };
 
+/* ================= obligations ================= */
+function addMonthISO(dISO){
+  const [y,m,d] = dISO.split('-').map(Number);
+  const ny = m === 12 ? y+1 : y, nm = m === 12 ? 1 : m+1;
+  const last = new Date(ny, nm, 0).getDate();
+  return `${ny}-${String(nm).padStart(2,'0')}-${String(Math.min(d,last)).padStart(2,'0')}`;
+}
+function dueLabel(due){
+  if(!due) return '';
+  const t0 = todayISO();
+  const dm = due.slice(5).split('-').reverse().join('/');
+  if(due < t0) return `<span class="late">متأخر من ${dm} ⚠</span>`;
+  if(due === t0) return `<span class="late">ميعاده النهارده</span>`;
+  return `ميعاده ${dm}`;
+}
+function renderObls(){
+  const list = $('#oblList');
+  const t0 = todayISO();
+  const sorted = [...obls].sort((a,b)=>{
+    const ad = a.due || '9999', bd = b.due || '9999';
+    return ad.localeCompare(bd);
+  });
+  const total = obls.reduce((s,o)=>s+o.a,0);
+  $('#oblTotal').textContent = total ? `عليك ${total.toLocaleString('ar-EG')} ${settings.currency}` : '';
+  list.innerHTML = '';
+  if(!sorted.length){
+    list.innerHTML = '<div class="empty" style="padding:14px 0">مفيش التزامات — دماغك مرتاحة 😌</div>';
+    return;
+  }
+  sorted.forEach(o=>{
+    const late = o.due && o.due < t0;
+    const el = document.createElement('div');
+    el.className = 'oitem' + (late ? ' late' : '');
+    el.innerHTML = `
+      <div class="ottl">
+        <div class="tname"></div>
+        <div class="sub"><span class="amt">${o.a.toLocaleString('ar-EG')} ${settings.currency}</span> ${o.due ? '· ' + dueLabel(o.due) : ''} ${o.rec ? '· <span class="orec">↻ شهري</span>' : ''}</div>
+      </div>
+      <button class="opay">اتدفع</button>
+      <button class="delbtn" aria-label="حذف">✕</button>`;
+    el.querySelector('.tname').textContent = o.t;
+    el.querySelector('.opay').onclick = ()=>{
+      if(!confirm(`تسجّل "${o.t}" كمدفوع؟ هيتسجل مصروف بـ ${o.a} ${settings.currency}`)) return;
+      exps.unshift({id:Date.now(), a:o.a, c:'التزامات', n:o.t, d:todayISO()});
+      store(K.exp, exps);
+      if(o.rec){
+        o.due = o.due ? addMonthISO(o.due) : addMonthISO(todayISO());
+      } else {
+        obls = obls.filter(x=>x.id !== o.id);
+      }
+      store(K.obl, obls);
+      expMonthOffset = 0;
+      renderExp();
+      toast('اتدفع واتسجل في المصاريف ✓');
+    };
+    el.querySelector('.delbtn').onclick = ()=>{
+      if(!confirm(`تمسح "${o.t}" من غير ما يتسجل كمصروف؟`)) return;
+      obls = obls.filter(x=>x.id !== o.id);
+      store(K.obl, obls);
+      renderObls();
+    };
+    list.appendChild(el);
+  });
+}
+$('#addOblBtn').onclick = ()=>{
+  const t = $('#oblTitle').value.trim();
+  const a = parseFloat($('#oblAmt').value);
+  if(!t || !a || a <= 0) return;
+  obls.push({id:Date.now(), t, a, due:$('#oblDue').value || '', rec:$('#oblRec').checked});
+  store(K.obl, obls);
+  $('#oblTitle').value=''; $('#oblAmt').value=''; $('#oblDue').value=''; $('#oblRec').checked=false;
+  renderObls();
+  toast('اتضاف الالتزام ✓');
+};
+
 /* ================= dashboard ================= */
 function renderDash(){
   const t0 = todayISO();
@@ -682,11 +793,15 @@ function renderDash(){
   Object.keys(days).filter(k=>k.startsWith(mk)).forEach(k=>{
     prDone += days[k].p.reduce((a,b)=>a+(b?1:0),0); prTotal += 5;
   });
+  const lateOblSum = obls.filter(o=>o.due && o.due < t0).reduce((s,o)=>s+o.a,0);
+  const allOblSum = obls.reduce((s,o)=>s+o.a,0);
   $('#monthStats').innerHTML = `
     <div class="stat"><div class="num">${daysLogged}</div><div class="lbl">يوم مسجّل الشهر ده</div></div>
     <div class="stat"><div class="num">${mExp.toLocaleString('ar-EG')}</div><div class="lbl">مصاريف الشهر (${settings.currency})</div></div>
     <div class="stat"><div class="num">${late}</div><div class="lbl">مهام متأخرة</div></div>
-    <div class="stat"><div class="num">${prTotal? Math.round(prDone/prTotal*100) : 0}٪</div><div class="lbl">التزام الصلوات</div></div>`;
+    <div class="stat"><div class="num">${prTotal? Math.round(prDone/prTotal*100) : 0}٪</div><div class="lbl">التزام الصلوات</div></div>
+    <div class="stat"><div class="num" ${lateOblSum?'style="color:var(--red)"':''}>${lateOblSum.toLocaleString('ar-EG')}</div><div class="lbl">التزامات متأخرة (${settings.currency})</div></div>
+    <div class="stat"><div class="num">${allOblSum.toLocaleString('ar-EG')}</div><div class="lbl">إجمالي عليك (${settings.currency})</div></div>`;
 }
 
 /* ================= tabs ================= */
@@ -733,7 +848,7 @@ $('#saveSettings').onclick = ()=>{
 
 /* ================= backup ================= */
 $('#exportBtn').onclick = ()=>{
-  const data = {v:1, exported:new Date().toISOString(), days, tasks, exps, settings};
+  const data = {v:1, exported:new Date().toISOString(), days, tasks, exps, obls, settings};
   const blob = new Blob([JSON.stringify(data,null,1)], {type:'application/json'});
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
@@ -752,9 +867,9 @@ $('#importFile').onchange = e=>{
       const data = JSON.parse(r.result);
       if(!data.days && !data.tasks) throw 0;
       if(!confirm('الاستيراد هيستبدل البيانات الحالية. متأكد؟')) return;
-      days = data.days||{}; tasks = data.tasks||[]; exps = data.exps||[]; 
+      days = data.days||{}; tasks = data.tasks||[]; exps = data.exps||[]; obls = data.obls||[];
       settings = Object.assign(settings, data.settings||{});
-      store(K.days,days); store(K.tasks,tasks); store(K.exp,exps); store(K.set,settings);
+      store(K.days,days); store(K.tasks,tasks); store(K.exp,exps); store(K.obl,obls); store(K.set,settings);
       $('#overlay').classList.remove('show');
       renderToday(); toast('اتسترجعت البيانات ✓');
     }catch(err){ alert('الملف ده مش نسخة احتياطية صالحة'); }
