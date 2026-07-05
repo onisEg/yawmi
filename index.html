@@ -290,10 +290,18 @@ input[type=number]{color-scheme:dark light}
 .exptotal{text-align:center; margin-bottom:16px}
 .exptotal .num{font-size:32px; font-weight:700; color:var(--gold)}
 .exptotal .lbl{font-size:13px; color:var(--muted)}
-.catbar{margin-bottom:10px}
-.catbar .row{display:flex; justify-content:space-between; font-size:13px; margin-bottom:4px}
-.catbar .track{height:6px; background:var(--card2); border-radius:4px; overflow:hidden}
-.catbar .fill{height:100%; background:var(--gold); border-radius:4px}
+.donutwrap{position:relative; width:140px; height:140px; margin:4px auto 18px}
+.donut circle{transition:stroke-dasharray .5s ease}
+.donutcenter{position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; pointer-events:none}
+.donutcenter .dt{font-size:20px; font-weight:700; color:var(--text); line-height:1}
+.donutcenter .dl{font-size:11px; color:var(--muted); margin-top:2px}
+.catlegwrap{display:flex; flex-direction:column; gap:2px}
+.catleg{display:flex; align-items:center; gap:8px; padding:7px 0; border-top:1px solid var(--line)}
+.catleg:first-child{border-top:none}
+.catleg .dot{width:12px; height:12px; border-radius:50%; flex-shrink:0}
+.catleg .nm{font-size:14px; flex:1}
+.catleg .pct{font-size:14px; font-weight:700; color:var(--text); min-width:38px; text-align:left}
+.catleg .amt{font-size:12px; color:var(--muted); min-width:90px; text-align:left}
 .eitem{
   display:flex; align-items:center; gap:10px; background:var(--card);
   border:1px solid var(--line); border-radius:12px; padding:10px 14px; margin-bottom:8px;
@@ -1807,25 +1815,53 @@ function renderExp(){
     rem.style.color = left >= 0 ? 'var(--teal)' : 'var(--red)';
   } else rem.textContent = '';
 
-  // category bars
+  // category donut
   const byCat = {};
   monthExp.forEach(e=>{ byCat[e.c] = (byCat[e.c]||0) + e.a; });
   const cats = Object.entries(byCat).sort((a,b)=>b[1]-a[1]);
   const bars = $('#catBars');
   $('#catBarsCard').classList.toggle('hidden', !cats.length);
-  bars.innerHTML = cats.map(([c,v])=>{
+  // ألوان التصنيفات
+  const CAT_COLORS = ['#D9A441','#5FB89E','#E4A0A0','#7BA7D9','#C89BE0','#E0B87B','#8FCf9F','#D98FB8','#A0B4E4','#B0B0A0'];
+  const catTotal = cats.reduce((a,[,v])=>a+v,0) || 1;
+  // بناء أقواس الدائرة
+  const R = 54, CX = 70, CY = 70, SW = 24;
+  const C = 2 * Math.PI * R;
+  let offset = 0;
+  const segs = cats.map(([c,v],i)=>{
+    const frac = v / catTotal;
+    const len = frac * C;
+    const color = CAT_COLORS[i % CAT_COLORS.length];
+    const dash = `${len} ${C - len}`;
+    const seg = `<circle cx="${CX}" cy="${CY}" r="${R}" fill="none" stroke="${color}" stroke-width="${SW}" stroke-dasharray="${dash}" stroke-dashoffset="${-offset}" transform="rotate(-90 ${CX} ${CY})"/>`;
+    offset += len;
+    return seg;
+  }).join('');
+  const donut = cats.length ? `
+    <div class="donutwrap">
+      <svg width="140" height="140" viewBox="0 0 140 140" class="donut">
+        <circle cx="${CX}" cy="${CY}" r="${R}" fill="none" stroke="var(--card2)" stroke-width="${SW}"/>
+        ${segs}
+      </svg>
+      <div class="donutcenter"><span class="dt">${catTotal.toLocaleString('ar-EG')}</span><span class="dl">${settings.currency}</span></div>
+    </div>` : '';
+  const legend = cats.map(([c,v],i)=>{
+    const color = CAT_COLORS[i % CAT_COLORS.length];
+    const pct = Math.round(v/catTotal*100);
     const b = settings.budgets[c];
-    const pct = b ? v/b : (total ? v/total : 0);
-    const over = b && pct >= 0.9;
-    const lbl = b
-      ? `${v.toLocaleString('ar-EG')} من ${b.toLocaleString('ar-EG')} ${settings.currency}${pct>1?' ⚠':''}`
+    const over = b && v/b >= 0.9;
+    const amtTxt = b
+      ? `${v.toLocaleString('ar-EG')} من ${b.toLocaleString('ar-EG')}${v/b>1?' ⚠':''}`
       : `${v.toLocaleString('ar-EG')} ${settings.currency}`;
     return `
-    <div class="catbar">
-      <div class="row"><span>${c}</span><span ${over?'style="color:var(--red)"':''}>${lbl}</span></div>
-      <div class="track"><div class="fill" style="width:${Math.min(pct*100,100).toFixed(1)}%${over?';background:var(--red)':''}"></div></div>
+    <div class="catleg">
+      <span class="dot" style="background:${color}"></span>
+      <span class="nm">${c}</span>
+      <span class="pct">${pct}٪</span>
+      <span class="amt" ${over?'style="color:var(--red)"':''}>${amtTxt}</span>
     </div>`;
   }).join('');
+  bars.innerHTML = donut + `<div class="catlegwrap">${legend}</div>`;
 
   const list = $('#expList');
   list.innerHTML = '';
