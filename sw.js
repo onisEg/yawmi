@@ -1,4 +1,4 @@
-const CACHE = 'yawmi-v33';
+const CACHE = 'yawmi-v34';
 const ASSETS = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {
@@ -16,6 +16,9 @@ self.addEventListener('activate', e => {
 
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
+  const url = new URL(e.request.url);
+  // بس نفس الأصل (التطبيق نفسه) — نسيب Supabase و esm.sh و الـ APIs تعدي عادي
+  if (url.origin !== self.location.origin) return;
   e.respondWith(
     fetch(e.request)
       .then(res => {
