@@ -120,6 +120,8 @@ main{padding:0 16px; max-width:560px; margin:0 auto}
 }
 .bead.on{color:var(--gold)}
 .bead.on .dot{background:var(--gold); border-color:var(--gold); box-shadow:0 0 12px rgba(217,164,65,.35)}
+.bead.locked{opacity:.4}
+.bead.locked .dot{border-style:dashed}
 
 /* ---------- habit chips ---------- */
 .chips{display:flex; flex-wrap:wrap; gap:8px}
@@ -677,6 +679,43 @@ settings.badHabits = settings.badHabits || [];
 const PRAYERS = ['الفجر','الظهر','العصر','المغرب','العشاء'];
 const MOODS = ['😔','😕','🙂','😄','🤩'];
 
+/* ===== prayer times ===== */
+// أوقات تقريبية احتياطية بالدقايق من نص الليل (فجر 5، ظهر 12، عصر 15:30، مغرب 18، عشاء 19:30)
+const FALLBACK_TIMES = [5*60, 12*60, 15*60+30, 18*60, 19*60+30];
+let prayerCache = load('yawmi_ptimes', {}); // { 'YYYY-MM-DD': [min,min,min,min,min] }
+function getPrayerMinutes(){
+  const k = todayISO();
+  if(prayerCache[k]) return prayerCache[k];
+  fetchPrayerTimes(k); // async، لحد ما تيجي بنستخدم التقريبي
+  return FALLBACK_TIMES;
+}
+function hmToMin(hm){ const [h,m] = hm.split(':').map(Number); return h*60 + m; }
+let ptFetching = false;
+function fetchPrayerTimes(k){
+  if(ptFetching || !navigator.onLine) return;
+  ptFetching = true;
+  const done = coords=>{
+    const [y,m,d] = k.split('-');
+    let url = `https://api.aladhan.com/v1/timings/${d}-${m}-${y}?method=5`;
+    if(coords) url += `&latitude=${coords.lat}&longitude=${coords.lng}`;
+    else url += `&latitude=30.0444&longitude=31.2357`; // القاهرة كافتراضي
+    fetch(url).then(r=>r.json()).then(j=>{
+      const t = j.data.timings;
+      prayerCache[k] = [hmToMin(t.Fajr), hmToMin(t.Dhuhr), hmToMin(t.Asr), hmToMin(t.Maghrib), hmToMin(t.Isha)];
+      store('yawmi_ptimes', prayerCache);
+      ptFetching = false;
+      if(viewDate === todayISO()) renderToday();
+    }).catch(()=>{ ptFetching = false; });
+  };
+  if(navigator.geolocation){
+    navigator.geolocation.getCurrentPosition(
+      p=> done({lat:p.coords.latitude, lng:p.coords.longitude}),
+      ()=> done(null),
+      {timeout:8000, maximumAge:86400000}
+    );
+  } else done(null);
+}
+
 const $ = s => document.querySelector(s);
 const iso = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 const todayISO = () => iso(new Date());
@@ -733,11 +772,23 @@ function renderToday(){
   // beads
   const beads = $('#beads');
   beads.innerHTML = '';
+  const isToday = viewDate === todayISO();
+  const nowMin = new Date().getHours()*60 + new Date().getMinutes();
+  const times = isToday ? getPrayerMinutes() : null;
   PRAYERS.forEach((name,i)=>{
+    const locked = isToday && times && nowMin < times[i];
     const b = document.createElement('button');
-    b.className = 'bead' + (rec.p[i] ? ' on' : '');
+    b.className = 'bead' + (rec.p[i] ? ' on' : '') + (locked ? ' locked' : '');
     b.innerHTML = `<span class="dot"></span>${name}`;
-    b.onclick = ()=>{ rec.p[i] = rec.p[i]?0:1; saveDays(); renderToday(); };
+    b.onclick = ()=>{
+      if(locked){
+        const t = times[i];
+        const hh = String(Math.floor(t/60)).padStart(2,'0'), mm = String(t%60).padStart(2,'0');
+        toast(`${name} لسه مجاش وقتها (${hh}:${mm})`);
+        return;
+      }
+      rec.p[i] = rec.p[i]?0:1; saveDays(); renderToday();
+    };
     beads.appendChild(b);
   });
 
