@@ -130,17 +130,28 @@ main{padding:0 16px; max-width:560px; margin:0 auto}
 }
 .chip.on{background:var(--gold-soft); border-color:var(--gold); color:var(--gold)}
 
-/* ---------- bad habits ---------- */
-.bhrow{display:flex; align-items:center; gap:12px; padding:9px 0}
-.bhname{flex:1; font-size:15px; min-width:0}
-.bhname .st{display:block; font-size:12px; color:var(--faint); margin-top:2px}
-.bhname .st.clean{color:var(--teal)}
-.bhcount{font-size:18px; font-weight:700; min-width:28px; text-align:center}
-.bhcount.zero{color:var(--teal)}
-.bhcount.hit{color:var(--red)}
-.bhbtn{background:none; border:1px solid var(--line); border-radius:9px; width:34px; height:34px; cursor:pointer; font-size:18px; color:var(--muted); flex-shrink:0}
-.bhbtn:active{background:var(--card2)}
+/* ---------- bad habits (recovery) ---------- */
+.bhcard{background:var(--card2); border:1px solid var(--line); border-radius:12px; padding:14px; margin-bottom:12px}
+.bhtop{display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:8px}
+.bhname2{font-size:15px; font-weight:500}
+.bhbtns{display:flex; gap:8px; align-items:center}
+.bhbtn{background:none; border:1px solid var(--line); border-radius:9px; height:32px; cursor:pointer; font-family:inherit; font-size:13px; color:var(--muted); padding:0 10px}
+.bhbtn.minus{width:32px; padding:0; font-size:18px}
 .bhbtn.plus{border-color:var(--red); color:var(--red)}
+.bhbtn:active{background:var(--card)}
+.bhbig{text-align:center; font-size:34px; font-weight:700; padding:6px 0 2px; line-height:1.1}
+.bhbig.clean{color:var(--teal)}
+.bhbig.hit{color:var(--red); font-size:20px; padding:14px 0}
+.bhbig .u{font-size:14px; font-weight:400; color:var(--muted); display:block; margin-top:2px}
+.bhtarget{margin:12px 0 10px}
+.bhtarget .row{display:flex; justify-content:space-between; font-size:12px; color:var(--muted); margin-bottom:5px}
+.bhtarget .track{height:7px; background:var(--card); border-radius:4px; overflow:hidden}
+.bhtarget .fill{height:100%; background:var(--teal); border-radius:4px; transition:width .4s ease}
+.bhstats{display:flex; gap:10px; margin-bottom:10px}
+.bhstats .s{flex:1; background:var(--card); border-radius:9px; padding:8px; text-align:center}
+.bhstats .n{display:block; font-size:18px; font-weight:700; color:var(--text)}
+.bhstats .l{font-size:11px; color:var(--muted)}
+.bhmsg{font-size:13px; line-height:1.7; color:var(--gold); background:var(--gold-soft); border-radius:9px; padding:9px 12px; text-align:center}
 
 /* ---------- mood & sleep ---------- */
 .moodrow{display:flex; justify-content:space-between; margin-bottom:14px}
@@ -743,29 +754,49 @@ function renderToday(){
     chips.appendChild(c);
   });
 
-  // bad habits (counters)
+  // bad habits (recovery cards)
   const bhWrap = $('#badHabitWrap');
   const bhList = $('#badHabitList');
   bhWrap.classList.toggle('hidden', !settings.badHabits.length);
   bhList.innerHTML = '';
   settings.badHabits.forEach(bh=>{
     const count = rec.bh[bh] || 0;
-    // clean streak = عدد الأيام المتواصلة اللي العدّاد فيها صفر
-    const cleanN = streak(k=>{ const r = days[k]; return !!(r && (!r.bh || !r.bh[bh])); }, viewDate);
-    const row = document.createElement('div');
-    row.className = 'bhrow';
-    const statusTxt = count === 0
-      ? (cleanN >= 2 ? `<span class="st clean">🔥 ${cleanN} يوم نضيف</span>` : '<span class="st clean">نضيف النهارده ✓</span>')
-      : `<span class="st">وقعت ${count} مرة النهارده</span>`;
-    row.innerHTML = `
-      <button class="bhbtn minus" aria-label="أقل">−</button>
-      <span class="bhcount ${count===0?'zero':'hit'}">${count}</span>
-      <button class="bhbtn plus" aria-label="أكتر">+</button>
-      <span class="bhname"><span class="nm"></span>${statusTxt}</span>`;
-    row.querySelector('.nm').textContent = bh;
-    row.querySelector('.plus').onclick = ()=>{ rec.bh[bh] = count + 1; saveDays(); renderToday(); };
-    row.querySelector('.minus').onclick = ()=>{ if(count > 0){ rec.bh[bh] = count - 1; if(rec.bh[bh]===0) delete rec.bh[bh]; saveDays(); renderToday(); } };
-    bhList.appendChild(row);
+    const relapsedToday = count > 0;
+    const cleanDays = bhCleanDays(bh, viewDate);
+    const total = bhTotalRelapses(bh);
+    const longest = bhLongestClean(bh);
+    const target = bhTarget(cleanDays);
+    const pct = Math.min(cleanDays / target * 100, 100);
+    const card = document.createElement('div');
+    card.className = 'bhcard';
+    card.innerHTML = `
+      <div class="bhtop">
+        <span class="bhname2"></span>
+        <div class="bhbtns">
+          <button class="bhbtn minus" aria-label="تقليل">−</button>
+          <button class="bhbtn plus" aria-label="سجّل انتكاسة">انتكست +</button>
+        </div>
+      </div>
+      <div class="bhbig ${relapsedToday?'hit':'clean'}">
+        ${relapsedToday ? `وقعت ${count} مرة النهارده` : `${cleanDays} <span class="u">يوم نضيف</span>`}
+      </div>
+      <div class="bhtarget">
+        <div class="row"><span>التارجت: ${target} يوم</span><span>${cleanDays}/${target}</span></div>
+        <div class="track"><div class="fill" style="width:${pct}%"></div></div>
+      </div>
+      <div class="bhstats">
+        <div class="s"><span class="n">${longest}</span><span class="l">أطول فترة</span></div>
+        <div class="s"><span class="n">${total}</span><span class="l">مرات الانتكاس</span></div>
+      </div>
+      <div class="bhmsg">${bhMessage(cleanDays, relapsedToday, target)}</div>`;
+    card.querySelector('.bhname2').textContent = bh;
+    card.querySelector('.plus').onclick = ()=>{
+      rec.bh[bh] = (rec.bh[bh]||0) + 1; saveDays(); renderToday();
+    };
+    card.querySelector('.minus').onclick = ()=>{
+      if(count > 0){ rec.bh[bh] = count - 1; if(rec.bh[bh]===0) delete rec.bh[bh]; saveDays(); renderToday(); }
+    };
+    bhList.appendChild(card);
   });
 
   // mood
@@ -823,6 +854,49 @@ function streak(test, anchor){
   if(!test(iso(d))) d.setDate(d.getDate() - 1);
   while(test(iso(d))){ n++; d.setDate(d.getDate() - 1); if(n > 3650) break; }
   return n;
+}
+
+/* ===== bad-habit recovery stats ===== */
+const BH_LADDER = [1, 3, 7, 14, 21, 30, 60, 90, 180, 365];
+function bhClean(k, name){ const r = days[k]; return !!(r && (!r.bh || !r.bh[name])); }
+// أيام النضافة المتواصلة المنتهية عند anchor
+function bhCleanDays(name, anchor){
+  return streak(k => bhClean(k, name), anchor);
+}
+// عدد مرات الانتكاس الكلي (مجموع العدّاد على كل الأيام)
+function bhTotalRelapses(name){
+  let t = 0;
+  for(const k in days){ const r = days[k]; if(r && r.bh && r.bh[name]) t += r.bh[name]; }
+  return t;
+}
+// أطول فترة نضافة وصلتلها (أطول سلسلة أيام نضيفة في التاريخ كله)
+function bhLongestClean(name){
+  const keys = Object.keys(days).filter(k => dayHasContent(days[k])).sort();
+  if(!keys.length) return 0;
+  let best = 0, cur = 0, prev = null;
+  const start = new Date(keys[0] + 'T12:00:00');
+  const end = new Date(iso(new Date()) + 'T12:00:00');
+  for(let d = new Date(start); d <= end; d.setDate(d.getDate()+1)){
+    if(bhClean(iso(d), name)){ cur++; if(cur > best) best = cur; }
+    else cur = 0;
+  }
+  return best;
+}
+// التارجت الحالي: أقرب رقم في السلم أكبر من أيام النضافة الحالية
+function bhTarget(cleanDays){
+  for(const t of BH_LADDER){ if(t > cleanDays) return t; }
+  return BH_LADDER[BH_LADDER.length-1] + Math.ceil((cleanDays - 365)/365)*365 || 365;
+}
+function bhMessage(cleanDays, relapsedToday, target){
+  if(relapsedToday) return 'انتكاسة مش نهاية الطريق — كل يوم بيبدأ من جديد. بكرة نظيف بإذن الله 💪';
+  if(cleanDays === 0) return 'ابدأ من دلوقتي. أول يوم هو الأصعب والأهم.';
+  if(cleanDays === 1) return 'يوم كامل نضيف! خطوة واحدة بس والتارجت قريب.';
+  const remaining = target - cleanDays;
+  if(remaining <= 1) return `فاضل يوم واحد وتكسر تارجت ${target}! متوقفش دلوقتي.`;
+  if(remaining <= 3) return `قربت! فاضل ${remaining} أيام على تارجت ${target}. انت أقوى من العادة دي.`;
+  if(cleanDays >= 30) return `${cleanDays} يوم! دي مش صدفة، ده انت بقيت شخص تاني. حافظ عليها.`;
+  if(cleanDays >= 7) return `أسبوع وأكتر نضيف — جسمك ودماغك بيشكروك. كمّل للتارجت.`;
+  return `ماشي كويس، ${cleanDays} أيام نضيفة. التارجت الجاي ${target} يوم.`;
 }
 
 function shiftDay(n){
