@@ -900,7 +900,7 @@ function syncSoon(){
   syncDirty = true;
   localStorage.setItem('yawmi_syncedat', String(Date.now()));
   clearTimeout(syncTimer);
-  syncTimer = setTimeout(()=> flushSync(), 60000); // رفع بعد دقيقة من آخر تعديل
+  syncTimer = setTimeout(()=> flushSync(), 3000); // رفع بعد 3 ثواني من آخر تعديل
 }
 async function flushSync(){
   if(!syncDirty || !syncCode()) return;
