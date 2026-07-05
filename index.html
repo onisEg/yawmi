@@ -889,16 +889,23 @@ async function syncFull(silent){
   }
   // المحلي أحدث أو مفيش سحابة → ارفع
   const ok = await syncPush();
-  if(ok) localStorage.setItem('yawmi_syncedat', String(Date.now()));
+  if(ok){ localStorage.setItem('yawmi_syncedat', String(Date.now())); syncDirty = false; }
   syncing = false;
   if(!silent) toast(ok ? 'اتزامن ✓' : 'المزامنة فشلت، جرّب تاني');
 }
 // نداء بعد أي حفظ: يرفع بعد تأخير بسيط
+let syncDirty = false;
 function syncSoon(){
   if(!syncCode()) return;
+  syncDirty = true;
   localStorage.setItem('yawmi_syncedat', String(Date.now()));
   clearTimeout(syncTimer);
-  syncTimer = setTimeout(()=> syncPush(), 3000);
+  syncTimer = setTimeout(()=> flushSync(), 60000); // رفع بعد دقيقة من آخر تعديل
+}
+async function flushSync(){
+  if(!syncDirty || !syncCode()) return;
+  const ok = await syncPush();
+  if(ok) syncDirty = false;
 }
 
 const load = (k,d)=>{ try{ const v = JSON.parse(localStorage.getItem(k)); return v ?? d; }catch(e){ return d; } };
@@ -2139,7 +2146,7 @@ function refreshSyncUI(){
   const st = $('#syncStatus');
   if(code){
     const at = parseInt(localStorage.getItem('yawmi_syncedat')||'0',10);
-    st.textContent = at ? `مفعّلة ✓ — آخر مزامنة: ${new Date(at).toLocaleString('ar-EG',{hour:'2-digit',minute:'2-digit',day:'numeric',month:'short'})}` : 'مفعّلة ✓';
+    st.textContent = at ? `مفعّلة تلقائي ✓ — آخر مزامنة: ${new Date(at).toLocaleString('ar-EG',{hour:'2-digit',minute:'2-digit',day:'numeric',month:'short'})}` : 'مفعّلة تلقائي ✓';
     st.style.color = 'var(--teal)';
     $('#syncOffBtn').classList.remove('hidden');
   } else {
@@ -2418,9 +2425,16 @@ let hiddenAt = 0;
 function markActive(){ localStorage.setItem('yawmi_active', Date.now()); }
 function lockTimeoutMs(){ return (settings.lockMins != null ? settings.lockMins : 2) * 60000; }
 document.addEventListener('visibilitychange', ()=>{
-  if(document.hidden){ hiddenAt = Date.now(); markActive(); }
-  else if(settings.pinH && hiddenAt && Date.now() - hiddenAt > lockTimeoutMs()) showLock();
+  if(document.hidden){
+    hiddenAt = Date.now(); markActive();
+    if(syncCode() && syncDirty) flushSync(); // ارفع فوراً قبل ما يروح للخلفية
+  } else {
+    if(settings.pinH && hiddenAt && Date.now() - hiddenAt > lockTimeoutMs()) showLock();
+    if(syncCode()) syncFull(true); // اسحب الأحدث لما يرجع
+  }
 });
+// ارفع قبل غلق التطبيق
+window.addEventListener('pagehide', ()=>{ if(syncCode() && syncDirty) syncPush(); });
 setInterval(markActive, 30000);
 ['click','keydown','input'].forEach(ev=> document.addEventListener(ev, markActive, {passive:true}));
 
