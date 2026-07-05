@@ -25,6 +25,11 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=IBM+Plex+Sans+Arabic:wght@400;500;700&display=swap" rel="stylesheet">
+<script type="module">
+  import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+  window._createSupabaseClient = createClient;
+  window.dispatchEvent(new Event('supabase-ready'));
+</script>
 <style>
 :root{
   --bg:#14161F; --card:#1C1F2B; --card2:#232736; --line:#2C3143;
@@ -370,6 +375,19 @@ nav.bottom button.on{color:var(--gold)}
 #toast.show{opacity:1}
 #toast.withundo{pointer-events:auto; display:flex; align-items:center; gap:12px; color:var(--text)}
 .undobtn{background:none; border:none; color:var(--gold); font-family:inherit; font-size:13px; font-weight:700; cursor:pointer; padding:2px 4px}
+
+/* ---------- auth modal ---------- */
+#authOverlay{position:fixed; inset:0; background:rgba(0,0,0,.6); display:flex; align-items:flex-end; justify-content:center; z-index:58; opacity:0; visibility:hidden; transition:opacity .25s ease, visibility .25s}
+#authOverlay.show{opacity:1; visibility:visible}
+#authModal{background:var(--card); border-radius:20px 20px 0 0; width:100%; max-width:560px; padding:20px 20px calc(24px + env(safe-area-inset-bottom)); max-height:90vh; overflow-y:auto; transform:translateY(100%); transition:transform .3s cubic-bezier(.32,.72,0,1)}
+#authOverlay.show #authModal{transform:translateY(0)}
+.btn.google{width:100%; background:var(--card2); border:1px solid var(--line); color:var(--text); display:flex; align-items:center; justify-content:center; gap:10px; font-size:15px}
+.btn.google span{display:inline-flex; align-items:center; justify-content:center; width:22px; height:22px; border-radius:50%; background:#fff; color:#4285F4; font-weight:700; font-family:Arial, sans-serif}
+.authdivider{display:flex; align-items:center; gap:12px; margin:16px 0; color:var(--faint); font-size:12px}
+.authdivider::before, .authdivider::after{content:''; flex:1; height:1px; background:var(--line)}
+.autherror{background:var(--gold-soft); color:var(--red); border-radius:10px; padding:10px 12px; font-size:13px; margin-top:12px; text-align:center}
+.authswitch{text-align:center; margin-top:16px; font-size:13px; color:var(--muted)}
+.authswitch button{background:none; border:none; color:var(--gold); font-family:inherit; font-size:13px; font-weight:700; cursor:pointer; margin-right:4px}
 
 /* ---------- greeting ---------- */
 #greeting{padding:14px 2px 4px; font-size:20px; font-weight:700; color:var(--text); animation:fadein .4s ease}
@@ -730,15 +748,16 @@ nav.bottom button.on{color:var(--gold)}
     </div>
     <input type="file" id="importFile" accept=".json" class="hidden">
 
-    <label style="margin-top:20px; padding-top:16px; border-top:1px solid var(--line)">المزامنة السحابية ☁️</label>
-    <div id="syncStatus" style="font-size:13px; color:var(--muted); margin-bottom:8px">اكتب كود مزامنة عشان بياناتك تتزامن على أجهزتك</div>
-    <div style="display:flex; gap:8px; align-items:center">
-      <input type="text" id="syncCode" placeholder="كود المزامنة (اختار أي كود)" style="flex:1" autocomplete="off">
-      <button class="btn ghost" id="syncGenBtn" style="flex:0; padding:10px 14px; font-size:13px; white-space:nowrap">توليد</button>
+    <label style="margin-top:20px; padding-top:16px; border-top:1px solid var(--line)">النسخة السحابية والحساب ☁️</label>
+    <div id="acctStatus" style="font-size:13px; color:var(--muted); margin-bottom:10px"></div>
+    <div class="btnrow" id="acctLoggedOut">
+      <button class="btn primary" id="openAuthBtn">اعمل حساب أو سجّل دخول للباك أب</button>
     </div>
-    <div class="btnrow">
-      <button class="btn ghost" id="syncNowBtn">مزامنة دلوقتي ⇅</button>
-      <button class="btn ghost" id="syncOffBtn">إيقاف المزامنة</button>
+    <div id="acctLoggedIn" class="hidden">
+      <div class="btnrow">
+        <button class="btn ghost" id="syncNowBtn">مزامنة دلوقتي ⇅</button>
+        <button class="btn ghost" id="signOutBtn">تسجيل خروج</button>
+      </div>
     </div>
 
     <div class="btnrow">
@@ -803,24 +822,55 @@ nav.bottom button.on{color:var(--gold)}
   </div>
 </div>
 
+<div id="authOverlay">
+  <div id="authModal">
+    <div class="bhdhead">
+      <h2 id="authTitle">اعمل حساب</h2>
+      <button class="iconbtn" id="authClose" aria-label="إغلاق">✕</button>
+    </div>
+    <p id="authIntro" style="font-size:13px; color:var(--muted); margin:0 0 16px; line-height:1.7">اعمل حساب عشان تعمل باك أب لبياناتك وتفتحها من أي جهاز. بياناتك الحالية على الموبايل هتترفع تلقائي بعد ما تسجّل.</p>
+    <button class="btn google" id="googleBtn"><span>G</span> كمّل بحساب جوجل</button>
+    <div class="authdivider"><span>أو</span></div>
+    <label for="authEmail">الإيميل</label>
+    <input type="email" id="authEmail" placeholder="you@example.com" autocomplete="email" style="width:100%">
+    <label for="authPass">الباسورد</label>
+    <input type="password" id="authPass" placeholder="6 حروف على الأقل" autocomplete="current-password" style="width:100%">
+    <div id="authError" class="autherror hidden"></div>
+    <button class="btn primary" id="authSubmit" style="width:100%; margin-top:14px">اعمل حساب</button>
+    <div class="authswitch">
+      <span id="authSwitchTxt">عندك حساب بالفعل؟</span>
+      <button id="authSwitchBtn">سجّل دخول</button>
+    </div>
+  </div>
+</div>
+
 <div id="toast">تم الحفظ ✓</div>
 
 <script>
 /* ================= state ================= */
 const K = {days:'yawmi_days', tasks:'yawmi_tasks', exp:'yawmi_exp', obl:'yawmi_obl', rev:'yawmi_rev', goals:'yawmi_goals', bh:'yawmi_bhdata', set:'yawmi_settings'};
 
-/* ================= cloud sync (Supabase) ================= */
+/* ================= cloud sync + auth (Supabase) ================= */
 const SUPABASE_URL = 'https://jtldivmllnzktnzgwtsm.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_nRigZs8_c02iCCO4MyvogQ_jkqwKaGV';
-const SYNC_TABLE = 'yawmi_sync';
-function syncCode(){ return localStorage.getItem('yawmi_synccode') || ''; }
-function syncHeaders(){
-  return {
-    'apikey': SUPABASE_KEY,
-    'Authorization': 'Bearer ' + SUPABASE_KEY,
-    'Content-Type': 'application/json'
-  };
+const DATA_TABLE = 'yawmi_data';
+let sb = null;            // عميل Supabase
+let currentUser = null;   // المستخدم المسجّل دخوله (أو null)
+function initSupabase(){
+  if(sb || !window._createSupabaseClient) return;
+  sb = window._createSupabaseClient(SUPABASE_URL, SUPABASE_KEY, {
+    auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
+  });
+  sb.auth.onAuthStateChange((event, session)=>{
+    currentUser = session ? session.user : null;
+    refreshAuthUI();
+    if(currentUser && (event === 'SIGNED_IN' || event === 'INITIAL_SESSION')){
+      syncFull(true); // أول ما يسجّل دخول، نزامن
+    }
+  });
 }
+function isLoggedIn(){ return !!currentUser; }
+
 // كل بيانات التطبيق في كائن واحد
 function collectAllData(){
   return {
@@ -840,37 +890,30 @@ function applyAllData(d){
   if(d.bhData) store(K.bh, d.bhData);
   if(d.settings) store(K.set, Object.assign(load(K.set,{}), d.settings));
 }
-let syncTimer = null, syncing = false;
-// رفع البيانات للسحابة
+let syncTimer = null, syncing = false, syncDirty = false;
+
 async function syncPush(){
-  const code = syncCode();
-  if(!code || !navigator.onLine) return false;
+  if(!isLoggedIn() || !navigator.onLine || !sb) return false;
   try{
-    const body = JSON.stringify({ sync_code: code, data: collectAllData(), updated_at: new Date().toISOString() });
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/${SYNC_TABLE}?on_conflict=sync_code`, {
-      method: 'POST',
-      headers: Object.assign(syncHeaders(), {'Prefer': 'resolution=merge-duplicates'}),
-      body
+    const { error } = await sb.from(DATA_TABLE).upsert({
+      user_id: currentUser.id,
+      data: collectAllData(),
+      updated_at: new Date().toISOString()
     });
-    return res.ok;
+    return !error;
   }catch(e){ return false; }
 }
-// سحب البيانات من السحابة
 async function syncPull(){
-  const code = syncCode();
-  if(!code || !navigator.onLine) return null;
+  if(!isLoggedIn() || !navigator.onLine || !sb) return null;
   try{
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/${SYNC_TABLE}?sync_code=eq.${encodeURIComponent(code)}&select=data,updated_at`, {
-      headers: syncHeaders()
-    });
-    if(!res.ok) return null;
-    const rows = await res.json();
-    return rows.length ? rows[0] : null;
+    const { data, error } = await sb.from(DATA_TABLE)
+      .select('data, updated_at').eq('user_id', currentUser.id).maybeSingle();
+    if(error) return null;
+    return data;
   }catch(e){ return null; }
 }
-// مزامنة كاملة: يسحب الأحدث ويطبقه، أو يرفع لو المحلي أحدث
 async function syncFull(silent){
-  if(syncing || !syncCode()) return;
+  if(syncing || !isLoggedIn()) return;
   syncing = true;
   if(!silent) toast('بيزامن...');
   const remote = await syncPull();
@@ -878,7 +921,6 @@ async function syncFull(silent){
   if(remote && remote.data){
     const remoteAt = remote.data._syncedAt || new Date(remote.updated_at).getTime();
     if(remoteAt > localAt){
-      // السحابة أحدث → طبّقها محلياً
       applyAllData(remote.data);
       localStorage.setItem('yawmi_syncedat', String(remoteAt));
       reloadState();
@@ -887,25 +929,64 @@ async function syncFull(silent){
       return;
     }
   }
-  // المحلي أحدث أو مفيش سحابة → ارفع
   const ok = await syncPush();
   if(ok){ localStorage.setItem('yawmi_syncedat', String(Date.now())); syncDirty = false; }
   syncing = false;
   if(!silent) toast(ok ? 'اتزامن ✓' : 'المزامنة فشلت، جرّب تاني');
 }
-// نداء بعد أي حفظ: يرفع بعد تأخير بسيط
-let syncDirty = false;
 function syncSoon(){
-  if(!syncCode()) return;
+  if(!isLoggedIn()) return;
   syncDirty = true;
   localStorage.setItem('yawmi_syncedat', String(Date.now()));
   clearTimeout(syncTimer);
-  syncTimer = setTimeout(()=> flushSync(), 3000); // رفع بعد 3 ثواني من آخر تعديل
+  syncTimer = setTimeout(()=> flushSync(), 3000);
 }
 async function flushSync(){
-  if(!syncDirty || !syncCode()) return;
+  if(!syncDirty || !isLoggedIn()) return;
   const ok = await syncPush();
   if(ok) syncDirty = false;
+}
+// توافق مع الكود القديم
+function syncCode(){ return isLoggedIn() ? currentUser.id : ''; }
+
+/* ===== auth actions ===== */
+async function authSignUp(email, password){
+  if(!sb) return {error:'لسه بيحمّل، جرّب كمان شوية'};
+  const { data, error } = await sb.auth.signUp({ email, password });
+  if(error) return {error: authErrArabic(error.message)};
+  // لو الإيميل محتاج تأكيد
+  if(data.user && !data.session) return {ok:true, needsConfirm:true};
+  return {ok:true};
+}
+async function authSignIn(email, password){
+  if(!sb) return {error:'لسه بيحمّل، جرّب كمان شوية'};
+  const { error } = await sb.auth.signInWithPassword({ email, password });
+  if(error) return {error: authErrArabic(error.message)};
+  return {ok:true};
+}
+async function authGoogle(){
+  if(!sb) return {error:'لسه بيحمّل'};
+  const { error } = await sb.auth.signInWithOAuth({
+    provider: 'google',
+    options: { redirectTo: location.href.split('#')[0] }
+  });
+  if(error) return {error: authErrArabic(error.message)};
+  return {ok:true};
+}
+async function authSignOut(){
+  if(!sb) return;
+  await sb.auth.signOut();
+  currentUser = null;
+  refreshAuthUI();
+}
+function authErrArabic(msg){
+  const m = (msg||'').toLowerCase();
+  if(m.includes('invalid login')) return 'الإيميل أو الباسورد غلط';
+  if(m.includes('already registered') || m.includes('already been')) return 'الإيميل ده مسجّل قبل كده — سجّل دخول';
+  if(m.includes('password') && m.includes('6')) return 'الباسورد لازم يكون 6 حروف على الأقل';
+  if(m.includes('email') && m.includes('valid')) return 'الإيميل مش صحيح';
+  if(m.includes('rate')) return 'حاولت كتير — استنى شوية وجرّب تاني';
+  return msg || 'حصل خطأ، جرّب تاني';
 }
 
 const load = (k,d)=>{ try{ const v = JSON.parse(localStorage.getItem(k)); return v ?? d; }catch(e){ return d; } };
@@ -2048,7 +2129,7 @@ function updateNavCurr(){
 }
 $('#gearBtn').onclick = ()=>{
   $('#setName').value = settings.name || '';
-  refreshSyncUI();
+  refreshAuthUI();
   $('#setHabits').value = settings.habits.join('\n');
   $('#setBadHabits').value = (settings.badHabits || []).join('\n');
   $('#setCountry').innerHTML = COUNTRIES.map(c=>`<option ${c.n===settings.country?'selected':''}>${c.n}</option>`).join('');
@@ -2140,41 +2221,77 @@ function doExport(){
 $('#exportBtn').onclick = doExport;
 
 /* sync UI */
-function refreshSyncUI(){
-  const code = syncCode();
-  $('#syncCode').value = code;
-  const st = $('#syncStatus');
-  if(code){
+function refreshAuthUI(){
+  const loggedIn = isLoggedIn();
+  const st = $('#acctStatus');
+  const outEl = $('#acctLoggedOut'), inEl = $('#acctLoggedIn');
+  if(!st) return;
+  if(loggedIn){
     const at = parseInt(localStorage.getItem('yawmi_syncedat')||'0',10);
-    st.textContent = at ? `مفعّلة تلقائي ✓ — آخر مزامنة: ${new Date(at).toLocaleString('ar-EG',{hour:'2-digit',minute:'2-digit',day:'numeric',month:'short'})}` : 'مفعّلة تلقائي ✓';
+    const email = currentUser.email || 'حسابك';
+    st.innerHTML = `مسجّل دخول: <b style="color:var(--text)">${email}</b><br>الباك أب تلقائي ✓${at ? ' — آخر مزامنة: ' + new Date(at).toLocaleString('ar-EG',{hour:'2-digit',minute:'2-digit',day:'numeric',month:'short'}) : ''}`;
     st.style.color = 'var(--teal)';
-    $('#syncOffBtn').classList.remove('hidden');
+    if(outEl) outEl.classList.add('hidden');
+    if(inEl) inEl.classList.remove('hidden');
   } else {
-    st.textContent = 'اكتب كود مزامنة (زي باسورد) واستخدم نفسه على أجهزتك التانية';
+    st.textContent = 'بياناتك على الموبايل بس. اعمل حساب عشان تعمل باك أب وتفتحها من أي جهاز.';
     st.style.color = 'var(--muted)';
-    $('#syncOffBtn').classList.add('hidden');
+    if(outEl) outEl.classList.remove('hidden');
+    if(inEl) inEl.classList.add('hidden');
   }
 }
-$('#syncGenBtn').onclick = ()=>{
-  const gen = 'yawmi-' + Math.random().toString(36).slice(2,8) + Math.random().toString(36).slice(2,6);
-  $('#syncCode').value = gen;
+// وضع المصادقة: 'signup' أو 'signin'
+let authMode = 'signup';
+function openAuth(mode){
+  authMode = mode || 'signup';
+  $('#authError').classList.add('hidden');
+  $('#authEmail').value = ''; $('#authPass').value = '';
+  applyAuthMode();
+  $('#authOverlay').classList.add('show');
+}
+function applyAuthMode(){
+  const signup = authMode === 'signup';
+  $('#authTitle').textContent = signup ? 'اعمل حساب' : 'تسجيل دخول';
+  $('#authSubmit').textContent = signup ? 'اعمل حساب' : 'دخول';
+  $('#authSwitchTxt').textContent = signup ? 'عندك حساب بالفعل؟' : 'لسه معملتش حساب؟';
+  $('#authSwitchBtn').textContent = signup ? 'سجّل دخول' : 'اعمل حساب';
+  $('#authIntro').style.display = signup ? 'block' : 'none';
+}
+function closeAuth(){ $('#authOverlay').classList.remove('show'); }
+function showAuthError(msg){ const e = $('#authError'); e.textContent = msg; e.classList.remove('hidden'); }
+
+$('#openAuthBtn').onclick = ()=> openAuth('signup');
+$('#authClose').onclick = closeAuth;
+$('#authOverlay').onclick = e=>{ if(e.target.id==='authOverlay') closeAuth(); };
+$('#authSwitchBtn').onclick = ()=>{ authMode = authMode==='signup'?'signin':'signup'; applyAuthMode(); $('#authError').classList.add('hidden'); };
+$('#authSubmit').onclick = async ()=>{
+  const email = $('#authEmail').value.trim();
+  const pass = $('#authPass').value;
+  if(!email || !pass){ showAuthError('اكتب الإيميل والباسورد'); return; }
+  $('#authSubmit').disabled = true;
+  $('#authSubmit').textContent = 'ثانية...';
+  const res = authMode==='signup' ? await authSignUp(email, pass) : await authSignIn(email, pass);
+  $('#authSubmit').disabled = false;
+  applyAuthMode();
+  if(res.error){ showAuthError(res.error); return; }
+  if(res.needsConfirm){ showAuthError('بعتنالك إيميل تأكيد — افتحه وأكّد، وبعدين سجّل دخول'); authMode='signin'; applyAuthMode(); return; }
+  closeAuth();
+  toast('أهلاً بيك ✓');
+  refreshAuthUI();
+};
+$('#googleBtn').onclick = async ()=>{
+  const res = await authGoogle();
+  if(res.error) showAuthError(res.error);
+  // جوجل هيعمل redirect، فمفيش حاجة تانية هنا
 };
 $('#syncNowBtn').onclick = async ()=>{
-  const code = $('#syncCode').value.trim();
-  if(!code){ toast('اكتب كود المزامنة الأول'); return; }
-  const wasNew = code !== syncCode();
-  localStorage.setItem('yawmi_synccode', code);
-  // لو كود جديد، نسحب الأول (يمكن فيه بيانات على السحابة)
-  if(wasNew) localStorage.setItem('yawmi_syncedat', '0');
   await syncFull(false);
-  refreshSyncUI();
+  refreshAuthUI();
 };
-$('#syncOffBtn').onclick = ()=>{
-  if(!confirm('توقف المزامنة على الجهاز ده؟ بياناتك المحلية هتفضل زي ما هي.')) return;
-  localStorage.removeItem('yawmi_synccode');
-  localStorage.removeItem('yawmi_syncedat');
-  refreshSyncUI();
-  toast('المزامنة اتوقفت');
+$('#signOutBtn').onclick = async ()=>{
+  if(!confirm('تسجّل خروج؟ بياناتك المحلية هتفضل على الجهاز، والباك أب هيقف لحد ما تسجّل دخول تاني.')) return;
+  await authSignOut();
+  toast('سجّلت خروج');
 };
 $('#importBtn').onclick = ()=> $('#importFile').click();
 $('#importFile').onchange = e=>{
@@ -2462,8 +2579,10 @@ renderGreeting();
 })();
 markActive();
 // مزامنة صامتة عند الفتح ولما يرجع النت
-if(syncCode()) setTimeout(()=> syncFull(true), 600);
-window.addEventListener('online', ()=>{ if(syncCode()) syncFull(true); });
+// تهيئة Supabase (لو الـ SDK جاهز، وإلا نستنى الحدث)
+if(window._createSupabaseClient) initSupabase();
+else window.addEventListener('supabase-ready', initSupabase);
+window.addEventListener('online', ()=>{ if(isLoggedIn()) syncFull(true); });
 if('serviceWorker' in navigator && (location.protocol==='https:' || location.hostname==='localhost')){
   navigator.serviceWorker.register('sw.js');
 }
