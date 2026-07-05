@@ -120,6 +120,25 @@ main{padding:0 16px; max-width:560px; margin:0 auto}
 }
 .bead.on{color:var(--gold)}
 .bead.on .dot{background:var(--gold); border-color:var(--gold); box-shadow:0 0 12px rgba(217,164,65,.35)}
+.bead.s1 .dot{background:var(--gold); border-color:var(--gold)}
+.bead.s2 .dot{background:var(--teal); border-color:var(--teal); box-shadow:0 0 12px rgba(95,184,158,.35)}
+.bead.s2{color:var(--teal)}
+.bead.s3 .dot{background:var(--red); border-color:var(--red); box-shadow:0 0 12px rgba(217,112,102,.3)}
+.bead.s3{color:var(--red)}
+
+/* prayer state picker */
+.pickerov{position:fixed; inset:0; background:rgba(0,0,0,.6); display:flex; align-items:flex-end; justify-content:center; z-index:56; opacity:0; visibility:hidden; transition:opacity .25s ease, visibility .25s}
+.pickerov.show{opacity:1; visibility:visible}
+.pickerbox{background:var(--card); border-radius:20px 20px 0 0; width:100%; max-width:560px; padding:20px 20px calc(24px + env(safe-area-inset-bottom)); transform:translateY(100%); transition:transform .3s cubic-bezier(.32,.72,0,1)}
+.pickerov.show .pickerbox{transform:translateY(0)}
+.pickerbox h3{margin:0 0 14px; font-size:17px; text-align:center}
+.ppopt{display:flex; align-items:center; gap:12px; width:100%; background:var(--card2); border:1px solid var(--line); border-radius:12px; padding:14px; margin-bottom:8px; font-family:inherit; font-size:15px; color:var(--text); cursor:pointer}
+.ppopt:active{background:var(--line)}
+.ppdot{width:16px; height:16px; border-radius:50%; flex-shrink:0}
+.ppopt.s2 .ppdot{background:var(--teal)}
+.ppopt.s1 .ppdot{background:var(--gold)}
+.ppopt.s3 .ppdot{background:var(--red)}
+.ppopt.s0 .ppdot{background:var(--card2); border:1.5px solid var(--faint)}
 .bead.locked{opacity:.4}
 .bead.locked .dot{border-style:dashed}
 .ptime{font-size:10px; color:var(--faint); direction:ltr; margin-top:1px}
@@ -135,6 +154,8 @@ main{padding:0 16px; max-width:560px; margin:0 auto}
 .pwdots{display:flex; gap:5px; flex:1}
 .pwdot{width:16px; height:16px; border-radius:50%; background:var(--card2); border:1px solid var(--line)}
 .pwdot.on{background:var(--gold); border-color:var(--gold)}
+.pwdot.s2{background:var(--teal); border-color:var(--teal)}
+.pwdot.s3{background:var(--red); border-color:var(--red)}
 .pwrow .cnt{font-size:12px; color:var(--faint); width:28px; text-align:left}
 .pmonth-head{font-size:13px; color:var(--muted); margin-bottom:10px; text-align:center}
 .pmgrid{display:grid; grid-template-columns:repeat(7,1fr); gap:5px}
@@ -517,6 +538,11 @@ nav.bottom button.on{color:var(--gold)}
     </div>
 
     <div class="card">
+      <h3>الأذكار 📿</h3>
+      <div class="chips" id="azkarChips"></div>
+    </div>
+
+    <div class="card">
       <h3>حالتي</h3>
       <div class="moodrow" id="moodRow"></div>
       <div class="inline">
@@ -755,6 +781,16 @@ nav.bottom button.on{color:var(--gold)}
   </div>
 </div>
 
+<div id="prayerPicker" class="pickerov">
+  <div class="pickerbox">
+    <h3 id="ppTitle"></h3>
+    <button class="ppopt s2" data-st="2"><span class="ppdot"></span>جماعة</button>
+    <button class="ppopt s1" data-st="1"><span class="ppdot"></span>مفرد (في وقتها)</button>
+    <button class="ppopt s3" data-st="3"><span class="ppdot"></span>خارج الوقت</button>
+    <button class="ppopt s0" data-st="0"><span class="ppdot"></span>لسه مصليتهاش</button>
+  </div>
+</div>
+
 <div id="toast">تم الحفظ ✓</div>
 
 <script>
@@ -812,6 +848,7 @@ localStorage.setItem('yawmi_lastseen', String(Date.now()));
 
 const PRAYERS = ['الفجر','الظهر','العصر','المغرب','العشاء'];
 const MOODS = ['😔','😕','🙂','😄','🤩'];
+const AZKAR = ['أذكار الصباح 🌅','أذكار المساء 🌃','أذكار النوم 🛌','قيام الليل 🌉'];
 
 /* ===== prayer times ===== */
 // بلاد وتحت كل واحدة مدنها بإحداثياتها لمواقيت الصلاة
@@ -980,6 +1017,7 @@ function getDay(dISO){
   if(!Array.isArray(d.p) || d.p.length !== 5) d.p = [0,0,0,0,0];
   if(!d.h) d.h = {};
   if(!d.bh) d.bh = {};
+  if(!d.z) d.z = {};
   return d;
 }
 function saveDays(){ store(K.days, days); toast(); }
@@ -1068,8 +1106,9 @@ function renderToday(){
   const hasRealTimes = !!prayerCache[cityCoords().n + '|' + viewDate];
   PRAYERS.forEach((name,i)=>{
     const locked = isToday && nowMin < times[i];
+    const st = rec.p[i] || 0; // 0=لسه، 1=مفرد، 2=جماعة، 3=خارج الوقت
     const b = document.createElement('button');
-    b.className = 'bead' + (rec.p[i] ? ' on' : '') + (locked ? ' locked' : '');
+    b.className = 'bead' + (st ? ' on s'+st : '') + (locked ? ' locked' : '');
     const timeLabel = hasRealTimes ? `<span class="ptime">${minToHM(times[i])}</span>` : '';
     b.innerHTML = `<span class="dot"></span>${name}${timeLabel}`;
     b.onclick = (e)=>{
@@ -1078,11 +1117,7 @@ function renderToday(){
         toast(`${name} لسه مجاش وقتها (${minToHM(times[i])})`);
         return;
       }
-      const before = rec.p.reduce((a,b)=>a+(b?1:0),0);
-      rec.p[i] = rec.p[i]?0:1;
-      const after = rec.p.reduce((a,b)=>a+(b?1:0),0);
-      saveDays(); renderToday();
-      if(before < 5 && after === 5) celebrate('الحمد لله، صليت الخمسة! 🕌');
+      openPrayerPicker(i, name);
     };
     beads.appendChild(b);
   });
@@ -1098,6 +1133,18 @@ function renderToday(){
     c.textContent = n >= 2 ? `${h} 🔥${n}` : h;
     c.onclick = ()=>{ rec.h[h] = !rec.h[h]; saveDays(); renderToday(); };
     chips.appendChild(c);
+  });
+
+  // azkar
+  const azChips = $('#azkarChips');
+  azChips.innerHTML = '';
+  AZKAR.forEach(z=>{
+    const c = document.createElement('button');
+    c.className = 'chip' + (rec.z[z] ? ' on' : '');
+    const n = streak(k=>{ const r = days[k]; return !!(r && r.z && r.z[z]); }, viewDate);
+    c.textContent = n >= 2 ? `${z} 🔥${n}` : z;
+    c.onclick = ()=>{ rec.z[z] = !rec.z[z]; saveDays(); renderToday(); };
+    azChips.appendChild(c);
   });
 
   // bad habits (recovery cards)
@@ -1322,6 +1369,26 @@ function startBHDetailTimer(){
   };
   tick();
   bhdTimerInt = setInterval(tick, 1000);
+}
+
+function openPrayerPicker(idx, name){
+  const rec = getDay(viewDate);
+  $('#ppTitle').textContent = name;
+  $('#prayerPicker').classList.add('show');
+  document.querySelectorAll('#prayerPicker .ppopt').forEach(opt=>{
+    opt.onclick = ()=>{
+      const st = parseInt(opt.dataset.st, 10);
+      const before = rec.p.reduce((a,b)=>a+(b?1:0),0);
+      rec.p[idx] = st;
+      const after = rec.p.reduce((a,b)=>a+(b?1:0),0);
+      saveDays();
+      $('#prayerPicker').classList.remove('show');
+      renderToday();
+      if(before < 5 && after === 5) celebrate('الحمد لله، صليت الخمسة! 🕌');
+      // احتفال خاص لو الخمسة كلهم جماعة
+      if(after === 5 && rec.p.every(x=>x===2)) celebrate('ما شاء الله، الخمسة جماعة! 🕌✨');
+    };
+  });
 }
 
 function shiftDay(n){
@@ -1763,7 +1830,7 @@ function renderPrayerCard(){
     wwrap.innerHTML += `
       <div class="pwrow">
         <span class="day">${lbl}</span>
-        <span class="pwdots">${p.map(x=>`<span class="pwdot ${x?'on':''}"></span>`).join('')}</span>
+        <span class="pwdots">${p.map(x=>`<span class="pwdot ${x?'on s'+x:''}"></span>`).join('')}</span>
         <span class="cnt">${cnt}/5</span>
       </div>`;
   }
@@ -1872,6 +1939,7 @@ $('#setPin').addEventListener('input', e=>{
   e.target.value = e.target.value.replace(/\D/g,'').slice(0,6);
 });
 $('#closeModal').onclick = ()=> $('#overlay').classList.remove('show');
+$('#prayerPicker').onclick = e=>{ if(e.target.id==='prayerPicker') $('#prayerPicker').classList.remove('show'); };
 $('#overlay').onclick = e=>{ if(e.target.id==='overlay') $('#overlay').classList.remove('show'); };
 function closeBHDetail(){ $('#bhOverlay').classList.remove('show'); if(bhdTimerInt) clearInterval(bhdTimerInt); }
 $('#bhdClose').onclick = closeBHDetail;
@@ -2047,7 +2115,7 @@ $('#searchInp').addEventListener('input', e=>{
 const MOOD_EMO = ['','😔','😕','🙂','😄','🤩'];
 let histLimit = 30;
 function dayHasContent(r){
-  return r && (r.j || r.l || (r.p && r.p.some(x=>x)) || (r.h && Object.values(r.h).some(x=>x)) || (r.bh && Object.values(r.bh).some(x=>x)) || r.m || r.s);
+  return r && (r.j || r.l || (r.p && r.p.some(x=>x)) || (r.h && Object.values(r.h).some(x=>x)) || (r.bh && Object.values(r.bh).some(x=>x)) || (r.z && Object.values(r.z).some(x=>x)) || r.m || r.s);
 }
 function renderHistory(){
   const sel = $('#histMonth');
