@@ -339,7 +339,14 @@ nav.bottom button{
   font-size:12px; cursor:pointer; display:flex; flex-direction:column; align-items:center;
   gap:3px; padding:6px 0; border-radius:12px;
 }
-nav.bottom button .ic{font-size:20px; line-height:1}
+nav.bottom button .ic{font-size:20px; line-height:1; display:flex; align-items:center; justify-content:center}
+.ico-svg{display:inline-block; vertical-align:middle}
+nav.bottom button .ic .ico-svg{width:22px; height:22px}
+.iconbtn .ico-svg{width:20px; height:20px}
+.h3ic{display:flex; align-items:center; gap:8px}
+.h3ic [data-icon]{display:inline-flex; color:var(--gold)}
+.h3ic .ico-svg{width:18px; height:18px}
+.delbtn .ico-svg{width:16px; height:16px}
 nav.bottom button.on{color:var(--gold)}
 
 /* ---------- modal ---------- */
@@ -503,8 +510,8 @@ nav.bottom button.on{color:var(--gold)}
 <header class="top">
   <span class="brand">يومي</span>
   <div>
-    <button class="iconbtn" id="themeBtn" aria-label="تبديل الوضع">◐</button>
-    <button class="iconbtn" id="gearBtn" aria-label="الإعدادات">⚙</button>
+    <button class="iconbtn" id="themeBtn" aria-label="تبديل الوضع"><span data-icon="moon"></span></button>
+    <button class="iconbtn" id="gearBtn" aria-label="الإعدادات"><span data-icon="settings"></span></button>
   </div>
 </header>
 
@@ -540,28 +547,28 @@ nav.bottom button.on{color:var(--gold)}
 
     <div class="card">
       <div style="display:flex; justify-content:space-between; align-items:center">
-        <h3 id="prayH3" style="margin:0">الصلوات</h3>
+        <h3 id="prayH3" class="h3ic" style="margin:0"><span data-icon="beads"></span>الصلوات</h3>
         <button class="linkbtn" id="prayDetailsBtn" style="margin:0">المواعيد والتقدم ›</button>
       </div>
       <div class="beads" id="beads" style="margin-top:12px"></div>
     </div>
 
     <div class="card">
-      <h3>العادات</h3>
+      <h3 class="h3ic"><span data-icon="check_square"></span>العادات</h3>
       <div class="chips" id="habitChips"></div>
       <div id="badHabitWrap" class="hidden">
-        <h3 style="margin-top:18px; padding-top:14px; border-top:1px solid var(--line)">عادات تحت السيطرة 🚫</h3>
+        <h3 class="h3ic" style="margin-top:18px; padding-top:14px; border-top:1px solid var(--line)"><span data-icon="ban"></span>عادات تحت السيطرة</h3>
         <div id="badHabitList"></div>
       </div>
     </div>
 
     <div class="card">
-      <h3>الأذكار 📿</h3>
+      <h3 class="h3ic"><span data-icon="beads"></span>الأذكار</h3>
       <div class="chips" id="azkarChips"></div>
     </div>
 
     <div class="card">
-      <h3>حالتي</h3>
+      <h3 class="h3ic"><span data-icon="smile"></span>حالتي</h3>
       <div class="moodrow" id="moodRow"></div>
       <div class="inline">
         <label for="sleepInp">ساعات النوم</label>
@@ -700,11 +707,11 @@ nav.bottom button.on{color:var(--gold)}
 </main>
 
 <nav class="bottom">
-  <button data-tab="today" class="on"><span class="ic">☀</span>اليوم</button>
-  <button data-tab="tasks"><span class="ic">☑</span>المهام</button>
-  <button data-tab="goals"><span class="ic">◎</span>الأهداف</button>
-  <button data-tab="exp"><span class="ic" id="navCurr">﷼</span>المصاريف</button>
-  <button data-tab="dash"><span class="ic">◔</span>نظرة</button>
+  <button data-tab="today" class="on"><span class="ic" data-icon="sun"></span>اليوم</button>
+  <button data-tab="tasks"><span class="ic" data-icon="check_square"></span>المهام</button>
+  <button data-tab="goals"><span class="ic" data-icon="target"></span>الأهداف</button>
+  <button data-tab="exp"><span class="ic" data-icon="wallet"></span>المصاريف</button>
+  <button data-tab="dash"><span class="ic" data-icon="chart"></span>نظرة</button>
 </nav>
 
 <div id="overlay">
@@ -1203,6 +1210,49 @@ function fetchPrayerTimes(dISO){
 
 const $ = s => document.querySelector(s);
 
+/* ===== أيقونات (Lucide، SVG مدمجة، شغّالة أوفلاين) ===== */
+const ICONS = {
+  sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M6.3 17.7l-1.4 1.4M19.1 4.9l-1.4 1.4"/>',
+  check_square: '<path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>',
+  target: '<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>',
+  wallet: '<path d="M19 7V5a2 2 0 0 0-2-2H5a2 2 0 0 0 0 4h14a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5"/><path d="M16 12h.01"/>',
+  chart: '<path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="M7 14l3-3 3 3 4-4"/>',
+  settings: '<path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/>',
+  search: '<circle cx="11" cy="11" r="8"/><path d="M21 21l-4.3-4.3"/>',
+  plus: '<path d="M12 5v14M5 12h14"/>',
+  pencil: '<path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/>',
+  trash: '<path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>',
+  x: '<path d="M18 6 6 18M6 6l12 12"/>',
+  moon: '<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>',
+  droplet: '<path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z"/>',
+  bed: '<path d="M2 4v16M2 8h18a2 2 0 0 1 2 2v10M2 17h20M6 8v9"/><circle cx="7" cy="10" r="1.5"/>',
+  book: '<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>',
+  smile: '<circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><path d="M9 9h.01M15 9h.01"/>',
+  beads: '<circle cx="5" cy="12" r="2.5"/><circle cx="12" cy="9" r="3"/><circle cx="19" cy="12" r="2.5"/><path d="M7 13l3-2M14 10l3 1.5"/>',
+  flame: '<path d="M8.5 14.5A2.5 2.5 0 0 0 11 17c1.4 0 2.5-1.1 2.5-2.5 0-1.4-1.5-3-1.5-3s-1.5 1.6-1.5 3M12 2s5 4 5 9a5 5 0 0 1-10 0c0-2 1-4 2-5.5"/>',
+  ban: '<circle cx="12" cy="12" r="10"/><path d="m4.9 4.9 14.2 14.2"/>',
+  refresh: '<path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/>',
+  cloud: '<path d="M17.5 19a4.5 4.5 0 1 0 0-9h-1.8A7 7 0 1 0 4 15.2"/>',
+  calendar: '<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>',
+  clock: '<circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>',
+  logout: '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5M21 12H9"/>',
+  download: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5M12 15V3"/>',
+  upload: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5M12 3v12"/>',
+  lock: '<rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
+  bell: '<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>'
+};
+function icon(name, size){
+  const p = ICONS[name] || '';
+  const s = size || 20;
+  return `<svg class="ico-svg" width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
+}
+function renderIcons(root){
+  (root || document).querySelectorAll('[data-icon]').forEach(el=>{
+    const name = el.dataset.icon;
+    if(name && !el.dataset.iconDone){ el.innerHTML = icon(name); el.dataset.iconDone = '1'; }
+  });
+}
+
 // تعديل عنصر نصي بالضغط عليه في مكانه
 function makeEditable(el, currentVal, onSave, opts){
   opts = opts || {};
@@ -1448,7 +1498,7 @@ function renderToday(){
 
   // prayer streak (كل الخمسة)
   const pn = streak(k=>{ const r = days[k]; return !!(r && r.p && r.p.reduce((a,b)=>a+(b?1:0),0) === 5); }, viewDate);
-  $('#prayH3').innerHTML = 'الصلوات' + (pn >= 2 ? `<span class="streak">🔥 ${pn} يوم كاملين</span>` : '');
+  $('#prayH3').innerHTML = icon('beads') + 'الصلوات' + (pn >= 2 ? `<span class="streak">🔥 ${pn} يوم كاملين</span>` : '');
 
   // في يوم زي ده
   const mmdd = viewDate.slice(5);
@@ -1685,7 +1735,7 @@ function renderTasks(){
         <button class="tcheck" aria-label="إنجاز">✓</button>
         <span class="ttxt"></span>
         ${t.due ? `<span class="tdue ${late?'late':''}">${t.due.slice(5).split('-').reverse().join('/')}</span>` : ''}
-        <button class="delbtn" aria-label="حذف">✕</button>`;
+        <button class="delbtn" aria-label="حذف">${icon("trash",16)}</button>`;
       el.querySelector('.ttxt').textContent = t.t;
       el.querySelector('.tcheck').onclick = ()=>{
         t.done = !t.done; store(K.tasks,tasks);
@@ -1776,7 +1826,7 @@ function renderExp(){
       <span class="enote"></span>
       <span class="edate">${e.d.slice(5).split('-').reverse().join('/')}</span>
       <span class="eamt">${e.a.toLocaleString('ar-EG')}</span>
-      <button class="delbtn" aria-label="حذف">✕</button>`;
+      <button class="delbtn" aria-label="حذف">${icon("trash",16)}</button>`;
     el.querySelector('.ecat').textContent = e.c;
     el.querySelector('.enote').textContent = e.n || '(بدون ملاحظة)';
     makeEditable(el.querySelector('.enote'), e.n || '', v=>{ e.n = v; store(K.exp,exps); renderExp(); }, {placeholder:'ملاحظة...', rerender:renderExp});
@@ -1840,7 +1890,7 @@ function renderObls(){
         <div class="sub"><span class="amt">${o.a.toLocaleString('ar-EG')} ${settings.currency}</span> ${o.due ? '· ' + dueLabel(o.due) : ''} ${o.rec ? '· <span class="orec">↻ شهري</span>' : ''}</div>
       </div>
       <button class="opay">اتدفع</button>
-      <button class="delbtn" aria-label="حذف">✕</button>`;
+      <button class="delbtn" aria-label="حذف">${icon("trash",16)}</button>`;
     el.querySelector('.tname').textContent = o.t;
     makeEditable(el.querySelector('.tname'), o.t, v=>{ if(v){ o.t = v; store(K.obl,obls); } renderObls(); }, {rerender:renderObls});
     el.querySelector('.opay').onclick = ()=>{
@@ -2122,6 +2172,7 @@ document.querySelectorAll('nav.bottom button').forEach(b=>{
 /* ================= settings ================= */
 function updateNavCurr(){
   const el = $('#navCurr');
+  if(!el) return; // بقى أيقونة محفظة بدل رمز العملة
   el.textContent = settings.currency;
   el.style.fontSize = settings.currency.length > 1 ? '14px' : '20px';
   el.style.fontWeight = '700';
@@ -2569,6 +2620,7 @@ $('#themeBtn').onclick = ()=>{
 applyTheme(localStorage.getItem('yawmi_theme') || 'light');
 
 /* ================= init ================= */
+renderIcons();
 updateNavCurr();
 renderToday();
 renderGreeting();
