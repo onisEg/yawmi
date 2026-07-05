@@ -339,6 +339,8 @@ nav.bottom button.on{color:var(--gold)}
   opacity:0; transition:opacity .3s; pointer-events:none; z-index:60;
 }
 #toast.show{opacity:1}
+#toast.withundo{pointer-events:auto; display:flex; align-items:center; gap:12px; color:var(--text)}
+.undobtn{background:none; border:none; color:var(--gold); font-family:inherit; font-size:13px; font-weight:700; cursor:pointer; padding:2px 4px}
 
 /* ---------- banners ---------- */
 .banner{
@@ -957,10 +959,32 @@ function saveDays(){ store(K.days, days); toast(); }
 let toastTimer;
 function toast(msg){
   const t = $('#toast');
+  t.classList.remove('withundo');
   if(msg) t.textContent = msg;
   t.classList.add('show');
   clearTimeout(toastTimer);
   toastTimer = setTimeout(()=> t.classList.remove('show'), 1200);
+}
+// توست مع زرار تراجع
+function undoToast(msg, onUndo){
+  const t = $('#toast');
+  clearTimeout(toastTimer);
+  t.classList.add('withundo');
+  t.innerHTML = '';
+  const span = document.createElement('span');
+  span.textContent = msg;
+  const btn = document.createElement('button');
+  btn.className = 'undobtn';
+  btn.textContent = 'تراجع';
+  btn.onclick = ()=>{
+    clearTimeout(toastTimer);
+    t.classList.remove('show','withundo');
+    onUndo();
+  };
+  t.appendChild(span);
+  t.appendChild(btn);
+  t.classList.add('show');
+  toastTimer = setTimeout(()=>{ t.classList.remove('show','withundo'); }, 4000);
 }
 
 /* ================= score ================= */
@@ -1320,7 +1344,11 @@ function renderTasks(){
         <button class="delbtn" aria-label="حذف">✕</button>`;
       el.querySelector('.ttxt').textContent = t.t;
       el.querySelector('.tcheck').onclick = ()=>{ t.done = !t.done; store(K.tasks,tasks); renderTasks(); toast(); };
-      el.querySelector('.delbtn').onclick = ()=>{ tasks = tasks.filter(x=>x.id!==t.id); store(K.tasks,tasks); renderTasks(); };
+      el.querySelector('.delbtn').onclick = ()=>{
+        const idx = tasks.indexOf(t);
+        tasks = tasks.filter(x=>x.id!==t.id); store(K.tasks,tasks); renderTasks();
+        undoToast('اتحذفت المهمة', ()=>{ tasks.splice(Math.min(idx,tasks.length),0,t); store(K.tasks,tasks); renderTasks(); });
+      };
       makeEditable(el.querySelector('.ttxt'), t.t, v=>{ if(v){ t.t = v; store(K.tasks,tasks); } renderTasks(); }, {rerender:renderTasks});
       list.appendChild(el);
     });
@@ -1401,7 +1429,11 @@ function renderExp(){
     el.querySelector('.enote').textContent = e.n || '(بدون ملاحظة)';
     makeEditable(el.querySelector('.enote'), e.n || '', v=>{ e.n = v; store(K.exp,exps); renderExp(); }, {placeholder:'ملاحظة...', rerender:renderExp});
     makeEditable(el.querySelector('.eamt'), e.a, v=>{ if(v>0){ e.a = v; store(K.exp,exps); } renderExp(); }, {number:true, rerender:renderExp});
-    el.querySelector('.delbtn').onclick = ()=>{ exps = exps.filter(x=>x.id!==e.id); store(K.exp,exps); renderExp(); };
+    el.querySelector('.delbtn').onclick = ()=>{
+      const snapshot = e;
+      exps = exps.filter(x=>x.id!==e.id); store(K.exp,exps); renderExp();
+      undoToast('اتحذف المصروف', ()=>{ exps.unshift(snapshot); store(K.exp,exps); renderExp(); });
+    };
     list.appendChild(el);
   });
 }
@@ -1474,10 +1506,11 @@ function renderObls(){
       toast('اتدفع واتسجل في المصاريف ✓');
     };
     el.querySelector('.delbtn').onclick = ()=>{
-      if(!confirm(`تمسح "${o.t}" من غير ما يتسجل كمصروف؟`)) return;
+      const snapshot = o;
       obls = obls.filter(x=>x.id !== o.id);
       store(K.obl, obls);
       renderObls();
+      undoToast('اتحذف الالتزام', ()=>{ obls.push(snapshot); store(K.obl,obls); renderObls(); });
     };
     list.appendChild(el);
   });
@@ -1527,9 +1560,11 @@ function renderGoals(){
     card.querySelector('.goaltitle').textContent = g.t;
     makeEditable(card.querySelector('.goaltitle'), g.t, v=>{ if(v){ g.t = v; store(K.goals,goals); } renderGoals(); }, {rerender:renderGoals});
     card.querySelector('.goaldel').onclick = ()=>{
-      if(!confirm(`تمسح هدف "${g.t}" وكل مشاريعه؟`)) return;
+      const idx = goals.indexOf(g);
+      const snapshot = g;
       goals = goals.filter(x=>x.id !== g.id);
       store(K.goals, goals); renderGoals();
+      undoToast('اتحذف الهدف', ()=>{ goals.splice(Math.min(idx,goals.length),0,snapshot); store(K.goals,goals); renderGoals(); });
     };
     // projects
     const pwrap = card.querySelector('.projs');
@@ -1551,8 +1586,11 @@ function renderGoals(){
       row.querySelector('.pplus').onclick = ()=> bump(25);
       row.querySelector('.pstate').onclick = ()=>{ p.pct = done ? 75 : 100; store(K.goals, goals); renderGoals(); };
       row.querySelector('.projdel').onclick = ()=>{
+        const idx = g.projects.indexOf(p);
+        const snapshot = p;
         g.projects = g.projects.filter(x=>x.id !== p.id);
         store(K.goals, goals); renderGoals();
+        undoToast('اتحذف المشروع', ()=>{ g.projects.splice(Math.min(idx,g.projects.length),0,snapshot); store(K.goals,goals); renderGoals(); });
       };
       pwrap.appendChild(row);
     });
