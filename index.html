@@ -146,6 +146,8 @@ main{padding:0 16px; max-width:560px; margin:0 auto}
 .pmcell.d4{background:rgba(217,164,65,.80)}
 .pmcell.d5{background:var(--gold); color:#1A150A}
 .pmcell.future{opacity:.25}
+.pmcell[data-k]{cursor:pointer}
+.pmcell[data-k]:active{outline:2px solid var(--gold)}
 .pmlegend{display:flex; align-items:center; justify-content:center; gap:6px; margin-top:12px; font-size:11px; color:var(--muted)}
 .pmlegend .box{width:12px; height:12px; border-radius:3px}
 
@@ -1518,7 +1520,7 @@ function renderPrayerCard(){
     const cnt = r && r.p ? r.p.reduce((a,b)=>a+(b?1:0),0) : 0;
     const future = dnum > todayNum;
     if(!future){ monthDone += cnt; monthPossible += 5; }
-    cells += `<div class="pmcell d${cnt} ${future?'future':''}">${dnum}</div>`;
+    cells += `<div class="pmcell d${cnt} ${future?'future':''}"${future?'':` data-k="${k}" role="button"`}>${dnum}</div>`;
   }
   const pctMonth = monthPossible ? Math.round(monthDone/monthPossible*100) : 0;
   pm.innerHTML = `
@@ -1531,6 +1533,12 @@ function renderPrayerCard(){
       <span class="box" style="background:var(--gold)"></span>
       <span>أكتر</span>
     </div>`;
+  pm.querySelectorAll('.pmcell[data-k]').forEach(cell=>{
+    cell.onclick = ()=>{
+      viewDate = cell.dataset.k;
+      document.querySelector('nav.bottom button[data-tab=today]').click();
+    };
+  });
 }
 
 function weekKeyOf(){
