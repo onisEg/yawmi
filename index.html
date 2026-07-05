@@ -596,8 +596,11 @@ nav.bottom button.on{color:var(--gold)}
     <textarea id="setHabits"></textarea>
     <label for="setBadHabits">عادات تحت السيطرة 🚫 (كل واحدة في سطر — بتتعد بعدّاد)</label>
     <textarea id="setBadHabits"></textarea>
-    <label for="setCity">بلدك (لمواقيت الصلاة)</label>
-    <select id="setCity"></select>
+    <label for="setCountry">بلدك ومدينتك (لمواقيت الصلاة)</label>
+    <div style="display:flex; gap:8px">
+      <select id="setCountry" style="flex:1"></select>
+      <select id="setCity" style="flex:1"></select>
+    </div>
     <label for="setCats">تصنيفات المصاريف (كل تصنيف في سطر — تقدر تحدد ميزانية كده: أكل: 2000)</label>
     <textarea id="setCats"></textarea>
     <label for="setIncome">الدخل الشهري (اختياري — عشان تشوف فاضلك كام)</label>
@@ -674,7 +677,7 @@ let goals = load(K.goals, []);
 let settings = Object.assign(
   {habits:['قراءة','رياضة','أذكار الصباح','أذكار المساء'],
    cats:['أكل','مواصلات','اشتراكات','خروجات','تانية'],
-   currency:'ج.م', income:0, city:'مصر'},
+   currency:'ج.م', income:0, country:'مصر', city:'القاهرة'},
   load(K.set, {})
 );
 settings.budgets = settings.budgets || {};
@@ -684,51 +687,106 @@ const PRAYERS = ['الفجر','الظهر','العصر','المغرب','العش
 const MOODS = ['😔','😕','🙂','😄','🤩'];
 
 /* ===== prayer times ===== */
-// بلاد بإحداثيات مدينتها الرئيسية لمواقيت الصلاة
-const CITIES = [
-  {n:'مصر', lat:30.0444, lng:31.2357},
-  {n:'السعودية', lat:24.7136, lng:46.6753},
-  {n:'الإمارات', lat:24.4539, lng:54.3773},
-  {n:'قطر', lat:25.2854, lng:51.5310},
-  {n:'الكويت', lat:29.3759, lng:47.9774},
-  {n:'البحرين', lat:26.2285, lng:50.5860},
-  {n:'عُمان', lat:23.5880, lng:58.3829},
-  {n:'الأردن', lat:31.9454, lng:35.9284},
-  {n:'لبنان', lat:33.8938, lng:35.5018},
-  {n:'سوريا', lat:33.5138, lng:36.2765},
-  {n:'العراق', lat:33.3152, lng:44.3661},
-  {n:'فلسطين', lat:31.9522, lng:35.2332},
-  {n:'اليمن', lat:15.3694, lng:44.1910},
-  {n:'السودان', lat:15.5007, lng:32.5599},
-  {n:'ليبيا', lat:32.8872, lng:13.1913},
-  {n:'تونس', lat:36.8065, lng:10.1815},
-  {n:'الجزائر', lat:36.7538, lng:3.0588},
-  {n:'المغرب', lat:34.0209, lng:-6.8416},
-  {n:'موريتانيا', lat:18.0735, lng:-15.9582},
-  {n:'تركيا', lat:41.0082, lng:28.9784},
-  {n:'إسبانيا', lat:40.4168, lng:-3.7038},
-  {n:'إيطاليا', lat:41.9028, lng:12.4964},
-  {n:'فرنسا', lat:48.8566, lng:2.3522},
-  {n:'ألمانيا', lat:52.5200, lng:13.4050},
-  {n:'بريطانيا', lat:51.5074, lng:-0.1278},
-  {n:'هولندا', lat:52.3676, lng:4.9041},
-  {n:'بلجيكا', lat:50.8503, lng:4.3517},
-  {n:'السويد', lat:59.3293, lng:18.0686},
-  {n:'النمسا', lat:48.2082, lng:16.3738},
-  {n:'سويسرا', lat:46.9480, lng:7.4474},
-  {n:'الولايات المتحدة', lat:38.9072, lng:-77.0369},
-  {n:'كندا', lat:45.4215, lng:-75.6972},
-  {n:'ماليزيا', lat:3.1390, lng:101.6869},
-  {n:'إندونيسيا', lat:-6.2088, lng:106.8456},
-  {n:'باكستان', lat:33.6844, lng:73.0479},
+// بلاد وتحت كل واحدة مدنها بإحداثياتها لمواقيت الصلاة
+const COUNTRIES = [
+  {n:'مصر', cities:[
+    {n:'القاهرة', lat:30.0444, lng:31.2357},
+    {n:'الجيزة', lat:30.0131, lng:31.2089},
+    {n:'الإسكندرية', lat:31.2001, lng:29.9187},
+    {n:'المنصورة', lat:31.0409, lng:31.3785},
+    {n:'طنطا', lat:30.7865, lng:31.0004},
+    {n:'الزقازيق', lat:30.5877, lng:31.5020},
+    {n:'الإسماعيلية', lat:30.5965, lng:32.2715},
+    {n:'بورسعيد', lat:31.2653, lng:32.3019},
+    {n:'السويس', lat:29.9668, lng:32.5498},
+    {n:'دمياط', lat:31.4165, lng:31.8133},
+    {n:'الفيوم', lat:29.3084, lng:30.8428},
+    {n:'بني سويف', lat:29.0661, lng:31.0994},
+    {n:'المنيا', lat:28.1099, lng:30.7503},
+    {n:'أسيوط', lat:27.1809, lng:31.1837},
+    {n:'سوهاج', lat:26.5591, lng:31.6957},
+    {n:'قنا', lat:26.1551, lng:32.7160},
+    {n:'الأقصر', lat:25.6872, lng:32.6396},
+    {n:'أسوان', lat:24.0889, lng:32.8998},
+    {n:'الغردقة', lat:27.2579, lng:33.8116},
+    {n:'شرم الشيخ', lat:27.9158, lng:34.3300},
+    {n:'مرسى مطروح', lat:31.3543, lng:27.2373},
+  ]},
+  {n:'السعودية', cities:[
+    {n:'الرياض', lat:24.7136, lng:46.6753},
+    {n:'جدة', lat:21.4858, lng:39.1925},
+    {n:'مكة', lat:21.3891, lng:39.8579},
+    {n:'المدينة المنورة', lat:24.5247, lng:39.5692},
+    {n:'الدمام', lat:26.4207, lng:50.0888},
+    {n:'الطائف', lat:21.2703, lng:40.4158},
+    {n:'تبوك', lat:28.3838, lng:36.5550},
+    {n:'أبها', lat:18.2465, lng:42.5117},
+    {n:'بريدة', lat:26.3260, lng:43.9750},
+    {n:'حائل', lat:27.5114, lng:41.7208},
+  ]},
+  {n:'الإمارات', cities:[
+    {n:'دبي', lat:25.2048, lng:55.2708},
+    {n:'أبوظبي', lat:24.4539, lng:54.3773},
+    {n:'الشارقة', lat:25.3463, lng:55.4209},
+    {n:'العين', lat:24.2075, lng:55.7447},
+    {n:'رأس الخيمة', lat:25.7895, lng:55.9432},
+    {n:'الفجيرة', lat:25.1288, lng:56.3265},
+  ]},
+  {n:'قطر', cities:[{n:'الدوحة', lat:25.2854, lng:51.5310}, {n:'الوكرة', lat:25.1715, lng:51.6034}]},
+  {n:'الكويت', cities:[{n:'مدينة الكويت', lat:29.3759, lng:47.9774}, {n:'الأحمدي', lat:29.0769, lng:48.0838}]},
+  {n:'البحرين', cities:[{n:'المنامة', lat:26.2285, lng:50.5860}, {n:'المحرق', lat:26.2572, lng:50.6119}]},
+  {n:'عُمان', cities:[{n:'مسقط', lat:23.5880, lng:58.3829}, {n:'صلالة', lat:17.0151, lng:54.0924}, {n:'صحار', lat:24.3417, lng:56.7089}]},
+  {n:'الأردن', cities:[{n:'عمّان', lat:31.9454, lng:35.9284}, {n:'الزرقاء', lat:32.0728, lng:36.0880}, {n:'إربد', lat:32.5556, lng:35.8500}, {n:'العقبة', lat:29.5320, lng:35.0063}]},
+  {n:'لبنان', cities:[{n:'بيروت', lat:33.8938, lng:35.5018}, {n:'طرابلس', lat:34.4367, lng:35.8497}, {n:'صيدا', lat:33.5571, lng:35.3729}]},
+  {n:'سوريا', cities:[{n:'دمشق', lat:33.5138, lng:36.2765}, {n:'حلب', lat:36.2021, lng:37.1343}, {n:'حمص', lat:34.7324, lng:36.7137}, {n:'اللاذقية', lat:35.5317, lng:35.7915}]},
+  {n:'العراق', cities:[{n:'بغداد', lat:33.3152, lng:44.3661}, {n:'البصرة', lat:30.5085, lng:47.7835}, {n:'الموصل', lat:36.3350, lng:43.1189}, {n:'أربيل', lat:36.1901, lng:44.0091}, {n:'النجف', lat:31.9960, lng:44.3148}]},
+  {n:'فلسطين', cities:[{n:'القدس', lat:31.7683, lng:35.2137}, {n:'غزة', lat:31.5017, lng:34.4668}, {n:'رام الله', lat:31.9038, lng:35.2034}, {n:'الخليل', lat:31.5326, lng:35.0998}, {n:'نابلس', lat:32.2211, lng:35.2544}]},
+  {n:'اليمن', cities:[{n:'صنعاء', lat:15.3694, lng:44.1910}, {n:'عدن', lat:12.7797, lng:45.0095}, {n:'تعز', lat:13.5795, lng:44.0209}]},
+  {n:'السودان', cities:[{n:'الخرطوم', lat:15.5007, lng:32.5599}, {n:'أم درمان', lat:15.6445, lng:32.4777}, {n:'بورتسودان', lat:19.6175, lng:37.2164}]},
+  {n:'ليبيا', cities:[{n:'طرابلس', lat:32.8872, lng:13.1913}, {n:'بنغازي', lat:32.1167, lng:20.0685}, {n:'مصراتة', lat:32.3754, lng:15.0925}]},
+  {n:'تونس', cities:[{n:'تونس', lat:36.8065, lng:10.1815}, {n:'صفاقس', lat:34.7406, lng:10.7603}, {n:'سوسة', lat:35.8256, lng:10.6084}]},
+  {n:'الجزائر', cities:[{n:'الجزائر', lat:36.7538, lng:3.0588}, {n:'وهران', lat:35.6971, lng:-0.6337}, {n:'قسنطينة', lat:36.3650, lng:6.6147}]},
+  {n:'المغرب', cities:[{n:'الرباط', lat:34.0209, lng:-6.8416}, {n:'الدار البيضاء', lat:33.5731, lng:-7.5898}, {n:'مراكش', lat:31.6295, lng:-7.9811}, {n:'فاس', lat:34.0181, lng:-5.0078}, {n:'طنجة', lat:35.7595, lng:-5.8340}]},
+  {n:'موريتانيا', cities:[{n:'نواكشوط', lat:18.0735, lng:-15.9582}]},
+  {n:'تركيا', cities:[{n:'إسطنبول', lat:41.0082, lng:28.9784}, {n:'أنقرة', lat:39.9334, lng:32.8597}, {n:'إزمير', lat:38.4237, lng:27.1428}, {n:'بورصة', lat:40.1826, lng:29.0665}]},
+  {n:'إسبانيا', cities:[{n:'مدريد', lat:40.4168, lng:-3.7038}, {n:'برشلونة', lat:41.3874, lng:2.1686}, {n:'فالنسيا', lat:39.4699, lng:-0.3763}, {n:'إشبيلية', lat:37.3891, lng:-5.9845}]},
+  {n:'إيطاليا', cities:[{n:'روما', lat:41.9028, lng:12.4964}, {n:'ميلانو', lat:45.4642, lng:9.1900}, {n:'نابولي', lat:40.8518, lng:14.2681}, {n:'تورينو', lat:45.0703, lng:7.6869}]},
+  {n:'فرنسا', cities:[{n:'باريس', lat:48.8566, lng:2.3522}, {n:'مارسيليا', lat:43.2965, lng:5.3698}, {n:'ليون', lat:45.7640, lng:4.8357}, {n:'ليل', lat:50.6292, lng:3.0573}]},
+  {n:'ألمانيا', cities:[{n:'برلين', lat:52.5200, lng:13.4050}, {n:'ميونخ', lat:48.1351, lng:11.5820}, {n:'فرانكفورت', lat:50.1109, lng:8.6821}, {n:'كولونيا', lat:50.9375, lng:6.9603}, {n:'هامبورغ', lat:53.5511, lng:9.9937}]},
+  {n:'بريطانيا', cities:[{n:'لندن', lat:51.5074, lng:-0.1278}, {n:'مانشستر', lat:53.4808, lng:-2.2426}, {n:'برمنغهام', lat:52.4862, lng:-1.8904}, {n:'ليدز', lat:53.8008, lng:-1.5491}]},
+  {n:'هولندا', cities:[{n:'أمستردام', lat:52.3676, lng:4.9041}, {n:'روتردام', lat:51.9244, lng:4.4777}, {n:'لاهاي', lat:52.0705, lng:4.3007}]},
+  {n:'بلجيكا', cities:[{n:'بروكسل', lat:50.8503, lng:4.3517}, {n:'أنتويرب', lat:51.2194, lng:4.4025}]},
+  {n:'السويد', cities:[{n:'ستوكهولم', lat:59.3293, lng:18.0686}, {n:'مالمو', lat:55.6050, lng:13.0038}, {n:'غوتنبرغ', lat:57.7089, lng:11.9746}]},
+  {n:'النمسا', cities:[{n:'فيينا', lat:48.2082, lng:16.3738}, {n:'غراتس', lat:47.0707, lng:15.4395}]},
+  {n:'سويسرا', cities:[{n:'زيورخ', lat:47.3769, lng:8.5417}, {n:'جنيف', lat:46.2044, lng:6.1432}, {n:'برن', lat:46.9480, lng:7.4474}]},
+  {n:'الولايات المتحدة', cities:[{n:'نيويورك', lat:40.7128, lng:-74.0060}, {n:'لوس أنجلوس', lat:34.0522, lng:-118.2437}, {n:'شيكاغو', lat:41.8781, lng:-87.6298}, {n:'هيوستن', lat:29.7604, lng:-95.3698}, {n:'ديترويت', lat:42.3314, lng:-83.0458}, {n:'واشنطن', lat:38.9072, lng:-77.0369}]},
+  {n:'كندا', cities:[{n:'تورونتو', lat:43.6532, lng:-79.3832}, {n:'مونتريال', lat:45.5017, lng:-73.5673}, {n:'فانكوفر', lat:49.2827, lng:-123.1207}, {n:'كالغاري', lat:51.0447, lng:-114.0719}]},
+  {n:'ماليزيا', cities:[{n:'كوالالمبور', lat:3.1390, lng:101.6869}, {n:'جورج تاون', lat:5.4141, lng:100.3288}]},
+  {n:'إندونيسيا', cities:[{n:'جاكرتا', lat:-6.2088, lng:106.8456}, {n:'سورابايا', lat:-7.2575, lng:112.7521}, {n:'باندونغ', lat:-6.9175, lng:107.6191}]},
+  {n:'باكستان', cities:[{n:'كراتشي', lat:24.8607, lng:67.0011}, {n:'لاهور', lat:31.5204, lng:74.3587}, {n:'إسلام آباد', lat:33.6844, lng:73.0479}]},
 ];
-// ترحيل: أي مدينة قديمة متسجلة مش موجودة في قايمة البلاد → مصر
-if(settings.city && !CITIES.find(c=>c.n===settings.city)) settings.city = 'مصر';
+// دالة تجيب إحداثيات المدينة المختارة
+function findCity(country, city){
+  const co = COUNTRIES.find(c=>c.n===country) || COUNTRIES[0];
+  return co.cities.find(ct=>ct.n===city) || co.cities[0];
+}
+// ترحيل الإعدادات القديمة: تأكد إن البلد والمدينة صالحين
+(function migrateLocation(){
+  let co = COUNTRIES.find(c=>c.n===settings.country);
+  if(!co){
+    // دوّر على المدينة القديمة في كل البلاد
+    for(const c of COUNTRIES){
+      if(c.cities.find(ct=>ct.n===settings.city)){ settings.country = c.n; co = c; break; }
+    }
+    if(!co){ settings.country = 'مصر'; settings.city = 'القاهرة'; co = COUNTRIES[0]; }
+  }
+  if(!co.cities.find(ct=>ct.n===settings.city)) settings.city = co.cities[0].n;
+})();
 // أوقات تقريبية احتياطية بالدقايق من نص الليل
 const FALLBACK_TIMES = [5*60, 12*60, 15*60+30, 18*60, 19*60+30];
 let prayerCache = load('yawmi_ptimes', {}); // { 'city|YYYY-MM-DD': [min,...] }
 function cityCoords(){
-  return CITIES.find(c=>c.n === settings.city) || CITIES[0];
+  return findCity(settings.country, settings.city);
 }
 function getPrayerMinutes(dISO){
   const c = cityCoords();
@@ -1404,7 +1462,8 @@ function updateNavCurr(){
 $('#gearBtn').onclick = ()=>{
   $('#setHabits').value = settings.habits.join('\n');
   $('#setBadHabits').value = (settings.badHabits || []).join('\n');
-  $('#setCity').innerHTML = CITIES.map(c=>`<option ${c.n===settings.city?'selected':''}>${c.n}</option>`).join('');
+  $('#setCountry').innerHTML = COUNTRIES.map(c=>`<option ${c.n===settings.country?'selected':''}>${c.n}</option>`).join('');
+  fillCitiesFor(settings.country, settings.city);
   $('#setCats').value = settings.cats.map(c => settings.budgets[c] ? `${c}: ${settings.budgets[c]}` : c).join('\n');
   $('#setIncome').value = settings.income || '';
   $('#setCurr').value = settings.currency;
@@ -1414,6 +1473,14 @@ $('#gearBtn').onclick = ()=>{
   $('#removePin').classList.toggle('hidden', !settings.pinH);
   $('#overlay').classList.add('show');
 };
+function fillCitiesFor(country, selectedCity){
+  const co = COUNTRIES.find(c=>c.n===country) || COUNTRIES[0];
+  $('#setCity').innerHTML = co.cities.map(ct=>`<option ${ct.n===selectedCity?'selected':''}>${ct.n}</option>`).join('');
+}
+$('#setCountry').addEventListener('change', ()=>{
+  const co = COUNTRIES.find(c=>c.n===$('#setCountry').value) || COUNTRIES[0];
+  fillCitiesFor(co.n, co.cities[0].n);
+});
 $('#removePin').onclick = ()=>{
   if(!confirm('تلغي قفل التطبيق؟')) return;
   delete settings.pinH; delete settings.pinLen;
@@ -1431,6 +1498,7 @@ $('#overlay').onclick = e=>{ if(e.target.id==='overlay') $('#overlay').classList
 $('#saveSettings').onclick = async ()=>{
   settings.habits = $('#setHabits').value.split('\n').map(s=>s.trim()).filter(Boolean).slice(0,8);
   settings.badHabits = $('#setBadHabits').value.split('\n').map(s=>s.trim()).filter(Boolean).slice(0,8);
+  settings.country = $('#setCountry').value;
   settings.city = $('#setCity').value;
   settings.cats = []; settings.budgets = {};
   $('#setCats').value.split('\n').map(s=>s.trim()).filter(Boolean).forEach(l=>{
