@@ -237,6 +237,7 @@ input[type=number]{color-scheme:dark light}
 .titem.done .tcheck{background:var(--teal); border-color:var(--teal); color:#0E2A22}
 .ttxt{flex:1; font-size:15px; cursor:text}
 .ttxtedit{flex:1; font-size:15px; padding:4px 8px; background:var(--card2); border:1px solid var(--gold); border-radius:8px; color:var(--text); font-family:inherit; outline:none}
+.inlineedit{font-size:15px; padding:4px 8px; background:var(--card2); border:1px solid var(--gold); border-radius:8px; color:var(--text); font-family:inherit; outline:none; max-width:100%}
 .titem.done .ttxt{color:var(--faint); text-decoration:line-through}
 .tdue{font-size:12px; color:var(--muted); white-space:nowrap}
 .tdue.late{color:var(--red)}
@@ -910,6 +911,34 @@ function fetchPrayerTimes(dISO){
 }
 
 const $ = s => document.querySelector(s);
+
+// تعديل عنصر نصي بالضغط عليه في مكانه
+function makeEditable(el, currentVal, onSave, opts){
+  opts = opts || {};
+  el.style.cursor = 'text';
+  el.onclick = (e)=>{
+    e.stopPropagation();
+    const inp = document.createElement('input');
+    inp.type = opts.number ? 'number' : 'text';
+    if(opts.number) inp.inputMode = 'decimal';
+    inp.className = 'inlineedit';
+    inp.value = currentVal;
+    if(opts.placeholder) inp.placeholder = opts.placeholder;
+    el.replaceWith(inp);
+    inp.focus();
+    if(!opts.number) inp.setSelectionRange(inp.value.length, inp.value.length);
+    let done = false;
+    const finish = (save)=>{
+      if(done) return; done = true;
+      if(save){
+        const v = opts.number ? parseFloat(inp.value) : inp.value.trim();
+        onSave(v);
+      } else if(opts.rerender){ opts.rerender(); }
+    };
+    inp.onkeydown = ev=>{ if(ev.key==='Enter') inp.blur(); if(ev.key==='Escape'){ done=true; if(opts.rerender) opts.rerender(); } };
+    inp.onblur = ()=> finish(true);
+  };
+}
 const iso = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 const todayISO = () => iso(new Date());
 let viewDate = todayISO();
@@ -1292,24 +1321,7 @@ function renderTasks(){
       el.querySelector('.ttxt').textContent = t.t;
       el.querySelector('.tcheck').onclick = ()=>{ t.done = !t.done; store(K.tasks,tasks); renderTasks(); toast(); };
       el.querySelector('.delbtn').onclick = ()=>{ tasks = tasks.filter(x=>x.id!==t.id); store(K.tasks,tasks); renderTasks(); };
-      // tap the text to edit it inline
-      const ttxtEl = el.querySelector('.ttxt');
-      ttxtEl.onclick = ()=>{
-        const inp = document.createElement('input');
-        inp.type = 'text';
-        inp.className = 'ttxtedit';
-        inp.value = t.t;
-        ttxtEl.replaceWith(inp);
-        inp.focus();
-        inp.setSelectionRange(inp.value.length, inp.value.length);
-        const save = ()=>{
-          const v = inp.value.trim();
-          if(v){ t.t = v; store(K.tasks,tasks); }
-          renderTasks();
-        };
-        inp.onkeydown = e=>{ if(e.key==='Enter') inp.blur(); if(e.key==='Escape') renderTasks(); };
-        inp.onblur = save;
-      };
+      makeEditable(el.querySelector('.ttxt'), t.t, v=>{ if(v){ t.t = v; store(K.tasks,tasks); } renderTasks(); }, {rerender:renderTasks});
       list.appendChild(el);
     });
   });
@@ -1386,7 +1398,9 @@ function renderExp(){
       <span class="eamt">${e.a.toLocaleString('ar-EG')}</span>
       <button class="delbtn" aria-label="حذف">✕</button>`;
     el.querySelector('.ecat').textContent = e.c;
-    el.querySelector('.enote').textContent = e.n || '';
+    el.querySelector('.enote').textContent = e.n || '(بدون ملاحظة)';
+    makeEditable(el.querySelector('.enote'), e.n || '', v=>{ e.n = v; store(K.exp,exps); renderExp(); }, {placeholder:'ملاحظة...', rerender:renderExp});
+    makeEditable(el.querySelector('.eamt'), e.a, v=>{ if(v>0){ e.a = v; store(K.exp,exps); } renderExp(); }, {number:true, rerender:renderExp});
     el.querySelector('.delbtn').onclick = ()=>{ exps = exps.filter(x=>x.id!==e.id); store(K.exp,exps); renderExp(); };
     list.appendChild(el);
   });
@@ -1444,6 +1458,7 @@ function renderObls(){
       <button class="opay">اتدفع</button>
       <button class="delbtn" aria-label="حذف">✕</button>`;
     el.querySelector('.tname').textContent = o.t;
+    makeEditable(el.querySelector('.tname'), o.t, v=>{ if(v){ o.t = v; store(K.obl,obls); } renderObls(); }, {rerender:renderObls});
     el.querySelector('.opay').onclick = ()=>{
       if(!confirm(`تسجّل "${o.t}" كمدفوع؟ هيتسجل مصروف بـ ${o.a} ${settings.currency}`)) return;
       exps.unshift({id:Date.now(), a:o.a, c:'التزامات', n:o.t, d:todayISO()});
@@ -1510,6 +1525,7 @@ function renderGoals(){
         <button class="addbtn projAdd" aria-label="إضافة مشروع">+</button>
       </div>`;
     card.querySelector('.goaltitle').textContent = g.t;
+    makeEditable(card.querySelector('.goaltitle'), g.t, v=>{ if(v){ g.t = v; store(K.goals,goals); } renderGoals(); }, {rerender:renderGoals});
     card.querySelector('.goaldel').onclick = ()=>{
       if(!confirm(`تمسح هدف "${g.t}" وكل مشاريعه؟`)) return;
       goals = goals.filter(x=>x.id !== g.id);
@@ -1529,6 +1545,7 @@ function renderGoals(){
         <button class="pplus" aria-label="أكتر">+</button>
         <button class="goaldel projdel" aria-label="حذف المشروع">✕</button>`;
       row.querySelector('.projname').textContent = p.t;
+      makeEditable(row.querySelector('.projname'), p.t, v=>{ if(v){ p.t = v; store(K.goals,goals); } renderGoals(); }, {rerender:renderGoals});
       const bump = d => { p.pct = Math.max(0, Math.min(100, p.pct + d)); store(K.goals, goals); renderGoals(); };
       row.querySelector('.pminus').onclick = ()=> bump(-25);
       row.querySelector('.pplus').onclick = ()=> bump(25);
