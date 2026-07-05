@@ -174,9 +174,10 @@ main{padding:0 16px; max-width:560px; margin:0 auto}
 .bhrelapse:active{background:var(--gold-soft)}
 
 /* detail popup */
-#bhOverlay{position:fixed; inset:0; background:rgba(0,0,0,.6); display:none; align-items:flex-end; justify-content:center; z-index:55}
-#bhOverlay.show{display:flex}
-#bhModal{background:var(--card); border-radius:20px 20px 0 0; width:100%; max-width:560px; padding:20px 20px calc(20px + env(safe-area-inset-bottom)); max-height:88vh; overflow-y:auto}
+#bhOverlay{position:fixed; inset:0; background:rgba(0,0,0,.6); display:flex; align-items:flex-end; justify-content:center; z-index:55; opacity:0; visibility:hidden; transition:opacity .25s ease, visibility .25s}
+#bhOverlay.show{opacity:1; visibility:visible}
+#bhModal{background:var(--card); border-radius:20px 20px 0 0; width:100%; max-width:560px; padding:20px 20px calc(20px + env(safe-area-inset-bottom)); max-height:88vh; overflow-y:auto; transform:translateY(100%); transition:transform .3s cubic-bezier(.32,.72,0,1)}
+#bhOverlay.show #bhModal{transform:translateY(0)}
 .bhdhead{display:flex; align-items:center; justify-content:space-between; margin-bottom:16px}
 .bhdhead h2{margin:0; font-size:19px}
 .bhdtimerbig{text-align:center; font-size:30px; font-weight:700; color:var(--red); direction:ltr; font-variant-numeric:tabular-nums; margin-bottom:12px}
@@ -243,6 +244,10 @@ input[type=number]{color-scheme:dark light}
 .tdue.late{color:var(--red)}
 .delbtn{background:none; border:none; color:var(--faint); font-size:16px; cursor:pointer; padding:2px 6px}
 .empty{text-align:center; color:var(--faint); font-size:14px; padding:30px 0}
+.empty-big{text-align:center; padding:44px 20px; color:var(--muted)}
+.empty-big .ico{font-size:40px; display:block; margin-bottom:12px; opacity:.85}
+.empty-big .ttl{font-size:16px; color:var(--text); margin-bottom:4px}
+.empty-big .desc{font-size:13px; color:var(--faint)}
 
 /* ---------- expenses ---------- */
 .monthnav{display:flex; align-items:center; justify-content:space-between; margin-bottom:14px}
@@ -313,14 +318,17 @@ nav.bottom button.on{color:var(--gold)}
 
 /* ---------- modal ---------- */
 #overlay{
-  position:fixed; inset:0; background:rgba(0,0,0,.6); display:none;
-  align-items:flex-end; justify-content:center; z-index:50;
+  position:fixed; inset:0; background:rgba(0,0,0,.6);
+  display:flex; align-items:flex-end; justify-content:center; z-index:50;
+  opacity:0; visibility:hidden; transition:opacity .25s ease, visibility .25s;
 }
-#overlay.show{display:flex}
+#overlay.show{opacity:1; visibility:visible}
 #modal{
   background:var(--card); border-radius:20px 20px 0 0; width:100%; max-width:560px;
   padding:22px 20px calc(22px + env(safe-area-inset-bottom)); max-height:85vh; overflow-y:auto;
+  transform:translateY(100%); transition:transform .3s cubic-bezier(.32,.72,0,1);
 }
+#overlay.show #modal{transform:translateY(0)}
 #modal h2{margin:0 0 18px; font-size:18px; font-weight:500}
 #modal label{display:block; font-size:13px; color:var(--muted); margin:14px 0 6px}
 #modal textarea{min-height:90px}
@@ -341,6 +349,15 @@ nav.bottom button.on{color:var(--gold)}
 #toast.show{opacity:1}
 #toast.withundo{pointer-events:auto; display:flex; align-items:center; gap:12px; color:var(--text)}
 .undobtn{background:none; border:none; color:var(--gold); font-family:inherit; font-size:13px; font-weight:700; cursor:pointer; padding:2px 4px}
+
+/* ---------- celebration ---------- */
+.celebrate{position:fixed; inset:0; display:flex; align-items:center; justify-content:center; z-index:70; pointer-events:none; opacity:0; transition:opacity .35s ease}
+.celebrate.show{opacity:1}
+.celebbox{background:var(--card); border:1px solid var(--gold); border-radius:18px; padding:22px 28px; text-align:center; box-shadow:0 8px 40px rgba(0,0,0,.35); transform:scale(.8); transition:transform .35s cubic-bezier(.34,1.56,.64,1)}
+.celebrate.show .celebbox{transform:scale(1)}
+.celebico{font-size:44px; display:block; margin-bottom:8px; animation:celebpop .5s ease}
+@keyframes celebpop{0%{transform:scale(0) rotate(-20deg)} 60%{transform:scale(1.3) rotate(10deg)} 100%{transform:scale(1) rotate(0)}}
+.celebmsg{font-size:16px; font-weight:500; color:var(--gold)}
 
 /* ---------- banners ---------- */
 .banner{
@@ -987,6 +1004,22 @@ function undoToast(msg, onUndo){
   toastTimer = setTimeout(()=>{ t.classList.remove('show','withundo'); }, 4000);
 }
 
+// لحظة احتفال بسيطة: رسالة + اهتزاز + انيميشن
+let lastCelebrate = 0;
+function celebrate(msg){
+  const now = Date.now();
+  if(now - lastCelebrate < 2000) return; // متكررش قريب
+  lastCelebrate = now;
+  if(navigator.vibrate) navigator.vibrate([40, 30, 40]);
+  const el = document.createElement('div');
+  el.className = 'celebrate';
+  el.innerHTML = `<div class="celebbox"><span class="celebico">🎉</span><span class="celebmsg"></span></div>`;
+  el.querySelector('.celebmsg').textContent = msg;
+  document.body.appendChild(el);
+  setTimeout(()=> el.classList.add('show'), 10);
+  setTimeout(()=>{ el.classList.remove('show'); setTimeout(()=> el.remove(), 400); }, 2200);
+}
+
 /* ================= score ================= */
 function scoreOf(d){
   const pr = d.p.reduce((a,b)=>a+(b?1:0),0);
@@ -1034,7 +1067,11 @@ function renderToday(){
         toast(`${name} لسه مجاش وقتها (${minToHM(times[i])})`);
         return;
       }
-      rec.p[i] = rec.p[i]?0:1; saveDays(); renderToday();
+      const before = rec.p.reduce((a,b)=>a+(b?1:0),0);
+      rec.p[i] = rec.p[i]?0:1;
+      const after = rec.p.reduce((a,b)=>a+(b?1:0),0);
+      saveDays(); renderToday();
+      if(before < 5 && after === 5) celebrate('الحمد لله، صليت الخمسة! 🕌');
     };
     beads.appendChild(b);
   });
@@ -1062,6 +1099,11 @@ function renderToday(){
     const elapsed = Date.now() - d.last;
     const {days} = fmtDuration(elapsed);
     const target = bhTarget(days);
+    // احتفال لو وصل مرحلة جديدة (مرة واحدة لكل مرحلة)
+    if(BH_LADDER.includes(days) && d.celebrated !== days){
+      d.celebrated = days; saveBH();
+      setTimeout(()=> celebrate(`${days} يوم نضيف من "${name}"! فخور بيك 🌱`), 300);
+    }
     const pct = Math.min(days / target * 100, 100);
     const card = document.createElement('div');
     card.className = 'bhcard2';
@@ -1343,7 +1385,15 @@ function renderTasks(){
         ${t.due ? `<span class="tdue ${late?'late':''}">${t.due.slice(5).split('-').reverse().join('/')}</span>` : ''}
         <button class="delbtn" aria-label="حذف">✕</button>`;
       el.querySelector('.ttxt').textContent = t.t;
-      el.querySelector('.tcheck').onclick = ()=>{ t.done = !t.done; store(K.tasks,tasks); renderTasks(); toast(); };
+      el.querySelector('.tcheck').onclick = ()=>{
+        t.done = !t.done; store(K.tasks,tasks);
+        // احتفال لو خلصت كل مهام النهارده
+        const t0b = todayISO();
+        const todays = tasks.filter(x=>x.due===t0b);
+        if(t.done && todays.length >= 2 && todays.every(x=>x.done)){
+          renderTasks(); celebrate('خلّصت كل مهام النهارده! 💪');
+        } else { renderTasks(); toast(); }
+      };
       el.querySelector('.delbtn').onclick = ()=>{
         const idx = tasks.indexOf(t);
         tasks = tasks.filter(x=>x.id!==t.id); store(K.tasks,tasks); renderTasks();
@@ -1353,7 +1403,7 @@ function renderTasks(){
       list.appendChild(el);
     });
   });
-  if(!any) list.innerHTML = '<div class="empty">مفيش مهام. ضيف أول مهمة من فوق ☝</div>';
+  if(!any) list.innerHTML = '<div class="empty-big"><span class="ico">📝</span><div class="ttl">مفيش مهام دلوقتي</div><div class="desc">ضيف أول مهمة من فوق وابدأ يومك منظم</div></div>';
 }
 $('#addTaskBtn').onclick = ()=>{
   const title = $('#taskTitle').value.trim();
@@ -1415,7 +1465,7 @@ function renderExp(){
 
   const list = $('#expList');
   list.innerHTML = '';
-  if(!monthExp.length){ list.innerHTML = '<div class="empty">مفيش مصاريف مسجلة الشهر ده</div>'; return; }
+  if(!monthExp.length){ list.innerHTML = '<div class="empty-big"><span class="ico">💰</span><div class="ttl">مفيش مصاريف الشهر ده</div><div class="desc">سجّل مصاريفك عشان تعرف فلوسك رايحة فين</div></div>'; return; }
   monthExp.forEach(e=>{
     const el = document.createElement('div');
     el.className = 'eitem';
@@ -1535,7 +1585,7 @@ function renderGoals(){
   const list = $('#goalList');
   list.innerHTML = '';
   if(!goals.length){
-    list.innerHTML = '<div class="empty">مفيش أهداف لسه. ضيف أول هدف من فوق ☝</div>';
+    list.innerHTML = '<div class="empty-big"><span class="ico">🎯</span><div class="ttl">مفيش أهداف لسه</div><div class="desc">حدّد هدف كبير وقسّمه لمشاريع تقدر تحققها</div></div>';
     return;
   }
   goals.forEach(g=>{
