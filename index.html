@@ -350,6 +350,10 @@ nav.bottom button.on{color:var(--gold)}
 #toast.withundo{pointer-events:auto; display:flex; align-items:center; gap:12px; color:var(--text)}
 .undobtn{background:none; border:none; color:var(--gold); font-family:inherit; font-size:13px; font-weight:700; cursor:pointer; padding:2px 4px}
 
+/* ---------- greeting ---------- */
+#greeting{padding:14px 2px 4px; font-size:20px; font-weight:700; color:var(--text); animation:fadein .4s ease}
+#greeting .sub{display:block; font-size:13px; font-weight:400; color:var(--muted); margin-top:2px}
+
 /* ---------- celebration ---------- */
 .celebrate{position:fixed; inset:0; display:flex; align-items:center; justify-content:center; z-index:70; pointer-events:none; opacity:0; transition:opacity .35s ease}
 .celebrate.show{opacity:1}
@@ -468,6 +472,7 @@ nav.bottom button.on{color:var(--gold)}
 <main>
   <!-- ============ اليوم ============ -->
   <section id="tab-today" class="tab active">
+    <div id="greeting" class="hidden"></div>
     <div id="banners" style="padding-top:12px"></div>
     <div class="daynav">
       <button class="navb" id="nextDayBtn" aria-label="اليوم التالي">‹</button>
@@ -661,6 +666,8 @@ nav.bottom button.on{color:var(--gold)}
 <div id="overlay">
   <div id="modal">
     <h2>الإعدادات</h2>
+    <label for="setName">اسمك</label>
+    <input type="text" id="setName" placeholder="عشان نحييك باسمك" style="width:100%">
     <label for="setHabits">العادات (كل عادة في سطر)</label>
     <textarea id="setHabits"></textarea>
     <label for="setBadHabits">عادات تحت السيطرة 🚫 (كل واحدة في سطر — بتتعد بعدّاد)</label>
@@ -793,11 +800,15 @@ function fmtDurationText(ms){
 let settings = Object.assign(
   {habits:['قراءة','رياضة','أذكار الصباح','أذكار المساء'],
    cats:['أكل','مواصلات','اشتراكات','خروجات','تانية'],
-   currency:'ج.م', income:0, country:'مصر', city:'القاهرة'},
+   currency:'ج.م', income:0, country:'مصر', city:'القاهرة', name:''},
   load(K.set, {})
 );
 settings.budgets = settings.budgets || {};
 settings.badHabits = settings.badHabits || [];
+// حالة الغياب: نحسبها مرة واحدة عند التحميل قبل ما نحدّث آخر ظهور
+const _lastSeen = parseInt(localStorage.getItem('yawmi_lastseen') || '0', 10);
+const _awayHours = _lastSeen ? (Date.now() - _lastSeen) / 3600000 : 0;
+localStorage.setItem('yawmi_lastseen', String(Date.now()));
 
 const PRAYERS = ['الفجر','الظهر','العصر','المغرب','العشاء'];
 const MOODS = ['😔','😕','🙂','😄','🤩'];
@@ -1826,6 +1837,7 @@ function updateNavCurr(){
   el.style.lineHeight = '1.4';
 }
 $('#gearBtn').onclick = ()=>{
+  $('#setName').value = settings.name || '';
   $('#setHabits').value = settings.habits.join('\n');
   $('#setBadHabits').value = (settings.badHabits || []).join('\n');
   $('#setCountry').innerHTML = COUNTRIES.map(c=>`<option ${c.n===settings.country?'selected':''}>${c.n}</option>`).join('');
@@ -1873,6 +1885,7 @@ $('#bhdRelapse').onclick = ()=>{
   saveBH(); openBHDetail(name); renderToday();
 };
 $('#saveSettings').onclick = async ()=>{
+  settings.name = $('#setName').value.trim();
   settings.habits = $('#setHabits').value.split('\n').map(s=>s.trim()).filter(Boolean).slice(0,8);
   settings.badHabits = $('#setBadHabits').value.split('\n').map(s=>s.trim()).filter(Boolean).slice(0,8);
   settings.country = $('#setCountry').value;
@@ -1897,7 +1910,7 @@ $('#saveSettings').onclick = async ()=>{
   store(K.set, settings);
   $('#overlay').classList.remove('show');
   updateNavCurr();
-  renderToday(); toast('الإعدادات اتحفظت ✓');
+  renderToday(); renderGreeting(); toast('الإعدادات اتحفظت ✓');
 };
 
 /* ================= backup ================= */
@@ -1936,6 +1949,34 @@ $('#importFile').onchange = e=>{
 };
 
 /* ================= banners ================= */
+// نحسب حالة الغياب مرة واحدة عند فتح التطبيق
+function renderGreeting(){
+  const el = $('#greeting');
+  if(viewDate !== todayISO()){ el.classList.add('hidden'); return; }
+  const name = (settings.name || '').trim();
+  const h = new Date().getHours();
+  let timeGreet;
+  if(h >= 5 && h < 12) timeGreet = 'صباح الخير';
+  else if(h >= 12 && h < 17) timeGreet = 'مساء الفل';
+  else if(h >= 17 && h < 22) timeGreet = 'مساء الخير';
+  else timeGreet = 'ليلة سعيدة';
+  const nm = name ? ` يا ${name}` : '';
+
+  let main, sub = '';
+  if(_lastSeen && _awayHours >= 240){
+    main = `وحشتنا${nm}! 🤍`;
+    sub = 'حمد لله على السلامة، رجعت تاني وده اللي يهمنا';
+  } else if(_lastSeen && _awayHours >= 10){
+    main = `حمد لله على السلامة${nm}`;
+    sub = 'مشفناكش من زمان — نكمّل اليوم مع بعض؟';
+  } else {
+    main = `${timeGreet}${nm}`;
+    sub = (h >= 22 || h < 5) ? 'متسهرش كتير، وسجّل يومك قبل ما تنام' : '';
+  }
+  el.innerHTML = `${main}${sub ? `<span class="sub">${sub}</span>` : ''}`;
+  el.classList.remove('hidden');
+}
+
 function renderBanners(){
   const wrap = $('#banners');
   wrap.innerHTML = '';
@@ -2156,6 +2197,7 @@ applyTheme(localStorage.getItem('yawmi_theme') || 'light');
 /* ================= init ================= */
 updateNavCurr();
 renderToday();
+renderGreeting();
 (function initLock(){
   if(!settings.pinH) return;
   const last = parseInt(localStorage.getItem('yawmi_active') || '0', 10);
