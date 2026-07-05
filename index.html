@@ -130,6 +130,18 @@ main{padding:0 16px; max-width:560px; margin:0 auto}
 }
 .chip.on{background:var(--gold-soft); border-color:var(--gold); color:var(--gold)}
 
+/* ---------- bad habits ---------- */
+.bhrow{display:flex; align-items:center; gap:12px; padding:9px 0}
+.bhname{flex:1; font-size:15px; min-width:0}
+.bhname .st{display:block; font-size:12px; color:var(--faint); margin-top:2px}
+.bhname .st.clean{color:var(--teal)}
+.bhcount{font-size:18px; font-weight:700; min-width:28px; text-align:center}
+.bhcount.zero{color:var(--teal)}
+.bhcount.hit{color:var(--red)}
+.bhbtn{background:none; border:1px solid var(--line); border-radius:9px; width:34px; height:34px; cursor:pointer; font-size:18px; color:var(--muted); flex-shrink:0}
+.bhbtn:active{background:var(--card2)}
+.bhbtn.plus{border-color:var(--red); color:var(--red)}
+
 /* ---------- mood & sleep ---------- */
 .moodrow{display:flex; justify-content:space-between; margin-bottom:14px}
 .mood{
@@ -419,6 +431,10 @@ nav.bottom button.on{color:var(--gold)}
     <div class="card">
       <h3>العادات</h3>
       <div class="chips" id="habitChips"></div>
+      <div id="badHabitWrap" class="hidden">
+        <h3 style="margin-top:18px; padding-top:14px; border-top:1px solid var(--line)">عادات تحت السيطرة 🚫</h3>
+        <div id="badHabitList"></div>
+      </div>
     </div>
 
     <div class="card">
@@ -563,6 +579,8 @@ nav.bottom button.on{color:var(--gold)}
     <h2>الإعدادات</h2>
     <label for="setHabits">العادات (كل عادة في سطر)</label>
     <textarea id="setHabits"></textarea>
+    <label for="setBadHabits">عادات تحت السيطرة 🚫 (كل واحدة في سطر — بتتعد بعدّاد)</label>
+    <textarea id="setBadHabits"></textarea>
     <label for="setCats">تصنيفات المصاريف (كل تصنيف في سطر — تقدر تحدد ميزانية كده: أكل: 2000)</label>
     <textarea id="setCats"></textarea>
     <label for="setIncome">الدخل الشهري (اختياري — عشان تشوف فاضلك كام)</label>
@@ -643,6 +661,7 @@ let settings = Object.assign(
   load(K.set, {})
 );
 settings.budgets = settings.budgets || {};
+settings.badHabits = settings.badHabits || [];
 
 const PRAYERS = ['الفجر','الظهر','العصر','المغرب','العشاء'];
 const MOODS = ['😔','😕','🙂','😄','🤩'];
@@ -658,6 +677,7 @@ function getDay(dISO){
   const d = days[dISO];
   if(!Array.isArray(d.p) || d.p.length !== 5) d.p = [0,0,0,0,0];
   if(!d.h) d.h = {};
+  if(!d.bh) d.bh = {};
   return d;
 }
 function saveDays(){ store(K.days, days); toast(); }
@@ -721,6 +741,31 @@ function renderToday(){
     c.textContent = n >= 2 ? `${h} 🔥${n}` : h;
     c.onclick = ()=>{ rec.h[h] = !rec.h[h]; saveDays(); renderToday(); };
     chips.appendChild(c);
+  });
+
+  // bad habits (counters)
+  const bhWrap = $('#badHabitWrap');
+  const bhList = $('#badHabitList');
+  bhWrap.classList.toggle('hidden', !settings.badHabits.length);
+  bhList.innerHTML = '';
+  settings.badHabits.forEach(bh=>{
+    const count = rec.bh[bh] || 0;
+    // clean streak = عدد الأيام المتواصلة اللي العدّاد فيها صفر
+    const cleanN = streak(k=>{ const r = days[k]; return !!(r && (!r.bh || !r.bh[bh])); }, viewDate);
+    const row = document.createElement('div');
+    row.className = 'bhrow';
+    const statusTxt = count === 0
+      ? (cleanN >= 2 ? `<span class="st clean">🔥 ${cleanN} يوم نضيف</span>` : '<span class="st clean">نضيف النهارده ✓</span>')
+      : `<span class="st">وقعت ${count} مرة النهارده</span>`;
+    row.innerHTML = `
+      <button class="bhbtn minus" aria-label="أقل">−</button>
+      <span class="bhcount ${count===0?'zero':'hit'}">${count}</span>
+      <button class="bhbtn plus" aria-label="أكتر">+</button>
+      <span class="bhname"><span class="nm"></span>${statusTxt}</span>`;
+    row.querySelector('.nm').textContent = bh;
+    row.querySelector('.plus').onclick = ()=>{ rec.bh[bh] = count + 1; saveDays(); renderToday(); };
+    row.querySelector('.minus').onclick = ()=>{ if(count > 0){ rec.bh[bh] = count - 1; if(rec.bh[bh]===0) delete rec.bh[bh]; saveDays(); renderToday(); } };
+    bhList.appendChild(row);
   });
 
   // mood
@@ -1194,6 +1239,7 @@ function updateNavCurr(){
 }
 $('#gearBtn').onclick = ()=>{
   $('#setHabits').value = settings.habits.join('\n');
+  $('#setBadHabits').value = (settings.badHabits || []).join('\n');
   $('#setCats').value = settings.cats.map(c => settings.budgets[c] ? `${c}: ${settings.budgets[c]}` : c).join('\n');
   $('#setIncome').value = settings.income || '';
   $('#setCurr').value = settings.currency;
@@ -1219,6 +1265,7 @@ $('#closeModal').onclick = ()=> $('#overlay').classList.remove('show');
 $('#overlay').onclick = e=>{ if(e.target.id==='overlay') $('#overlay').classList.remove('show'); };
 $('#saveSettings').onclick = async ()=>{
   settings.habits = $('#setHabits').value.split('\n').map(s=>s.trim()).filter(Boolean).slice(0,8);
+  settings.badHabits = $('#setBadHabits').value.split('\n').map(s=>s.trim()).filter(Boolean).slice(0,8);
   settings.cats = []; settings.budgets = {};
   $('#setCats').value.split('\n').map(s=>s.trim()).filter(Boolean).forEach(l=>{
     const ix = l.indexOf(':') >= 0 ? l.indexOf(':') : l.indexOf('：');
@@ -1348,7 +1395,7 @@ $('#searchInp').addEventListener('input', e=>{
 const MOOD_EMO = ['','😔','😕','🙂','😄','🤩'];
 let histLimit = 30;
 function dayHasContent(r){
-  return r && (r.j || r.l || (r.p && r.p.some(x=>x)) || (r.h && Object.values(r.h).some(x=>x)) || r.m || r.s);
+  return r && (r.j || r.l || (r.p && r.p.some(x=>x)) || (r.h && Object.values(r.h).some(x=>x)) || (r.bh && Object.values(r.bh).some(x=>x)) || r.m || r.s);
 }
 function renderHistory(){
   const sel = $('#histMonth');
