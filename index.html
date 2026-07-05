@@ -105,13 +105,13 @@ main{padding:0 16px; max-width:560px; margin:0 auto}
 /* ---------- prayer beads ---------- */
 .beads{display:flex; justify-content:space-between; position:relative; padding:6px 4px}
 .beads::before{
-  content:''; position:absolute; top:50%; right:8%; left:8%;
-  height:1px; background:var(--line); transform:translateY(-14px);
+  content:''; position:absolute; top:21px; right:8%; left:8%;
+  height:1.5px; background:var(--line); z-index:0;
 }
 .bead{
   background:none; border:none; cursor:pointer; font-family:inherit;
   display:flex; flex-direction:column; align-items:center; gap:8px;
-  color:var(--faint); font-size:12px; position:relative; padding:0;
+  color:var(--faint); font-size:12px; position:relative; padding:0; z-index:1;
 }
 .bead .dot{
   width:30px; height:30px; border-radius:50%;
