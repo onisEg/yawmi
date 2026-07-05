@@ -235,7 +235,8 @@ input[type=number]{color-scheme:dark light}
   display:flex; align-items:center; justify-content:center; padding:0;
 }
 .titem.done .tcheck{background:var(--teal); border-color:var(--teal); color:#0E2A22}
-.ttxt{flex:1; font-size:15px}
+.ttxt{flex:1; font-size:15px; cursor:text}
+.ttxtedit{flex:1; font-size:15px; padding:4px 8px; background:var(--card2); border:1px solid var(--gold); border-radius:8px; color:var(--text); font-family:inherit; outline:none}
 .titem.done .ttxt{color:var(--faint); text-decoration:line-through}
 .tdue{font-size:12px; color:var(--muted); white-space:nowrap}
 .tdue.late{color:var(--red)}
@@ -1291,6 +1292,24 @@ function renderTasks(){
       el.querySelector('.ttxt').textContent = t.t;
       el.querySelector('.tcheck').onclick = ()=>{ t.done = !t.done; store(K.tasks,tasks); renderTasks(); toast(); };
       el.querySelector('.delbtn').onclick = ()=>{ tasks = tasks.filter(x=>x.id!==t.id); store(K.tasks,tasks); renderTasks(); };
+      // tap the text to edit it inline
+      const ttxtEl = el.querySelector('.ttxt');
+      ttxtEl.onclick = ()=>{
+        const inp = document.createElement('input');
+        inp.type = 'text';
+        inp.className = 'ttxtedit';
+        inp.value = t.t;
+        ttxtEl.replaceWith(inp);
+        inp.focus();
+        inp.setSelectionRange(inp.value.length, inp.value.length);
+        const save = ()=>{
+          const v = inp.value.trim();
+          if(v){ t.t = v; store(K.tasks,tasks); }
+          renderTasks();
+        };
+        inp.onkeydown = e=>{ if(e.key==='Enter') inp.blur(); if(e.key==='Escape') renderTasks(); };
+        inp.onblur = save;
+      };
       list.appendChild(el);
     });
   });
