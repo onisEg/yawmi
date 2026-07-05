@@ -125,6 +125,21 @@ main{padding:0 16px; max-width:560px; margin:0 auto}
 .ptime{font-size:10px; color:var(--faint); direction:ltr; margin-top:1px}
 .bead.on .ptime{color:var(--gold)}
 
+/* ---------- prayer detail card ---------- */
+.ptrow{display:flex; align-items:center; justify-content:space-between; padding:10px 4px; border-top:1px solid var(--line)}
+.ptrow:first-child{border-top:none}
+.ptrow .nm{font-size:15px}
+.ptrow .tm{font-size:15px; font-weight:500; direction:ltr; color:var(--gold)}
+.ptrow.next{background:var(--gold-soft); border-radius:8px; padding-right:10px; padding-left:10px}
+.ptrow.next .nm::after{content:' — الجاية'; font-size:12px; color:var(--muted)}
+.pweek{display:flex; flex-direction:column; gap:8px}
+.pwrow{display:flex; align-items:center; gap:8px}
+.pwrow .day{font-size:12px; color:var(--muted); width:70px; flex-shrink:0}
+.pwdots{display:flex; gap:5px; flex:1}
+.pwdot{width:16px; height:16px; border-radius:50%; background:var(--card2); border:1px solid var(--line)}
+.pwdot.on{background:var(--gold); border-color:var(--gold)}
+.pwrow .cnt{font-size:12px; color:var(--faint); width:28px; text-align:left}
+
 /* ---------- habit chips ---------- */
 .chips{display:flex; flex-wrap:wrap; gap:8px}
 .chip{
@@ -439,8 +454,11 @@ nav.bottom button.on{color:var(--gold)}
     </div>
 
     <div class="card">
-      <h3 id="prayH3">الصلوات</h3>
-      <div class="beads" id="beads"></div>
+      <div style="display:flex; justify-content:space-between; align-items:center">
+        <h3 id="prayH3" style="margin:0">الصلوات</h3>
+        <button class="linkbtn" id="prayDetailsBtn" style="margin:0">المواعيد والتقدم ›</button>
+      </div>
+      <div class="beads" id="beads" style="margin-top:12px"></div>
     </div>
 
     <div class="card">
@@ -547,6 +565,13 @@ nav.bottom button.on{color:var(--gold)}
   <section id="tab-dash" class="tab">
     <div style="height:14px"></div>
     <div class="grid2" id="todayStats"></div>
+
+    <div class="card" id="prayerCard">
+      <h3>الصلوات — مواعيد النهارده</h3>
+      <div id="prayerTimes"></div>
+      <h3 style="margin-top:16px">التزام آخر ٧ أيام</h3>
+      <div id="prayerWeek"></div>
+    </div>
     <div class="card">
       <h3>نتيجة آخر ٧ أيام</h3>
       <div class="bars" id="weekBars"></div>
@@ -872,14 +897,13 @@ function renderToday(){
   const isToday = viewDate === todayISO();
   const nowMin = new Date().getHours()*60 + new Date().getMinutes();
   const times = getPrayerMinutes(viewDate);
-  const hasRealTimes = !!prayerCache[cityCoords().n + '|' + viewDate];
   PRAYERS.forEach((name,i)=>{
     const locked = isToday && nowMin < times[i];
     const b = document.createElement('button');
     b.className = 'bead' + (rec.p[i] ? ' on' : '') + (locked ? ' locked' : '');
-    const timeLabel = hasRealTimes ? `<span class="ptime">${minToHM(times[i])}</span>` : '';
-    b.innerHTML = `<span class="dot"></span>${name}${timeLabel}`;
-    b.onclick = ()=>{
+    b.innerHTML = `<span class="dot"></span>${name}`;
+    b.onclick = (e)=>{
+      e.stopPropagation();
       if(locked){
         toast(`${name} لسه مجاش وقتها (${minToHM(times[i])})`);
         return;
@@ -1057,6 +1081,10 @@ function shiftDay(n){
 $('#prevDayBtn').onclick = ()=> shiftDay(-1);
 $('#nextDayBtn').onclick = ()=> shiftDay(1);
 $('#backToday').onclick = ()=>{ viewDate = todayISO(); renderToday(); };
+$('#prayDetailsBtn').onclick = ()=>{
+  document.querySelector('nav.bottom button[data-tab=dash]').click();
+  setTimeout(()=>{ const c = $('#prayerCard'); if(c) c.scrollIntoView({behavior:'smooth', block:'start'}); }, 100);
+};
 
 let saveDebounce;
 function bindText(sel, key){
@@ -1427,6 +1455,41 @@ function renderDash(){
     ? `أسبوعك: متوسط ${(sum/cnt).toFixed(1)} من 10 · صرفت ${wkExp.toLocaleString('ar-EG')} ${settings.currency}`
     : '';
   renderHistory();
+  renderPrayerCard();
+}
+
+function renderPrayerCard(){
+  const times = getPrayerMinutes(todayISO());
+  const hasReal = !!prayerCache[cityCoords().n + '|' + todayISO()];
+  const nowMin = new Date().getHours()*60 + new Date().getMinutes();
+  // next prayer today
+  let nextIdx = times.findIndex(t => t > nowMin);
+  const pt = $('#prayerTimes');
+  pt.innerHTML = PRAYERS.map((name,i)=>`
+    <div class="ptrow ${i===nextIdx?'next':''}">
+      <span class="nm">${name}</span>
+      <span class="tm">${hasReal ? minToHM(times[i]) : '—'}</span>
+    </div>`).join('');
+  if(!hasReal){
+    pt.innerHTML = '<div class="empty" style="padding:12px 0">حدّد بلدك ومدينتك من الإعدادات ⚙ عشان تشوف المواعيد</div>' + pt.innerHTML;
+  }
+  // weekly commitment
+  const pw = $('#prayerWeek');
+  pw.innerHTML = '';
+  for(let d=6; d>=0; d--){
+    const dt = new Date(); dt.setDate(dt.getDate()-d);
+    const k = iso(dt);
+    const r = days[k];
+    const p = r && r.p ? r.p : [0,0,0,0,0];
+    const cnt = p.reduce((a,b)=>a+(b?1:0),0);
+    const lbl = d===0 ? 'النهارده' : new Intl.DateTimeFormat('ar-EG',{weekday:'long'}).format(dt);
+    pw.innerHTML += `
+      <div class="pwrow">
+        <span class="day">${lbl}</span>
+        <span class="pwdots">${p.map(x=>`<span class="pwdot ${x?'on':''}"></span>`).join('')}</span>
+        <span class="cnt">${cnt}/5</span>
+      </div>`;
+  }
 }
 
 function weekKeyOf(){
