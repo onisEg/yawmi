@@ -1,4 +1,4 @@
-const CACHE = 'yawmi-v23';
+const CACHE = 'yawmi-v24';
 const ASSETS = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {
