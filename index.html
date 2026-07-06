@@ -233,6 +233,8 @@ main{padding:0 16px; max-width:560px; margin:0 auto}
 .sleepbtn.on.ok{background:var(--gold-soft); border-color:var(--gold); color:var(--gold)}
 .sleepbtn.on.bad{background:rgba(217,112,102,.12); border-color:var(--red); color:var(--red)}
 .otype{display:inline-block; font-size:11px; background:var(--gold-soft); color:var(--gold); border-radius:6px; padding:1px 7px; margin-left:6px}
+.prayeralert{margin-top:12px; padding:10px 12px; border-radius:10px; font-size:13px; line-height:1.6; background:var(--gold-soft); color:var(--gold); text-align:center}
+.prayeralert.urgent{background:rgba(217,112,102,.12); color:var(--red); font-weight:500}
 
 /* ---------- task-project link ---------- */
 .ttxtwrap{flex:1; display:flex; flex-direction:column; gap:3px; min-width:0}
@@ -626,6 +628,7 @@ nav.bottom button.on{color:var(--gold)}
         <button class="linkbtn" id="prayDetailsBtn" style="margin:0">المواعيد والتقدم ›</button>
       </div>
       <div class="beads" id="beads" style="margin-top:12px"></div>
+      <div id="prayerAlert" class="hidden"></div>
     </div>
 
     <div class="card">
@@ -774,12 +777,10 @@ nav.bottom button.on{color:var(--gold)}
       <div class="addrow" style="margin:12px 0 0">
         <input type="text" id="oblTitle" placeholder="الاسم... (فاتورة، سلفة، كورس)">
       </div>
-      <div class="addrow" style="margin-top:8px">
-        <select id="oblType" style="flex:1"></select>
-      </div>
       <div class="addrow" style="margin-top:8px; margin-bottom:0">
-        <input type="number" id="oblAmt" inputmode="decimal" placeholder="المبلغ">
+        <input type="number" id="oblAmt" inputmode="decimal" placeholder="المبلغ" style="flex:1">
         <button type="button" class="datebtn" id="oblDueBtn" aria-label="ميعاد الدفع"><span data-icon="calendar"></span><input type="date" id="oblDue" aria-label="ميعاد الدفع"></button>
+        <select id="oblType" style="flex:0; width:auto; min-width:90px"></select>
         <button class="addbtn" id="addOblBtn" aria-label="إضافة التزام">+</button>
       </div>
       <label class="inline" style="margin-top:12px; font-size:14px; color:var(--muted); cursor:pointer">
@@ -1873,6 +1874,54 @@ function renderDhikr(){
   $('#dhikrHint').textContent = done ? 'ما شاء الله، كمّلت المطلوب ✓' : 'دوس على الدايرة مع كل مرة';
 }
 
+// تنبيه ذكي عن الصلاة الفايتة/اللي قرب وقتها يخلص
+function renderPrayerAlert(rec, times, hasRealTimes, isToday, nowMin){
+  const el = $('#prayerAlert');
+  if(!el) return;
+  // بس على النهارده
+  if(!isToday){ el.classList.add('hidden'); return; }
+
+  // الصلوات اللي جه وقتها (nowMin >= وقتها) ولسه متصلتش
+  const pending = [];
+  for(let i=0; i<5; i++){
+    if((rec.p[i]||0) === 0){ // لسه متصلتش
+      if(!hasRealTimes || nowMin >= times[i]){
+        pending.push(i);
+      }
+    }
+  }
+  if(!pending.length){ el.classList.add('hidden'); return; }
+
+  // نهاية نافذة كل صلاة = بداية اللي بعدها (العشا لآخر الليل)
+  function windowEnd(i){
+    if(!hasRealTimes) return 24*60;
+    if(i < 4) return times[i+1];
+    return 24*60; // العشا لحد آخر اليوم
+  }
+
+  let msg = '', urgent = false;
+  // نشوف أقرب صلاة فايتة وقربها من نهاية وقتها
+  const soonest = pending[pending.length-1]; // آخر وحدة (أحدث صلاة جه وقتها)
+  if(hasRealTimes){
+    const end = windowEnd(soonest);
+    const left = end - nowMin;
+    if(left > 0 && left <= 45){
+      urgent = true;
+      msg = `⏰ ${PRAYERS[soonest]} وقتها قرّب يخلص (فاضل ${arNum(left)} دقيقة) — صلّيها بسرعة عشان متصليهاش خارج الوقت`;
+    }
+  }
+  if(!msg){
+    if(pending.length === 1){
+      msg = `🕌 لسه مصليتش ${PRAYERS[pending[0]]}`;
+    } else {
+      const names = pending.map(i=>PRAYERS[i]).join('، ');
+      msg = `🕌 لسه فاضلك: ${names}`;
+    }
+  }
+  el.textContent = msg;
+  el.className = 'prayeralert' + (urgent ? ' urgent' : '');
+}
+
 function renderToday(){
   const rec = getDay(viewDate);
   $('#gdate').textContent = fmtDate(viewDate);
@@ -1903,6 +1952,7 @@ function renderToday(){
     };
     beads.appendChild(b);
   });
+  renderPrayerAlert(rec, times, hasRealTimes, isToday, nowMin);
 
   // habits
   const chips = $('#habitChips');
@@ -2005,7 +2055,7 @@ function renderToday(){
 
   // prayer streak (كل الخمسة)
   const pn = streak(k=>{ const r = days[k]; return !!(r && r.p && r.p.reduce((a,b)=>a+(b?1:0),0) === 5); }, viewDate);
-  $('#prayH3').innerHTML = icon('beads') + 'الصلوات' + (pn >= 2 ? `<span class="streak">🔥 ${arNum(pn)} يوم كاملين</span>` : '');
+  $('#prayH3').innerHTML = icon('beads') + 'الصلوات';
 
   // في يوم زي ده
   const mmdd = viewDate.slice(5);
