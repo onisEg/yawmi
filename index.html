@@ -865,10 +865,13 @@ nav.bottom button.on{color:var(--gold)}
     </select>
     <label style="margin-top:8px">تصدير بياناتك</label>
     <div class="btnrow">
-      <button class="btn ghost" id="exportBtn">📊 تنزيل Excel</button>
+      <button class="btn ghost" id="exportBtn">📊 Excel</button>
+      <button class="btn ghost" id="exportPdfBtn">📄 PDF</button>
+    </div>
+    <div class="btnrow" style="margin-top:8px">
       <button class="btn ghost" id="exportJsonBtn">💾 نسخة للاسترجاع</button>
     </div>
-    <div style="font-size:12px; color:var(--faint); margin-top:-2px">Excel لعرض بياناتك · نسخة الاسترجاع لو حبيت ترجّعها للتطبيق تاني</div>
+    <div style="font-size:12px; color:var(--faint); margin-top:2px">Excel و PDF لعرض بياناتك · نسخة الاسترجاع لو حبيت ترجّعها للتطبيق تاني</div>
     <div class="btnrow" style="margin-top:8px">
       <button class="btn ghost" id="importBtn">استيراد نسخة استرجاع</button>
     </div>
@@ -2862,6 +2865,71 @@ $('#saveSettings').onclick = async ()=>{
 
 /* ================= backup ================= */
 // نسخة JSON كاملة (للاستيراد/الاسترجاع)
+// تصدير PDF عبر تقرير مطبوع (المستخدم يختار حفظ كـ PDF)
+function doExportPDF(){
+  const PR = ['—','مفرد','جماعة','خارج الوقت'];
+  const PRC = ['#999','#d9a441','#5fb89e','#e4a0a0'];
+  const monthK = todayISO().slice(0,7);
+  const monthDays = Object.keys(days).filter(k=>k.startsWith(monthK)).sort();
+  const mExp = exps.filter(e=>e.d.startsWith(monthK)).reduce((a,e)=>a+e.a,0);
+  const name = settings.name ? ` — ${settings.name}` : '';
+  let rows = '';
+  monthDays.forEach(k=>{
+    const d = getDay(k);
+    const dd = arDate(new Date(k+'T12:00:00'), {weekday:'long', day:'numeric', month:'long'});
+    const beads = (d.p||[0,0,0,0,0]).map(x=>`<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${PRC[x]};margin:0 1px"></span>`).join('');
+    const habits = (settings.habits||[]).filter(h=>d.h&&d.h[h]).length;
+    const mood = d.m ? ['','😔','😕','🙂','😄','🤩'][d.m] : '';
+    rows += `<tr>
+      <td style="padding:6px 8px;border-bottom:1px solid #eee">${dd}</td>
+      <td style="padding:6px 8px;border-bottom:1px solid #eee;text-align:center">${arNum(scoreOf(d))}</td>
+      <td style="padding:6px 8px;border-bottom:1px solid #eee;white-space:nowrap">${beads}</td>
+      <td style="padding:6px 8px;border-bottom:1px solid #eee;text-align:center">${arNum(habits)}</td>
+      <td style="padding:6px 8px;border-bottom:1px solid #eee;text-align:center;font-size:14px">${mood}</td>
+      <td style="padding:6px 8px;border-bottom:1px solid #eee;font-size:12px;color:#555">${(d.l||'').slice(0,40)}</td>
+    </tr>`;
+  });
+  const monthName = arDate(new Date(), {month:'long', year:'numeric'});
+  const html = `<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="utf-8">
+  <title>يومي - تقرير ${monthName}</title>
+  <style>
+    @page{margin:1.5cm}
+    body{font-family:'Segoe UI',Tahoma,Arial,sans-serif;color:#222;padding:20px;max-width:800px;margin:auto}
+    h1{color:#d9a441;font-size:26px;margin:0 0 4px}
+    .sub{color:#888;font-size:13px;margin-bottom:20px}
+    .cards{display:flex;gap:12px;margin-bottom:24px;flex-wrap:wrap}
+    .c{flex:1;min-width:120px;background:#faf6ee;border:1px solid #eadfc8;border-radius:12px;padding:14px;text-align:center}
+    .c .n{font-size:22px;font-weight:700;color:#d9a441}
+    .c .l{font-size:12px;color:#888;margin-top:4px}
+    table{width:100%;border-collapse:collapse;font-size:13px}
+    th{background:#d9a441;color:#fff;padding:8px;text-align:right;font-weight:600}
+    .foot{margin-top:24px;text-align:center;color:#aaa;font-size:11px}
+    @media print{.noprint{display:none}}
+  </style></head><body>
+  <h1>📿 يومي</h1>
+  <div class="sub">تقرير ${monthName}${name} · اتصدر ${arDate(new Date(),{day:'numeric',month:'long',year:'numeric'})}</div>
+  <div class="cards">
+    <div class="c"><div class="n">${arNum(monthDays.length)}</div><div class="l">يوم مسجّل</div></div>
+    <div class="c"><div class="n">${arMoney(mExp)}</div><div class="l">مصاريف (${settings.currency})</div></div>
+    <div class="c"><div class="n">${arNum(tasks.filter(t=>t.done).length)}</div><div class="l">مهام خلصت</div></div>
+  </div>
+  <table>
+    <thead><tr><th>اليوم</th><th>النتيجة</th><th>الصلوات</th><th>عادات</th><th>مزاج</th><th>تعلمت</th></tr></thead>
+    <tbody>${rows || '<tr><td colspan=6 style="padding:20px;text-align:center;color:#999">مفيش أيام مسجلة الشهر ده</td></tr>'}</tbody>
+  </table>
+  <div class="foot">يومي · تطبيقك الشخصي لمتابعة يومك</div>
+  <div class="noprint" style="text-align:center;margin-top:24px">
+    <button onclick="window.print()" style="background:#d9a441;color:#1a150a;border:none;padding:12px 32px;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer">🖨️ احفظ PDF أو اطبع</button>
+  </div>
+  <script>setTimeout(()=>window.print(),600)<\/script>
+  </body></html>`;
+  const w = window.open('', '_blank');
+  if(!w){ toast('اسمح بالنوافذ المنبثقة عشان الـ PDF'); return; }
+  w.document.write(html);
+  w.document.close();
+  toast('جهّزنا التقرير — اختار "حفظ كـ PDF"');
+}
+
 function doExportJSON(){
   const data = {v:1, exported:new Date().toISOString(), days, tasks, exps, obls, revs, goals, bhData, settings};
   const blob = new Blob([JSON.stringify(data,null,1)], {type:'application/json'});
@@ -2923,6 +2991,7 @@ function doExportCSV(){
 function doExport(){ doExportCSV(); }
 $('#exportBtn').onclick = doExportCSV;
 $('#exportJsonBtn').onclick = doExportJSON;
+$('#exportPdfBtn').onclick = doExportPDF;
 
 /* sync UI */
 function refreshAuthUI(){
@@ -2945,9 +3014,9 @@ function refreshAuthUI(){
   }
 }
 // وضع المصادقة: 'signup' أو 'signin'
-let authMode = 'signup';
+let authMode = 'signin';
 function openAuth(mode){
-  authMode = mode || 'signup';
+  authMode = mode || 'signin';
   $('#authError').classList.add('hidden');
   $('#authEmail').value = ''; $('#authPass').value = '';
   applyAuthMode();
@@ -2964,7 +3033,7 @@ function applyAuthMode(){
 function closeAuth(){ $('#authOverlay').classList.remove('show'); }
 function showAuthError(msg){ const e = $('#authError'); e.textContent = msg; e.classList.remove('hidden'); }
 
-$('#openAuthBtn').onclick = ()=> openAuth('signup');
+$('#openAuthBtn').onclick = ()=> openAuth('signin');
 $('#authClose').onclick = closeAuth;
 $('#authOverlay').onclick = e=>{ if(e.target.id==='authOverlay') closeAuth(); };
 $('#authSwitchBtn').onclick = ()=>{ authMode = authMode==='signup'?'signin':'signup'; applyAuthMode(); $('#authError').classList.add('hidden'); };
@@ -2977,7 +3046,15 @@ $('#authSubmit').onclick = async ()=>{
   const res = authMode==='signup' ? await authSignUp(email, pass) : await authSignIn(email, pass);
   $('#authSubmit').disabled = false;
   applyAuthMode();
-  if(res.error){ showAuthError(res.error); return; }
+  if(res.error){
+    // لو تسجيل دخول فشل بإيميل/باسورد غلط، نلمّح إنه يعمل حساب
+    if(authMode==='signin' && res.error.includes('غلط')){
+      showAuthError(res.error + ' — لو معندكش حساب، اضغط "تسجيل جديد" تحت');
+    } else {
+      showAuthError(res.error);
+    }
+    return;
+  }
   if(res.needsConfirm){ showAuthError('بعتنالك إيميل تأكيد — افتحه وأكّد، وبعدين سجّل دخول'); authMode='signin'; applyAuthMode(); return; }
   closeAuth();
   toast('أهلاً بيك ✓');
