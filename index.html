@@ -295,6 +295,7 @@ input[type=text]:focus,input[type=number]:focus,input[type=email]:focus,input[ty
   border-color:var(--gold); background:var(--card); box-shadow:0 0 0 3px var(--gold-soft);
 }
 textarea{min-height:120px; resize:vertical; line-height:1.9}
+#learnedInp{min-height:44px !important; line-height:1.6; resize:none}
 input[type=date]{color-scheme:dark light}
 input[type=number]{color-scheme:dark light}
 ::placeholder{color:var(--faint)}
@@ -665,7 +666,7 @@ nav.bottom button.on{color:var(--gold)}
         <div class="moodrow" id="moodRow"></div>
         <div id="moodReflect" class="hidden">
           <div class="moodq" id="moodQ"></div>
-          <textarea id="moodNote" placeholder="اكتب هنا..."></textarea>
+          <textarea id="moodNote" placeholder="اكتب هنا..." autocomplete="off"></textarea>
         </div>
       </div>
     </div>
@@ -683,7 +684,7 @@ nav.bottom button.on{color:var(--gold)}
         <span class="collapsearrow" id="learnArrow">›</span>
       </button>
       <div class="collapsebody" id="learnBody">
-        <input type="text" id="learnedInp" placeholder="حاجة جديدة عرفتها اليوم..." autocomplete="off" autocapitalize="sentences" name="yawmi-learned-field">
+        <textarea id="learnedInp" placeholder="حاجة جديدة عرفتها اليوم..." autocomplete="off" autocapitalize="sentences" inputmode="text" rows="1" style="min-height:44px"></textarea>
       </div>
     </div>
 
@@ -693,7 +694,7 @@ nav.bottom button.on{color:var(--gold)}
         <span class="collapsearrow" id="journalArrow">›</span>
       </button>
       <div class="collapsebody" id="journalBody">
-        <textarea id="journalInp" placeholder="اكتب عن يومك... اللي حصل، اللي حسيت بيه، اللي نفسك فيه"></textarea>
+        <textarea id="journalInp" placeholder="اكتب عن يومك... اللي حصل، اللي حسيت بيه، اللي نفسك فيه" autocomplete="off"></textarea>
       </div>
     </div>
 
