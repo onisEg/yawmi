@@ -1390,6 +1390,14 @@ const _arDigits = ['٠','١','٢','٣','٤','٥','٦','٧','٨','٩'];
 function arNum(v){
   return String(v).replace(/[0-9]/g, d => _arDigits[+d]);
 }
+// تنسيق تاريخ بأسماء عربية وأرقام عربية مضمونة (مش معتمد على إعدادات الجهاز)
+function arDate(d, opts){
+  return arNum(new Intl.DateTimeFormat('ar-EG', opts).format(d));
+}
+// تنسيق مبلغ بفواصل وأرقام عربية مضمونة
+function arMoney(n){
+  return arNum(Number(n).toLocaleString('en-US'));
+}
 
 /* ===== أيقونات (Lucide، SVG مدمجة، شغّالة أوفلاين) ===== */
 const ICONS = {
@@ -1538,7 +1546,7 @@ function scoreOf(d){
 /* ================= today tab ================= */
 function fmtDate(dISO){
   const d = new Date(dISO+'T12:00:00');
-  return new Intl.DateTimeFormat('ar-EG',{weekday:'long', day:'numeric', month:'long', year:'numeric'}).format(d);
+  return arDate(d, {weekday:'long', day:'numeric', month:'long', year:'numeric'});
 }
 function fmtHijri(dISO){
   try{
@@ -1901,7 +1909,7 @@ function openBHDetail(name){
       const prev = sorted[i+1] || d.start;
       const streak = fmtDurationText(ts - prev);
       const dt = new Date(ts);
-      const dateStr = new Intl.DateTimeFormat('ar-EG',{day:'numeric',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'}).format(dt);
+      const dateStr = arDate(dt, {day:'numeric',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'});
       return `<div class="bhhrow">
         <button class="bhhundo" data-ts="${ts}" aria-label="تراجع">↩</button>
         <div class="bhhinfo"><div class="bhhdate">${dateStr}</div><div class="bhhstreak">صمد قبلها: ${streak}</div></div>
@@ -2172,20 +2180,20 @@ function renderExp(){
   renderObls();
   const mk = monthKey(expMonthOffset);
   const d = new Date(mk+'-15T12:00:00');
-  $('#expMonthLabel').textContent = new Intl.DateTimeFormat('ar-EG',{month:'long', year:'numeric'}).format(d);
+  $('#expMonthLabel').textContent = arDate(d, {month:'long', year:'numeric'});
 
   const sel = $('#expCat');
   sel.innerHTML = settings.cats.map(c=>`<option>${c}</option>`).join('');
 
   const monthExp = exps.filter(e=>e.d.startsWith(mk)).sort((a,b)=> b.d.localeCompare(a.d) || b.id-a.id);
   const total = monthExp.reduce((a,e)=>a+e.a,0);
-  $('#expTotal').textContent = total.toLocaleString('ar-EG') + ' ' + settings.currency;
+  $('#expTotal').textContent = arMoney(total) + ' ' + settings.currency;
   const rem = $('#expRemain');
   if(settings.income > 0 && expMonthOffset === 0){
     const left = settings.income - total;
     rem.textContent = left >= 0
-      ? `فاضلك ${left.toLocaleString('ar-EG')} من دخل ${settings.income.toLocaleString('ar-EG')} ${settings.currency}`
-      : `عديت دخلك بـ ${Math.abs(left).toLocaleString('ar-EG')} ${settings.currency} ⚠`;
+      ? `فاضلك ${arMoney(left)} من دخل ${arMoney(settings.income)} ${settings.currency}`
+      : `عديت دخلك بـ ${arMoney(Math.abs(left))} ${settings.currency} ⚠`;
     rem.style.color = left >= 0 ? 'var(--teal)' : 'var(--red)';
   } else rem.textContent = '';
 
@@ -2217,7 +2225,7 @@ function renderExp(){
         <circle cx="${CX}" cy="${CY}" r="${R}" fill="none" stroke="var(--card2)" stroke-width="${SW}"/>
         ${segs}
       </svg>
-      <div class="donutcenter"><span class="dt">${catTotal.toLocaleString('ar-EG')}</span><span class="dl">${settings.currency}</span></div>
+      <div class="donutcenter"><span class="dt">${arMoney(catTotal)}</span><span class="dl">${settings.currency}</span></div>
     </div>` : '';
   const legend = cats.map(([c,v],i)=>{
     const color = CAT_COLORS[i % CAT_COLORS.length];
@@ -2225,8 +2233,8 @@ function renderExp(){
     const b = settings.budgets[c];
     const over = b && v/b >= 0.9;
     const amtTxt = b
-      ? `${v.toLocaleString('ar-EG')} من ${b.toLocaleString('ar-EG')}${v/b>1?' ⚠':''}`
-      : `${v.toLocaleString('ar-EG')} ${settings.currency}`;
+      ? `${arMoney(v)} من ${arMoney(b)}${v/b>1?' ⚠':''}`
+      : `${arMoney(v)} ${settings.currency}`;
     return `
     <div class="catleg">
       <span class="dot" style="background:${color}"></span>
@@ -2247,7 +2255,7 @@ function renderExp(){
       <span class="ecat"></span>
       <span class="enote"></span>
       <span class="edate">${arNum(e.d.slice(5).split('-').reverse().join('/'))}</span>
-      <span class="eamt">${e.a.toLocaleString('ar-EG')}</span>
+      <span class="eamt">${arMoney(e.a)}</span>
       <button class="delbtn" aria-label="حذف">${icon("trash",16)}</button>`;
     el.querySelector('.ecat').textContent = e.c;
     el.querySelector('.enote').textContent = e.n || '(بدون ملاحظة)';
@@ -2296,7 +2304,7 @@ function renderObls(){
     return ad.localeCompare(bd);
   });
   const total = obls.reduce((s,o)=>s+o.a,0);
-  $('#oblTotal').textContent = total ? `عليك ${total.toLocaleString('ar-EG')} ${settings.currency}` : '';
+  $('#oblTotal').textContent = total ? `عليك ${arMoney(total)} ${settings.currency}` : '';
   list.innerHTML = '';
   if(!sorted.length){
     list.innerHTML = '<div class="empty" style="padding:14px 0">مفيش التزامات — دماغك مرتاحة 😌</div>';
@@ -2309,7 +2317,7 @@ function renderObls(){
     el.innerHTML = `
       <div class="ottl">
         <div class="tname"></div>
-        <div class="sub"><span class="amt">${o.a.toLocaleString('ar-EG')} ${settings.currency}</span> ${o.due ? '· ' + dueLabel(o.due) : ''} ${o.rec ? '· <span class="orec">↻ شهري</span>' : ''}</div>
+        <div class="sub"><span class="amt">${arMoney(o.a)} ${settings.currency}</span> ${o.due ? '· ' + dueLabel(o.due) : ''} ${o.rec ? '· <span class="orec">↻ شهري</span>' : ''}</div>
       </div>
       <button class="opay">اتدفع</button>
       <button class="delbtn" aria-label="حذف">${icon("trash",16)}</button>`;
@@ -2480,7 +2488,7 @@ function renderDash(){
     <div class="stat"><div class="num">${arNum(sc%1===0?sc:sc.toFixed(1))}</div><div class="lbl">نتيجة النهارده</div></div>
     <div class="stat"><div class="num">${pr}/٥</div><div class="lbl">الصلوات</div></div>
     <div class="stat"><div class="num">${arNum(doneToday)}/${arNum(dueToday.length)}</div><div class="lbl">مهام النهارده</div></div>
-    <div class="stat"><div class="num">${expToday.toLocaleString('ar-EG')}</div><div class="lbl">مصاريف النهارده (${settings.currency})</div></div>`;
+    <div class="stat"><div class="num">${arMoney(expToday)}</div><div class="lbl">مصاريف النهارده (${settings.currency})</div></div>`;
 
   // week bars
   const wb = $('#weekBars');
@@ -2492,7 +2500,7 @@ function renderDash(){
     const r = days[k];
     const s = r ? scoreOf(getDay(k)) : 0;
     if(r){ sum+=s; cnt++; }
-    const lbl = new Intl.DateTimeFormat('ar-EG',{weekday:'short'}).format(d);
+    const lbl = arDate(d, {weekday:'short'});
     wb.innerHTML += `
       <div class="barcol">
         <div class="bar ${s?'':'zero'}" style="height:${Math.max(s/10*100,3)}%"></div>
@@ -2513,11 +2521,11 @@ function renderDash(){
   const allOblSum = obls.reduce((s,o)=>s+o.a,0);
   $('#monthStats').innerHTML = `
     <div class="stat"><div class="num">${daysLogged}</div><div class="lbl">يوم مسجّل الشهر ده</div></div>
-    <div class="stat"><div class="num">${mExp.toLocaleString('ar-EG')}</div><div class="lbl">مصاريف الشهر (${settings.currency})</div></div>
+    <div class="stat"><div class="num">${arMoney(mExp)}</div><div class="lbl">مصاريف الشهر (${settings.currency})</div></div>
     <div class="stat"><div class="num">${late}</div><div class="lbl">مهام متأخرة</div></div>
     <div class="stat"><div class="num">${arNum(prTotal? Math.round(prDone/prTotal*100) : 0)}٪</div><div class="lbl">التزام الصلوات</div></div>
-    <div class="stat"><div class="num" ${lateOblSum?'style="color:var(--red)"':''}>${lateOblSum.toLocaleString('ar-EG')}</div><div class="lbl">التزامات متأخرة (${settings.currency})</div></div>
-    <div class="stat"><div class="num">${allOblSum.toLocaleString('ar-EG')}</div><div class="lbl">إجمالي عليك (${settings.currency})</div></div>`;
+    <div class="stat"><div class="num" ${lateOblSum?'style="color:var(--red)"':''}>${arMoney(lateOblSum)}</div><div class="lbl">التزامات متأخرة (${settings.currency})</div></div>
+    <div class="stat"><div class="num">${arMoney(allOblSum)}</div><div class="lbl">إجمالي عليك (${settings.currency})</div></div>`;
 
   // weekly review
   const wk = weekKeyOf();
@@ -2525,7 +2533,7 @@ function renderDash(){
   renderReviewQuestions(wk);
   const wkExp = exps.filter(e => e.d >= wk).reduce((a,e)=>a+e.a,0);
   $('#revSummary').textContent = cnt
-    ? `أسبوعك: متوسط ${arNum((sum/cnt).toFixed(1))} من ١٠ · صرفت ${wkExp.toLocaleString('ar-EG')} ${settings.currency}`
+    ? `أسبوعك: متوسط ${arNum((sum/cnt).toFixed(1))} من ١٠ · صرفت ${arMoney(wkExp)} ${settings.currency}`
     : '';
   // فتح/قفل الكارت حسب وجود إجابات
   const rev = revs[wk] || {};
@@ -2585,7 +2593,7 @@ function renderPrayerCard(){
     const r = days[k];
     const p = r && r.p ? r.p : [0,0,0,0,0];
     const cnt = p.reduce((a,b)=>a+(b?1:0),0);
-    const lbl = d===0 ? 'النهارده' : new Intl.DateTimeFormat('ar-EG',{weekday:'long'}).format(dt);
+    const lbl = d===0 ? 'النهارده' : arDate(dt, {weekday:'long'});
     wwrap.innerHTML += `
       <div class="pwrow">
         <span class="day">${lbl}</span>
@@ -2597,7 +2605,7 @@ function renderPrayerCard(){
   const pm = $('#prayerMonth');
   const now = new Date();
   const y = now.getFullYear(), m = now.getMonth();
-  const monthName = new Intl.DateTimeFormat('ar-EG',{month:'long', year:'numeric'}).format(now);
+  const monthName = arDate(now, {month:'long', year:'numeric'});
   const firstDay = new Date(y, m, 1).getDay(); // 0=Sunday
   const daysInMonth = new Date(y, m+1, 0).getDate();
   const todayNum = now.getDate();
@@ -2961,7 +2969,7 @@ function renderHistory(){
   const prev = sel.value;
   sel.innerHTML = '<option value="">كل الشهور</option>' + months.map(m=>{
     const d = new Date(m+'-15T12:00:00');
-    const lbl = new Intl.DateTimeFormat('ar-EG',{month:'long', year:'numeric'}).format(d);
+    const lbl = arDate(d, {month:'long', year:'numeric'});
     return `<option value="${m}">${lbl}</option>`;
   }).join('');
   if(prev && months.includes(prev)) sel.value = prev;
@@ -2979,8 +2987,8 @@ function renderHistory(){
   shown.forEach(k=>{
     const r = days[k];
     const d = new Date(k+'T12:00:00');
-    const dlabel = new Intl.DateTimeFormat('ar-EG',{day:'numeric', month:'short'}).format(d);
-    const wd = new Intl.DateTimeFormat('ar-EG',{weekday:'short'}).format(d);
+    const dlabel = arDate(d, {day:'numeric', month:'short'});
+    const wd = arDate(d, {weekday:'short'});
     const snip = (r.j || r.l || '').slice(0, 60);
     const pr = r.p ? r.p.reduce((a,b)=>a+(b?1:0),0) : 0;
     const hd = r.h ? Object.values(r.h).filter(Boolean).length : 0;
