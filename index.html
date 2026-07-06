@@ -227,6 +227,20 @@ main{padding:0 16px; max-width:560px; margin:0 auto}
 .collapsecard:not(.filled):not(.open) .collapsehead .collapsearrow::before{content:'+ '; font-size:15px; color:var(--faint)}
 .moodq{font-size:14px; line-height:1.7; color:var(--gold); background:var(--gold-soft); border-radius:10px; padding:10px 12px; margin:14px 0 10px; text-align:center}
 
+/* ---------- task-project link ---------- */
+.ttxtwrap{flex:1; display:flex; flex-direction:column; gap:3px; min-width:0}
+.taskprojtag{display:inline-flex; align-items:center; gap:4px; font-size:11px; color:var(--gold); background:var(--gold-soft); border-radius:6px; padding:2px 8px; align-self:flex-start; max-width:100%}
+.taskprojtag.mini{font-size:10px; padding:1px 6px}
+.taskprojtag .tagx{background:none; border:none; color:var(--gold); cursor:pointer; padding:0 2px; font-size:11px}
+#taskProjChosen{margin:-8px 0 12px}
+.projpickgoal{font-size:12px; color:var(--muted); padding:10px 4px 4px; font-weight:500}
+.projpickitem{margin-right:8px}
+.projtasks{margin:2px 0 10px 0; padding:8px 12px; background:var(--card2); border-radius:10px}
+.projtaskshead{font-size:12px; color:var(--muted); margin-bottom:6px}
+.projtask{font-size:13px; color:var(--text); padding:3px 0; display:flex; align-items:center; gap:8px}
+.projtask.done{color:var(--faint); text-decoration:line-through}
+.projtask .pt-check{color:var(--teal); font-size:13px}
+
 /* ---------- bad habits (recovery) ---------- */
 .bhcard2{display:flex; align-items:center; gap:12px; background:var(--card2); border:1px solid var(--line); border-radius:14px; padding:12px; margin-bottom:12px; cursor:pointer; transition:background .1s}
 .bhcard2:active{background:var(--card)}
@@ -691,9 +705,11 @@ nav.bottom button.on{color:var(--gold)}
   <section id="tab-tasks" class="tab">
     <div class="addrow" style="margin-top:14px">
       <input type="text" id="taskTitle" placeholder="مهمة جديدة...">
+      <button type="button" class="datebtn" id="taskProjBtn" aria-label="اربط بمشروع"><span data-icon="target"></span></button>
       <button type="button" class="datebtn" id="taskDueBtn" aria-label="تاريخ الاستحقاق"><span data-icon="calendar"></span><input type="date" id="taskDue" aria-label="تاريخ الاستحقاق"></button>
       <button class="addbtn" id="addTaskBtn" aria-label="إضافة مهمة">+</button>
     </div>
+    <div id="taskProjChosen" class="hidden"></div>
     <div id="taskList"></div>
   </section>
 
@@ -962,6 +978,13 @@ nav.bottom button.on{color:var(--gold)}
         <button class="btn primary" id="addDhikrBtn" style="flex:1">إضافة</button>
       </div>
     </div>
+  </div>
+</div>
+
+<div id="projPicker" class="pickerov">
+  <div class="pickerbox">
+    <h3>اربط المهمة بمشروع</h3>
+    <div id="projPickerList"></div>
   </div>
 </div>
 
@@ -2036,9 +2059,11 @@ function renderTasks(){
       const el = document.createElement('div');
       el.className = 'titem' + (t.done ? ' done' : '');
       const late = !t.done && t.due && t.due < t0;
+      const proj = t.pj ? findProject(t.pj) : null;
+      const projTag = proj ? `<span class="taskprojtag mini">🎯 ${proj.project.t}</span>` : '';
       el.innerHTML = `
         <button class="tcheck" aria-label="إنجاز">✓</button>
-        <span class="ttxt"></span>
+        <div class="ttxtwrap"><span class="ttxt"></span>${projTag}</div>
         ${t.due ? `<span class="tdue ${late?'late':''}">${t.due.slice(5).split('-').reverse().join('/')}</span>` : ''}
         <button class="delbtn" aria-label="حذف">${icon("trash",16)}</button>`;
       el.querySelector('.ttxt').textContent = t.t;
@@ -2062,19 +2087,63 @@ function renderTasks(){
   });
   if(!any) list.innerHTML = '<div class="empty-big"><span class="ico">📝</span><div class="ttl">مفيش مهام دلوقتي</div><div class="desc">ضيف أول مهمة من فوق وابدأ يومك منظم</div></div>';
 }
+let pendingProj = null; // المشروع المختار للمهمة الجديدة
 $('#addTaskBtn').onclick = ()=>{
   const title = $('#taskTitle').value.trim();
   if(!title) return;
-  tasks.unshift({id:Date.now(), t:title, due:$('#taskDue').value || '', done:false});
+  const t = {id:Date.now(), t:title, due:$('#taskDue').value || '', done:false};
+  if(pendingProj) t.pj = pendingProj;
+  tasks.unshift(t);
   store(K.tasks, tasks);
   $('#taskTitle').value=''; $('#taskDue').value='';
   $('#taskDueBtn').classList.remove('has');
+  pendingProj = null; updateProjChosen();
   renderTasks(); toast('اتضافت ✓');
 };
 $('#taskDue').addEventListener('change', ()=>{
   $('#taskDueBtn').classList.toggle('has', !!$('#taskDue').value);
 });
 $('#taskTitle').addEventListener('keydown', e=>{ if(e.key==='Enter') $('#addTaskBtn').click(); });
+
+// اختيار مشروع للمهمة الجديدة
+$('#taskProjBtn').onclick = ()=> openProjPicker(pid=>{ pendingProj = pid; updateProjChosen(); });
+function updateProjChosen(){
+  const box = $('#taskProjChosen');
+  $('#taskProjBtn').classList.toggle('has', !!pendingProj);
+  if(!pendingProj){ box.classList.add('hidden'); box.innerHTML=''; return; }
+  const found = findProject(pendingProj);
+  if(!found){ pendingProj=null; box.classList.add('hidden'); return; }
+  box.classList.remove('hidden');
+  box.innerHTML = `<span class="taskprojtag">🎯 ${found.goal.t} · ${found.project.t}<button class="tagx" aria-label="شيل">✕</button></span>`;
+  box.querySelector('.tagx').onclick = ()=>{ pendingProj=null; updateProjChosen(); };
+}
+// منتقي المشروع
+function openProjPicker(onPick){
+  const list = $('#projPickerList');
+  const hasProjects = goals.some(g=>g.projects && g.projects.length);
+  if(!hasProjects){
+    list.innerHTML = '<div class="empty" style="padding:16px 0">مفيش مشاريع لسه. ضيف هدف ومشروع من تبويب الأهداف الأول.</div>';
+  } else {
+    let html = '<button class="ppopt" data-pid="0"><span class="ppdot" style="background:var(--faint)"></span>بدون مشروع</button>';
+    goals.forEach(g=>{
+      if(!g.projects || !g.projects.length) return;
+      html += `<div class="projpickgoal">${g.t}</div>`;
+      g.projects.forEach(p=>{
+        html += `<button class="ppopt projpickitem" data-pid="${p.id}"><span class="ppdot" style="background:var(--gold)"></span>${p.t}</button>`;
+      });
+    });
+    list.innerHTML = html;
+  }
+  list.querySelectorAll('.ppopt').forEach(opt=>{
+    opt.onclick = ()=>{
+      const pid = parseInt(opt.dataset.pid,10);
+      onPick(pid || null);
+      $('#projPicker').classList.remove('show');
+    };
+  });
+  $('#projPicker').classList.add('show');
+}
+$('#projPicker').onclick = e=>{ if(e.target.id==='projPicker') $('#projPicker').classList.remove('show'); };
 
 /* ================= expenses ================= */
 function monthKey(offset){
@@ -2270,6 +2339,15 @@ $('#oblDue').addEventListener('change', ()=>{
 });
 
 /* ================= goals & projects ================= */
+// يلاقي المشروع وهدفه من رقم المشروع
+function findProject(pid){
+  for(const g of goals){
+    if(!g.projects) continue;
+    const p = g.projects.find(x=>x.id === pid);
+    if(p) return {goal:g, project:p};
+  }
+  return null;
+}
 function goalPct(g){
   if(!g.projects || !g.projects.length) return 0;
   return Math.round(g.projects.reduce((a,p)=>a+p.pct,0) / g.projects.length);
@@ -2336,6 +2414,16 @@ function renderGoals(){
         undoToast('اتحذف المشروع', ()=>{ g.projects.splice(Math.min(idx,g.projects.length),0,snapshot); store(K.goals,goals); renderGoals(); });
       };
       pwrap.appendChild(row);
+      // المهام المرتبطة بالمشروع
+      const linked = tasks.filter(t=>t.pj === p.id);
+      if(linked.length){
+        const doneN = linked.filter(t=>t.done).length;
+        const twrap = document.createElement('div');
+        twrap.className = 'projtasks';
+        twrap.innerHTML = `<div class="projtaskshead">📋 ${doneN}/${linked.length} مهام</div>` +
+          linked.map(t=>`<div class="projtask ${t.done?'done':''}"><span class="pt-check">${t.done?'✓':'○'}</span>${t.t}</div>`).join('');
+        pwrap.appendChild(twrap);
+      }
     });
     // add project
     const inp = card.querySelector('.projInp');
