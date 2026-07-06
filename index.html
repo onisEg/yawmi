@@ -185,6 +185,30 @@ main{padding:0 16px; max-width:560px; margin:0 auto}
   cursor:pointer; transition:all .15s ease;
 }
 .chip.on{background:var(--gold-soft); border-color:var(--gold); color:var(--gold)}
+
+/* ---------- dhikr of the day ---------- */
+.dhikrhead{display:flex; align-items:center; justify-content:space-between}
+.dhikrmenu{background:none; border:none; color:var(--muted); font-size:22px; cursor:pointer; padding:0 8px; line-height:1}
+.dhikrtext{text-align:center; font-size:20px; line-height:2; color:var(--gold); padding:12px 6px 4px; font-weight:500}
+.dhikrcounter{display:block; position:relative; width:96px; height:96px; margin:8px auto 6px; background:none; border:none; cursor:pointer; -webkit-tap-highlight-color:transparent}
+.dhikrring circle:last-child{transition:stroke-dashoffset .3s ease}
+.dhikrcounter:active{transform:scale(.94)}
+.dhikrcounter{transition:transform .1s ease}
+.dhikrnum{position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center}
+.dhikrnum b{font-size:26px; font-weight:700; color:var(--text); line-height:1}
+.dhikrnum small{font-size:12px; color:var(--muted); margin-top:2px}
+.dhikrhint{text-align:center; font-size:12px; color:var(--faint); margin-top:4px}
+.dhikrcard.done .dhikrtext{color:var(--teal)}
+.dhikrcard.done .dhikrnum b{color:var(--teal)}
+#dhikrManageOv{position:fixed; inset:0; background:rgba(0,0,0,.6); display:flex; align-items:flex-end; justify-content:center; z-index:58; opacity:0; visibility:hidden; transition:opacity .25s ease, visibility .25s}
+#dhikrManageOv.show{opacity:1; visibility:visible}
+#dhikrManageModal{background:var(--card); border-radius:20px 20px 0 0; width:100%; max-width:560px; padding:20px 20px calc(24px + env(safe-area-inset-bottom)); max-height:88vh; overflow-y:auto; transform:translateY(100%); transition:transform .3s cubic-bezier(.32,.72,0,1)}
+#dhikrManageOv.show #dhikrManageModal{transform:translateY(0)}
+.dmrow{display:flex; align-items:center; gap:10px; background:var(--card2); border-radius:12px; padding:12px; margin-bottom:8px}
+.dmrow .dmtext{flex:1; font-size:14px; line-height:1.7}
+.dmrow .dmtarget{font-size:12px; color:var(--muted); white-space:nowrap}
+.dmrow .dmdel{background:none; border:none; color:var(--red); cursor:pointer; padding:4px; flex-shrink:0}
+.dmrow .dmdel .ico-svg{width:16px; height:16px}
 .chip.chipadd{display:inline-flex; align-items:center; justify-content:center; padding:7px 12px; border-style:dashed; color:var(--faint)}
 .chip.chipadd .ico-svg{width:15px; height:15px}
 .chip.chipadd:active{border-color:var(--gold); color:var(--gold)}
@@ -599,6 +623,22 @@ nav.bottom button.on{color:var(--gold)}
       <div class="chips" id="azkarChips"></div>
     </div>
 
+    <div class="card dhikrcard" id="dhikrCard">
+      <div class="dhikrhead">
+        <h3 class="h3ic"><span data-icon="beads"></span>ذِكر اليوم</h3>
+        <button class="dhikrmenu" id="dhikrMenuBtn" aria-label="إدارة الأذكار">⋯</button>
+      </div>
+      <div class="dhikrtext" id="dhikrText"></div>
+      <button class="dhikrcounter" id="dhikrCounter">
+        <svg width="96" height="96" viewBox="0 0 96 96" class="dhikrring">
+          <circle cx="48" cy="48" r="42" fill="none" stroke="var(--line)" stroke-width="6"/>
+          <circle cx="48" cy="48" r="42" fill="none" stroke="var(--gold)" stroke-width="6" stroke-linecap="round" id="dhikrProg" stroke-dasharray="263.9" stroke-dashoffset="263.9" transform="rotate(-90 48 48)"/>
+        </svg>
+        <span class="dhikrnum"><b id="dhikrCount">0</b><small id="dhikrTarget">/ 100</small></span>
+      </button>
+      <div class="dhikrhint" id="dhikrHint">دوس على الدايرة مع كل مرة</div>
+    </div>
+
     <div class="card">
       <h3 class="h3ic"><span data-icon="smile"></span>حالتي</h3>
       <div class="moodrow" id="moodRow"></div>
@@ -893,11 +933,48 @@ nav.bottom button.on{color:var(--gold)}
   </div>
 </div>
 
+<div id="dhikrManageOv">
+  <div id="dhikrManageModal">
+    <div class="bhdhead">
+      <h2>أذكارك</h2>
+      <button class="iconbtn" id="dhikrManageClose" aria-label="إغلاق">✕</button>
+    </div>
+    <p style="font-size:13px; color:var(--muted); margin:0 0 14px; line-height:1.7">دي قايمة الأذكار اللي بتظهر كل يوم بالتناوب. تقدر تضيف أذكارك أو تشيل اللي مش عايزه.</p>
+    <div id="dhikrManageList"></div>
+    <div style="border-top:1px solid var(--line); margin-top:14px; padding-top:14px">
+      <label for="newDhikrText" style="display:block; font-size:13px; color:var(--muted); margin-bottom:6px">ضيف ذِكر جديد</label>
+      <textarea id="newDhikrText" placeholder="نص الذِكر..." style="min-height:60px"></textarea>
+      <div style="display:flex; gap:8px; align-items:center; margin-top:8px">
+        <input type="number" id="newDhikrTarget" inputmode="numeric" placeholder="العدد" style="width:100px" value="33">
+        <button class="btn primary" id="addDhikrBtn" style="flex:1">إضافة</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div id="toast">تم الحفظ ✓</div>
 
 <script>
 /* ================= state ================= */
 const K = {days:'yawmi_days', tasks:'yawmi_tasks', exp:'yawmi_exp', obl:'yawmi_obl', rev:'yawmi_rev', goals:'yawmi_goals', bh:'yawmi_bhdata', set:'yawmi_settings'};
+
+// أذكار جاهزة من السنة والقرآن — {نص، العدد المطلوب}
+const DEFAULT_DHIKR = [
+  {text:'سُبْحَانَ اللهِ وَبِحَمْدِهِ', target:100},
+  {text:'سُبْحَانَ اللهِ وَبِحَمْدِهِ، سُبْحَانَ اللهِ الْعَظِيمِ', target:100},
+  {text:'لَا إِلَٰهَ إِلَّا اللهُ وَحْدَهُ لَا شَرِيكَ لَهُ، لَهُ الْمُلْكُ وَلَهُ الْحَمْدُ وَهُوَ عَلَىٰ كُلِّ شَيْءٍ قَدِيرٌ', target:10},
+  {text:'أَسْتَغْفِرُ اللهَ وَأَتُوبُ إِلَيْهِ', target:100},
+  {text:'اللَّهُمَّ صَلِّ وَسَلِّمْ عَلَىٰ نَبِيِّنَا مُحَمَّد', target:100},
+  {text:'سُبْحَانَ اللهِ', target:33},
+  {text:'الْحَمْدُ لِلَّهِ', target:33},
+  {text:'اللهُ أَكْبَرُ', target:34},
+  {text:'لَا حَوْلَ وَلَا قُوَّةَ إِلَّا بِاللهِ', target:100},
+  {text:'حَسْبِيَ اللهُ لَا إِلَٰهَ إِلَّا هُوَ عَلَيْهِ تَوَكَّلْتُ وَهُوَ رَبُّ الْعَرْشِ الْعَظِيمِ', target:7},
+  {text:'بِسْمِ اللهِ الَّذِي لَا يَضُرُّ مَعَ اسْمِهِ شَيْءٌ فِي الْأَرْضِ وَلَا فِي السَّمَاءِ وَهُوَ السَّمِيعُ الْعَلِيمُ', target:3},
+  {text:'رَضِيتُ بِاللهِ رَبًّا، وَبِالْإِسْلَامِ دِينًا، وَبِمُحَمَّدٍ ﷺ نَبِيًّا', target:3},
+  {text:'لَا إِلَٰهَ إِلَّا أَنْتَ سُبْحَانَكَ إِنِّي كُنْتُ مِنَ الظَّالِمِينَ', target:10},
+  {text:'يَا حَيُّ يَا قَيُّومُ بِرَحْمَتِكَ أَسْتَغِيثُ', target:10},
+];
 
 /* ================= cloud sync + auth (Supabase) ================= */
 const SUPABASE_URL = 'https://jtldivmllnzktnzgwtsm.supabase.co';
@@ -1085,6 +1162,7 @@ let settings = Object.assign(
 settings.budgets = settings.budgets || {};
 settings.badHabits = settings.badHabits || [];
 settings.azkar = settings.azkar || ['أذكار الصباح 🌅','أذكار المساء 🌃','أذكار النوم 🛌','قيام الليل 🌉'];
+settings.dhikrList = settings.dhikrList || DEFAULT_DHIKR.slice();
 
 // إعادة تحميل كل الحالة من التخزين المحلي (بعد سحب مزامنة)
 function reloadState(){
@@ -1104,6 +1182,7 @@ function reloadState(){
   settings.budgets = settings.budgets || {};
   settings.badHabits = settings.badHabits || [];
   settings.azkar = settings.azkar || ['أذكار الصباح 🌅','أذكار المساء 🌃','أذكار النوم 🛌','قيام الليل 🌉'];
+  settings.dhikrList = settings.dhikrList || DEFAULT_DHIKR.slice();
   // إعادة رسم التبويب الحالي
   updateNavCurr();
   renderToday();
@@ -1335,6 +1414,7 @@ function getDay(dISO){
   if(!d.h) d.h = {};
   if(!d.bh) d.bh = {};
   if(!d.z) d.z = {};
+  if(!d.dh) d.dh = {};
   return d;
 }
 function saveDays(){ store(K.days, days); toast(); }
@@ -1492,6 +1572,32 @@ function toggleCollapse(key){
   }
 }
 
+// اختيار ذِكر اليوم بشكل ثابت لكل يوم (يدور على القايمة)
+function dhikrOfDay(dISO){
+  const list = settings.dhikrList || [];
+  if(!list.length) return null;
+  const epoch = Math.floor(new Date(dISO+'T12:00:00').getTime() / 86400000);
+  return list[epoch % list.length];
+}
+function renderDhikr(){
+  const card = $('#dhikrCard');
+  const rec = getDay(viewDate);
+  const d = dhikrOfDay(viewDate);
+  if(!d){ card.classList.add('hidden'); return; }
+  card.classList.remove('hidden');
+  $('#dhikrText').textContent = d.text;
+  const count = rec.dh[d.text] || 0;
+  const target = d.target || 33;
+  $('#dhikrCount').textContent = count;
+  $('#dhikrTarget').textContent = '/ ' + target;
+  const C = 2 * Math.PI * 42;
+  const pct = Math.min(count / target, 1);
+  $('#dhikrProg').style.strokeDashoffset = C - pct * C;
+  const done = count >= target;
+  card.classList.toggle('done', done);
+  $('#dhikrHint').textContent = done ? 'ما شاء الله، كمّلت المطلوب ✓' : 'دوس على الدايرة مع كل مرة';
+}
+
 function renderToday(){
   const rec = getDay(viewDate);
   $('#gdate').textContent = fmtDate(viewDate);
@@ -1530,6 +1636,8 @@ function renderToday(){
   // azkar
   const azChips = $('#azkarChips');
   renderChipList(azChips, settings.azkar, rec.z, 'z', 'ذِكر');
+
+  renderDhikr();
 
   // bad habits (recovery cards)
   const bhWrap = $('#badHabitWrap');
@@ -1820,6 +1928,56 @@ bindText('#learnedInp','l');
 bindText('#sleepInp','s');
 $('#learnHead').onclick = ()=> toggleCollapse('learn');
 $('#journalHead').onclick = ()=> toggleCollapse('journal');
+$('#dhikrCounter').onclick = ()=>{
+  const rec = getDay(viewDate);
+  const d = dhikrOfDay(viewDate);
+  if(!d) return;
+  const before = rec.dh[d.text] || 0;
+  rec.dh[d.text] = before + 1;
+  saveDays();
+  if(navigator.vibrate) navigator.vibrate(15);
+  renderDhikr();
+  if(before + 1 === (d.target||33)) celebrate('كمّلت ذِكر النهارده! 🌿');
+};
+$('#dhikrMenuBtn').onclick = openDhikrManage;
+function renderDhikrManageList(){
+  const list = $('#dhikrManageList');
+  list.innerHTML = (settings.dhikrList||[]).map((d,i)=>`
+    <div class="dmrow">
+      <span class="dmtext">${d.text}</span>
+      <span class="dmtarget">${d.target}×</span>
+      <button class="dmdel" data-i="${i}" aria-label="حذف">${icon('trash',16)}</button>
+    </div>`).join('') || '<div class="empty" style="padding:12px 0">مفيش أذكار — ضيف واحد تحت</div>';
+  list.querySelectorAll('.dmdel').forEach(btn=>{
+    btn.onclick = ()=>{
+      const i = +btn.dataset.i;
+      const removed = settings.dhikrList[i];
+      settings.dhikrList.splice(i,1);
+      store(K.set, settings);
+      renderDhikrManageList(); renderDhikr();
+      undoToast('اتشال الذِكر', ()=>{ settings.dhikrList.splice(i,0,removed); store(K.set,settings); renderDhikrManageList(); renderDhikr(); });
+    };
+  });
+}
+function openDhikrManage(){
+  renderDhikrManageList();
+  $('#newDhikrText').value = '';
+  $('#newDhikrTarget').value = '33';
+  $('#dhikrManageOv').classList.add('show');
+}
+function closeDhikrManage(){ $('#dhikrManageOv').classList.remove('show'); }
+$('#dhikrManageClose').onclick = closeDhikrManage;
+$('#dhikrManageOv').onclick = e=>{ if(e.target.id==='dhikrManageOv') closeDhikrManage(); };
+$('#addDhikrBtn').onclick = ()=>{
+  const text = $('#newDhikrText').value.trim();
+  const target = parseInt($('#newDhikrTarget').value) || 33;
+  if(!text){ toast('اكتب نص الذِكر'); return; }
+  settings.dhikrList.push({text, target});
+  store(K.set, settings);
+  $('#newDhikrText').value = ''; $('#newDhikrTarget').value = '33';
+  renderDhikrManageList(); renderDhikr();
+  toast('اتضاف ✓');
+};
 
 /* ================= tasks ================= */
 function renderTasks(){
@@ -2615,7 +2773,7 @@ $('#searchInp').addEventListener('input', e=>{
 const MOOD_EMO = ['','😔','😕','🙂','😄','🤩'];
 let histLimit = 30;
 function dayHasContent(r){
-  return r && (r.j || r.l || (r.p && r.p.some(x=>x)) || (r.h && Object.values(r.h).some(x=>x)) || (r.bh && Object.values(r.bh).some(x=>x)) || (r.z && Object.values(r.z).some(x=>x)) || r.m || r.s);
+  return r && (r.j || r.l || (r.p && r.p.some(x=>x)) || (r.h && Object.values(r.h).some(x=>x)) || (r.bh && Object.values(r.bh).some(x=>x)) || (r.z && Object.values(r.z).some(x=>x)) || (r.dh && Object.values(r.dh).some(x=>x)) || r.m || r.s);
 }
 function renderHistory(){
   const sel = $('#histMonth');
