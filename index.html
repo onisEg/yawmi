@@ -1061,7 +1061,89 @@ function applyAllData(d){
   if(d.bhData) store(K.bh, d.bhData);
   if(d.settings) store(K.set, Object.assign(load(K.set,{}), d.settings));
 }
-let syncTimer = null, syncing = false, syncDirty = false;
+
+// ====== الدمج الآمن: بيدمج بيانات الجهاز مع السحابة من غير ما يمسح حاجة ======
+// عدد الحقول المليانة في يوم (عشان نعرف اليوم الأغنى بالمحتوى)
+function dayScore(r){
+  if(!r) return -1;
+  let s = 0;
+  if(r.j) s++; if(r.l) s++; if(r.m) s++; if(r.s) s++; if(r.mn) s++;
+  if(r.p) s += r.p.filter(x=>x).length;
+  if(r.h) s += Object.values(r.h).filter(Boolean).length;
+  if(r.z) s += Object.values(r.z).filter(Boolean).length;
+  if(r.dh) s += Object.values(r.dh).filter(v=>v>0).length;
+  return s;
+}
+// دمج كائنات مفتاحها التاريخ (الأيام والمراجعات): بناخد الأغنى بالمحتوى لكل مفتاح
+function mergeByKey(localObj, remoteObj, scoreFn){
+  const out = Object.assign({}, remoteObj || {});
+  for(const k in (localObj || {})){
+    if(!(k in out)) out[k] = localObj[k];
+    else {
+      // موجود في الاتنين → ناخد الأغنى
+      out[k] = scoreFn(localObj[k]) >= scoreFn(remoteObj[k]) ? localObj[k] : remoteObj[k];
+    }
+  }
+  return out;
+}
+// دمج قوائم بالـ id (المهام/المصاريف/الالتزامات): اتحاد بدون تكرار
+function mergeById(localArr, remoteArr){
+  const map = new Map();
+  (remoteArr || []).forEach(x=> map.set(x.id, x));
+  (localArr || []).forEach(x=>{
+    // لو موجود في الاتنين، الأولوية للمحلي (الأحدث تعديلاً غالباً)
+    map.set(x.id, x);
+  });
+  return [...map.values()];
+}
+// دمج revs (مفتاحها الأسبوع، وجواها إجابات)
+function mergeRevs(localR, remoteR){
+  const out = Object.assign({}, remoteR || {});
+  for(const wk in (localR || {})){
+    if(!(wk in out)){ out[wk] = localR[wk]; continue; }
+    // دمج الإجابات
+    const merged = Object.assign({}, out[wk], localR[wk]);
+    merged.answers = Object.assign({}, (out[wk]||{}).answers, (localR[wk]||{}).answers);
+    // دمج الأسئلة المخصّصة بالـ id
+    const cust = new Map();
+    ((out[wk]||{}).custom||[]).forEach(c=>cust.set(c.id,c));
+    ((localR[wk]||{}).custom||[]).forEach(c=>cust.set(c.id,c));
+    if(cust.size) merged.custom = [...cust.values()];
+    out[wk] = merged;
+  }
+  return out;
+}
+// دمج الأهداف بالـ id، وكل هدف نضم مشاريعه
+function mergeGoals(localG, remoteG){
+  const map = new Map();
+  (remoteG || []).forEach(g=> map.set(g.id, g));
+  (localG || []).forEach(g=>{
+    if(!map.has(g.id)){ map.set(g.id, g); return; }
+    const rg = map.get(g.id);
+    // دمج المشاريع بالـ id (الأولوية للمحلي)
+    const pmap = new Map();
+    (rg.projects||[]).forEach(p=> pmap.set(p.id, p));
+    (g.projects||[]).forEach(p=> pmap.set(p.id, p));
+    map.set(g.id, Object.assign({}, rg, g, {projects:[...pmap.values()]}));
+  });
+  return [...map.values()];
+}
+// الدمج الكامل: يرجّع بيانات مدموجة من المحلي + السحابة
+function mergeData(local, remote){
+  local = local || {}; remote = remote || {};
+  return {
+    days: mergeByKey(local.days, remote.days, dayScore),
+    tasks: mergeById(local.tasks, remote.tasks),
+    exps: mergeById(local.exps, remote.exps),
+    obls: mergeById(local.obls, remote.obls),
+    revs: mergeRevs(local.revs, remote.revs),
+    goals: mergeGoals(local.goals, remote.goals),
+    bhData: Object.assign({}, remote.bhData, local.bhData),
+    settings: Object.assign({}, remote.settings, local.settings),
+    _syncedAt: Date.now()
+  };
+}
+let syncTimer = null, syncing = false, syncDirty = false, syncReady = false;
 
 async function syncPush(){
   if(!isLoggedIn() || !navigator.onLine || !sb) return false;
@@ -1083,25 +1165,39 @@ async function syncPull(){
     return data;
   }catch(e){ return null; }
 }
+// نسخة احتياطية محلية قبل أي دمج (أمان إضافي)
+function localSafetyBackup(){
+  try{
+    const snap = collectAllData();
+    localStorage.setItem('yawmi_premerge_backup', JSON.stringify({at:Date.now(), data:snap}));
+  }catch(e){}
+}
 async function syncFull(silent){
   if(syncing || !isLoggedIn()) return;
   syncing = true;
   if(!silent) toast('بيزامن...');
   const remote = await syncPull();
-  const localAt = parseInt(localStorage.getItem('yawmi_syncedat') || '0', 10);
+  const local = collectAllData();
   if(remote && remote.data){
-    const remoteAt = remote.data._syncedAt || new Date(remote.updated_at).getTime();
-    if(remoteAt > localAt){
-      applyAllData(remote.data);
-      localStorage.setItem('yawmi_syncedat', String(remoteAt));
-      reloadState();
-      syncing = false;
-      if(!silent) toast('اتزامن ✓ (نزّلنا الأحدث)');
-      return;
-    }
+    // نسخة أمان قبل الدمج
+    localSafetyBackup();
+    // دمج آمن: مفيش حاجة بتتمسح
+    const merged = mergeData(local, remote.data);
+    applyAllData(merged);
+    localStorage.setItem('yawmi_syncedat', String(Date.now()));
+    reloadState();
+    // نرفع النتيجة المدموجة عشان السحابة تبقى محدّثة للأجهزة التانية
+    const ok = await syncPush();
+    if(ok) syncDirty = false;
+    syncReady = true;
+    syncing = false;
+    if(!silent) toast('اتزامن ✓ (دمجنا كل بياناتك)');
+    return;
   }
+  // مفيش بيانات على السحابة لسه → ارفع المحلي
   const ok = await syncPush();
   if(ok){ localStorage.setItem('yawmi_syncedat', String(Date.now())); syncDirty = false; }
+  syncReady = true;
   syncing = false;
   if(!silent) toast(ok ? 'اتزامن ✓' : 'المزامنة فشلت، جرّب تاني');
 }
@@ -1114,6 +1210,7 @@ function syncSoon(){
 }
 async function flushSync(){
   if(!syncDirty || !isLoggedIn()) return;
+  if(!syncReady) return; // منمنع أي رفع قبل ما نعمل دمج أولي (يحمي من مسح بيانات جهاز تاني)
   const ok = await syncPush();
   if(ok) syncDirty = false;
 }
@@ -3097,7 +3194,7 @@ document.addEventListener('visibilitychange', ()=>{
   }
 });
 // ارفع قبل غلق التطبيق
-window.addEventListener('pagehide', ()=>{ if(syncCode() && syncDirty) syncPush(); });
+window.addEventListener('pagehide', ()=>{ if(syncCode() && syncDirty && syncReady) syncPush(); });
 setInterval(markActive, 30000);
 ['click','keydown','input'].forEach(ev=> document.addEventListener(ev, markActive, {passive:true}));
 
