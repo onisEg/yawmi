@@ -611,7 +611,7 @@ nav.bottom button.on{color:var(--gold)}
         <div class="ringnum" id="scoreNum">0</div>
       </div>
       <div class="scoretxt">
-        <div class="big">نتيجة اليوم من 10</div>
+        <div class="big">نتيجة اليوم من ١٠</div>
         <div class="sub" id="scoreSub">الصلوات والعادات بيتحسبوا تلقائي</div>
       </div>
     </div>
@@ -1185,9 +1185,9 @@ function fmtDuration(ms){
 }
 function fmtDurationText(ms){
   const {days,h,m} = fmtDuration(ms);
-  if(days > 0) return `${days} يوم و${h} ساعة`;
-  if(h > 0) return `${h} ساعة و${m} دقيقة`;
-  return `${m} دقيقة`;
+  if(days > 0) return `${arNum(days)} يوم و${arNum(h)} ساعة`;
+  if(h > 0) return `${arNum(h)} ساعة و${arNum(m)} دقيقة`;
+  return `${arNum(m)} دقيقة`;
 }
 let settings = Object.assign(
   {habits:['قراءة','رياضة','أذكار الصباح','أذكار المساء'],
@@ -1357,7 +1357,7 @@ function getPrayerMinutes(dISO){
   return FALLBACK_TIMES;
 }
 function hmToMin(hm){ const [h,m] = hm.split(':').map(Number); return h*60 + m; }
-function minToHM(t){ return String(Math.floor(t/60)).padStart(2,'0') + ':' + String(t%60).padStart(2,'0'); }
+function minToHM(t){ return arNum(String(Math.floor(t/60)).padStart(2,'0') + ':' + String(t%60).padStart(2,'0')); }
 let ptFetching = false;
 function fetchPrayerTimes(dISO){
   if(ptFetching || !navigator.onLine) return;
@@ -1375,6 +1375,12 @@ function fetchPrayerTimes(dISO){
 }
 
 const $ = s => document.querySelector(s);
+
+// تحويل أي رقم/نص لأرقام عربية (٠١٢٣٤٥٦٧٨٩)
+const _arDigits = ['٠','١','٢','٣','٤','٥','٦','٧','٨','٩'];
+function arNum(v){
+  return String(v).replace(/[0-9]/g, d => _arDigits[+d]);
+}
 
 /* ===== أيقونات (Lucide، SVG مدمجة، شغّالة أوفلاين) ===== */
 const ICONS = {
@@ -1540,7 +1546,7 @@ function renderChipList(container, listArr, recObj, field, kindLabel){
     const c = document.createElement('button');
     c.className = 'chip' + (recObj[name] ? ' on' : '');
     const n = streak(k=>{ const r = days[k]; return !!(r && r[field] && r[field][name]); }, viewDate);
-    c.textContent = n >= 2 ? `${name} 🔥${n}` : name;
+    c.textContent = n >= 2 ? `${name} 🔥${arNum(n)}` : name;
     c.onclick = ()=>{ recObj[name] = !recObj[name]; saveDays(); renderToday(); };
     // ضغطة مطوّلة = حذف
     let lpTimer = null;
@@ -1632,8 +1638,8 @@ function renderDhikr(){
   $('#dhikrText').textContent = d.text;
   const count = rec.dh[d.text] || 0;
   const target = d.target || 33;
-  $('#dhikrCount').textContent = count;
-  $('#dhikrTarget').textContent = '/ ' + target;
+  $('#dhikrCount').textContent = arNum(count);
+  $('#dhikrTarget').textContent = '/ ' + arNum(target);
   const C = 2 * Math.PI * 42;
   const pct = Math.min(count / target, 1);
   $('#dhikrProg').style.strokeDashoffset = C - pct * C;
@@ -1696,7 +1702,7 @@ function renderToday(){
     // احتفال لو وصل مرحلة جديدة (مرة واحدة لكل مرحلة)
     if(BH_LADDER.includes(days) && d.celebrated !== days){
       d.celebrated = days; saveBH();
-      setTimeout(()=> celebrate(`${days} يوم نضيف من "${name}"! فخور بيك 🌱`), 300);
+      setTimeout(()=> celebrate(`${arNum(days)} يوم نضيف من "${name}"! فخور بيك 🌱`), 300);
     }
     const pct = Math.min(days / target * 100, 100);
     const card = document.createElement('div');
@@ -1711,12 +1717,12 @@ function renderToday(){
             stroke-linecap="round" stroke-dasharray="${C}" stroke-dashoffset="${C - pct/100*C}"
             transform="rotate(-90 32 32)"/>
         </svg>
-        <span class="bhringtxt">${days}<small>يوم</small></span>
+        <span class="bhringtxt">${arNum(days)}<small>يوم</small></span>
       </div>
       <div class="bhinfo">
         <div class="bhnm"></div>
         <div class="bhtimer" data-since="${d.last}">—</div>
-        <div class="bhsub">التارجت: ${target} يوم · ${d.relapses.length} محاولة</div>
+        <div class="bhsub">التارجت: ${arNum(target)} يوم · ${arNum(d.relapses.length)} محاولة</div>
       </div>
       <button class="bhrelapse" aria-label="سجّل انتكاسة">انتكاسة</button>`;
     card.querySelector('.bhnm').textContent = name;
@@ -1763,16 +1769,16 @@ function renderToday(){
 
   // score ring
   const sc = scoreOf(rec);
-  $('#scoreNum').textContent = sc % 1 === 0 ? sc : sc.toFixed(1);
+  $('#scoreNum').textContent = arNum(sc % 1 === 0 ? sc : sc.toFixed(1));
   const C = 226.2;
   $('#ringfg').style.strokeDashoffset = C - (sc/10)*C;
   const pr = rec.p.reduce((a,b)=>a+(b?1:0),0);
   const hd = settings.habits.filter(h=>rec.h[h]).length;
-  $('#scoreSub').textContent = `${pr} من ٥ صلوات · ${hd} من ${settings.habits.length} عادات`;
+  $('#scoreSub').textContent = `${arNum(pr)} من ٥ صلوات · ${arNum(hd)} من ${arNum(settings.habits.length)} عادات`;
 
   // prayer streak (كل الخمسة)
   const pn = streak(k=>{ const r = days[k]; return !!(r && r.p && r.p.reduce((a,b)=>a+(b?1:0),0) === 5); }, viewDate);
-  $('#prayH3').innerHTML = icon('beads') + 'الصلوات' + (pn >= 2 ? `<span class="streak">🔥 ${pn} يوم كاملين</span>` : '');
+  $('#prayH3').innerHTML = icon('beads') + 'الصلوات' + (pn >= 2 ? `<span class="streak">🔥 ${arNum(pn)} يوم كاملين</span>` : '');
 
   // في يوم زي ده
   const mmdd = viewDate.slice(5);
@@ -1839,11 +1845,11 @@ function bhMessage(cleanDays, relapsedToday, target){
   if(cleanDays === 0) return 'ابدأ من دلوقتي. أول يوم هو الأصعب والأهم.';
   if(cleanDays === 1) return 'يوم كامل نضيف! خطوة واحدة بس والتارجت قريب.';
   const remaining = target - cleanDays;
-  if(remaining <= 1) return `فاضل يوم واحد وتكسر تارجت ${target}! متوقفش دلوقتي.`;
-  if(remaining <= 3) return `قربت! فاضل ${remaining} أيام على تارجت ${target}. انت أقوى من العادة دي.`;
+  if(remaining <= 1) return `فاضل يوم واحد وتكسر تارجت ${arNum(target)}! متوقفش دلوقتي.`;
+  if(remaining <= 3) return `قربت! فاضل ${arNum(remaining)} أيام على تارجت ${arNum(target)}. انت أقوى من العادة دي.`;
   if(cleanDays >= 30) return `${cleanDays} يوم! دي مش صدفة، ده انت بقيت شخص تاني. حافظ عليها.`;
   if(cleanDays >= 7) return `أسبوع وأكتر نضيف — جسمك ودماغك بيشكروك. كمّل للتارجت.`;
-  return `ماشي كويس، ${cleanDays} أيام نضيفة. التارجت الجاي ${target} يوم.`;
+  return `ماشي كويس، ${arNum(cleanDays)} أيام نضيفة. التارجت الجاي ${arNum(target)} يوم.`;
 }
 
 /* live timer for bad-habit cards */
@@ -1855,7 +1861,7 @@ function startBHTimers(){
       const since = parseInt(el.dataset.since, 10);
       const {days,h,m,sec} = fmtDuration(Date.now() - since);
       const p = n => String(n).padStart(2,'0');
-      el.textContent = `${days}ي ${p(h)}:${p(m)}:${p(sec)}`;
+      el.textContent = arNum(`${days}ي ${p(h)}:${p(m)}:${p(sec)}`);
     });
   };
   tick();
@@ -1872,7 +1878,7 @@ function openBHDetail(name){
   const ov = $('#bhOverlay');
   $('#bhdTitle').textContent = name;
   $('#bhdTimer').dataset.since = d.last;
-  $('#bhdTarget').textContent = `${target} يوم`;
+  $('#bhdTarget').textContent = `${arNum(target)} يوم`;
   $('#bhdAttempts').textContent = d.relapses.length;
   $('#bhdLongest').textContent = longest;
   $('#bhdMsg').textContent = bhMessage(days, false, target);
@@ -1974,7 +1980,7 @@ function bindText(sel, key){
 function renderScoreOnly(){
   const rec = getDay(viewDate);
   const sc = scoreOf(rec);
-  $('#scoreNum').textContent = sc % 1 === 0 ? sc : sc.toFixed(1);
+  $('#scoreNum').textContent = arNum(sc % 1 === 0 ? sc : sc.toFixed(1));
   $('#ringfg').style.strokeDashoffset = 226.2 - (sc/10)*226.2;
 }
 bindText('#journalInp','j');
@@ -2064,7 +2070,7 @@ function renderTasks(){
       el.innerHTML = `
         <button class="tcheck" aria-label="إنجاز">✓</button>
         <div class="ttxtwrap"><span class="ttxt"></span>${projTag}</div>
-        ${t.due ? `<span class="tdue ${late?'late':''}">${t.due.slice(5).split('-').reverse().join('/')}</span>` : ''}
+        ${t.due ? `<span class="tdue ${late?'late':''}">${arNum(t.due.slice(5).split('-').reverse().join('/'))}</span>` : ''}
         <button class="delbtn" aria-label="حذف">${icon("trash",16)}</button>`;
       el.querySelector('.ttxt').textContent = t.t;
       el.querySelector('.tcheck').onclick = ()=>{
@@ -2215,7 +2221,7 @@ function renderExp(){
     <div class="catleg">
       <span class="dot" style="background:${color}"></span>
       <span class="nm">${c}</span>
-      <span class="pct">${pct}٪</span>
+      <span class="pct">${arNum(pct)}٪</span>
       <span class="amt" ${over?'style="color:var(--red)"':''}>${amtTxt}</span>
     </div>`;
   }).join('');
@@ -2230,7 +2236,7 @@ function renderExp(){
     el.innerHTML = `
       <span class="ecat"></span>
       <span class="enote"></span>
-      <span class="edate">${e.d.slice(5).split('-').reverse().join('/')}</span>
+      <span class="edate">${arNum(e.d.slice(5).split('-').reverse().join('/'))}</span>
       <span class="eamt">${e.a.toLocaleString('ar-EG')}</span>
       <button class="delbtn" aria-label="حذف">${icon("trash",16)}</button>`;
     el.querySelector('.ecat').textContent = e.c;
@@ -2267,7 +2273,7 @@ function addMonthISO(dISO){
 function dueLabel(due){
   if(!due) return '';
   const t0 = todayISO();
-  const dm = due.slice(5).split('-').reverse().join('/');
+  const dm = arNum(due.slice(5).split('-').reverse().join('/'));
   if(due < t0) return `<span class="late">متأخر من ${dm} ⚠</span>`;
   if(due === t0) return `<span class="late">ميعاده النهارده</span>`;
   return `ميعاده ${dm}`;
@@ -2371,7 +2377,7 @@ function renderGoals(){
       </div>
       <div class="gprog">
         <div class="track"><div class="fill" style="width:${pct}%"></div></div>
-        <span class="pct">${pct}٪</span>
+        <span class="pct">${arNum(pct)}٪</span>
       </div>
       <div class="projs"></div>
       <div class="addproj">
@@ -2397,7 +2403,7 @@ function renderGoals(){
         <span class="projname ${done?'done':''}"></span>
         <button class="pstate ${done?'done':''}">${done?'خلص ✓':'شغال'}</button>
         <button class="pminus" aria-label="أقل">−</button>
-        <span class="pctnum">${p.pct}٪</span>
+        <span class="pctnum">${arNum(p.pct)}٪</span>
         <button class="pplus" aria-label="أكتر">+</button>
         <button class="goaldel projdel" aria-label="حذف المشروع">✕</button>`;
       row.querySelector('.projname').textContent = p.t;
@@ -2420,7 +2426,7 @@ function renderGoals(){
         const doneN = linked.filter(t=>t.done).length;
         const twrap = document.createElement('div');
         twrap.className = 'projtasks';
-        twrap.innerHTML = `<div class="projtaskshead">📋 ${doneN}/${linked.length} مهام</div>` +
+        twrap.innerHTML = `<div class="projtaskshead">📋 ${arNum(doneN)}/${arNum(linked.length)} مهام</div>` +
           linked.map(t=>`<div class="projtask ${t.done?'done':''}"><span class="pt-check">${t.done?'✓':'○'}</span>${t.t}</div>`).join('');
         pwrap.appendChild(twrap);
       }
@@ -2461,9 +2467,9 @@ function renderDash(){
   const expToday = exps.filter(e=>e.d===t0).reduce((a,e)=>a+e.a,0);
 
   $('#todayStats').innerHTML = `
-    <div class="stat"><div class="num">${sc%1===0?sc:sc.toFixed(1)}</div><div class="lbl">نتيجة النهارده</div></div>
+    <div class="stat"><div class="num">${arNum(sc%1===0?sc:sc.toFixed(1))}</div><div class="lbl">نتيجة النهارده</div></div>
     <div class="stat"><div class="num">${pr}/٥</div><div class="lbl">الصلوات</div></div>
-    <div class="stat"><div class="num">${doneToday}/${dueToday.length}</div><div class="lbl">مهام النهارده</div></div>
+    <div class="stat"><div class="num">${arNum(doneToday)}/${arNum(dueToday.length)}</div><div class="lbl">مهام النهارده</div></div>
     <div class="stat"><div class="num">${expToday.toLocaleString('ar-EG')}</div><div class="lbl">مصاريف النهارده (${settings.currency})</div></div>`;
 
   // week bars
@@ -2483,7 +2489,7 @@ function renderDash(){
         <span class="barlbl">${i===0?'اليوم':lbl}</span>
       </div>`;
   }
-  $('#weekAvg').textContent = cnt ? `متوسط الأسبوع: ${(sum/cnt).toFixed(1)} من 10 · سجلت ${cnt} من ٧ أيام` : 'لسه مفيش أيام مسجلة الأسبوع ده';
+  $('#weekAvg').textContent = cnt ? `متوسط الأسبوع: ${arNum((sum/cnt).toFixed(1))} من ١٠ · سجلت ${arNum(cnt)} من ٧ أيام` : 'لسه مفيش أيام مسجلة الأسبوع ده';
 
   // month stats
   const mk = monthKey(0);
@@ -2499,20 +2505,20 @@ function renderDash(){
     <div class="stat"><div class="num">${daysLogged}</div><div class="lbl">يوم مسجّل الشهر ده</div></div>
     <div class="stat"><div class="num">${mExp.toLocaleString('ar-EG')}</div><div class="lbl">مصاريف الشهر (${settings.currency})</div></div>
     <div class="stat"><div class="num">${late}</div><div class="lbl">مهام متأخرة</div></div>
-    <div class="stat"><div class="num">${prTotal? Math.round(prDone/prTotal*100) : 0}٪</div><div class="lbl">التزام الصلوات</div></div>
+    <div class="stat"><div class="num">${arNum(prTotal? Math.round(prDone/prTotal*100) : 0)}٪</div><div class="lbl">التزام الصلوات</div></div>
     <div class="stat"><div class="num" ${lateOblSum?'style="color:var(--red)"':''}>${lateOblSum.toLocaleString('ar-EG')}</div><div class="lbl">التزامات متأخرة (${settings.currency})</div></div>
     <div class="stat"><div class="num">${allOblSum.toLocaleString('ar-EG')}</div><div class="lbl">إجمالي عليك (${settings.currency})</div></div>`;
 
   // weekly review
   const wk = weekKeyOf();
-  $('#revWeek').textContent = 'من الجمعة ' + wk.slice(5).split('-').reverse().join('/');
+  $('#revWeek').textContent = 'من الجمعة ' + arNum(wk.slice(5).split('-').reverse().join('/'));
   const r = revs[wk] || {};
   $('#rev1').value = r.q1 || '';
   $('#rev2').value = r.q2 || '';
   $('#rev3').value = r.q3 || '';
   const wkExp = exps.filter(e => e.d >= wk).reduce((a,e)=>a+e.a,0);
   $('#revSummary').textContent = cnt
-    ? `أسبوعك: متوسط ${(sum/cnt).toFixed(1)} من 10 · صرفت ${wkExp.toLocaleString('ar-EG')} ${settings.currency}`
+    ? `أسبوعك: متوسط ${arNum((sum/cnt).toFixed(1))} من ١٠ · صرفت ${wkExp.toLocaleString('ar-EG')} ${settings.currency}`
     : '';
   renderHistory();
   renderPrayerCard();
@@ -2534,7 +2540,7 @@ function renderPrayerCard(){
       <div class="pwrow">
         <span class="day">${lbl}</span>
         <span class="pwdots">${p.map(x=>`<span class="pwdot ${x?'on s'+x:''}"></span>`).join('')}</span>
-        <span class="cnt">${cnt}/5</span>
+        <span class="cnt">${arNum(cnt)}/٥</span>
       </div>`;
   }
   // monthly heatmap
@@ -2555,11 +2561,11 @@ function renderPrayerCard(){
     const cnt = r && r.p ? r.p.reduce((a,b)=>a+(b?1:0),0) : 0;
     const future = dnum > todayNum;
     if(!future){ monthDone += cnt; monthPossible += 5; }
-    cells += `<div class="pmcell d${cnt} ${future?'future':''}"${future?'':` data-k="${k}" role="button"`}>${dnum}</div>`;
+    cells += `<div class="pmcell d${cnt} ${future?'future':''}"${future?'':` data-k="${k}" role="button"`}>${arNum(dnum)}</div>`;
   }
   const pctMonth = monthPossible ? Math.round(monthDone/monthPossible*100) : 0;
   pm.innerHTML = `
-    <div class="pmonth-head">${monthName} — التزام ${pctMonth}٪ (${monthDone} من ${monthPossible} صلاة)</div>
+    <div class="pmonth-head">${monthName} — التزام ${arNum(pctMonth)}٪ (${arNum(monthDone)} من ${arNum(monthPossible)} صلاة)</div>
     <div class="pmgrid">${cells}</div>
     <div class="pmlegend"><span>أقل</span>
       <span class="box" style="background:var(--card2)"></span>
@@ -2934,8 +2940,8 @@ function renderHistory(){
       <span class="histmood">${r.m ? MOOD_EMO[r.m] : ''}</span>
       <span class="histsnip"></span>
       <span class="histmini">
-        <span class="m ${pr===5?'on':''}">🕌${pr}</span>
-        <span class="m ${hd?'on':''}">✓${hd}</span>
+        <span class="m ${pr===5?'on':''}">🕌${arNum(pr)}</span>
+        <span class="m ${hd?'on':''}">✓${arNum(hd)}</span>
       </span>`;
     row.querySelector('.histsnip').textContent = snip || '—';
     row.onclick = ()=>{
@@ -2947,7 +2953,7 @@ function renderHistory(){
   if(keys.length > histLimit){
     const more = document.createElement('div');
     more.className = 'histmore';
-    more.textContent = `عرض المزيد (${keys.length - histLimit} يوم كمان)`;
+    more.textContent = `عرض المزيد (${arNum(keys.length - histLimit)} يوم كمان)`;
     more.onclick = ()=>{ histLimit += 30; renderHistory(); };
     list.appendChild(more);
   }
