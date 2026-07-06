@@ -525,6 +525,8 @@ nav.bottom button.on{color:var(--gold)}
 /* ---------- weekly review & search ---------- */
 .rlbl{display:block; font-size:13px; color:var(--muted); margin:12px 0 6px}
 .rta{min-height:56px}
+.revq{margin-bottom:4px}
+.revqdel{background:none; border:none; color:var(--red); font-size:12px; cursor:pointer; padding:0 4px; float:left}
 .sres{padding:10px 4px; border-bottom:1px solid var(--line); cursor:pointer}
 .sres:last-child{border-bottom:none}
 .sres .d{font-size:12px; color:var(--gold)}
@@ -790,15 +792,16 @@ nav.bottom button.on{color:var(--gold)}
     </div>
     <div class="grid2" id="monthStats"></div>
 
-    <div class="card">
-      <h3>المراجعة الأسبوعية <span id="revWeek" style="color:var(--faint); font-weight:400"></span></h3>
-      <div id="revSummary" style="font-size:13px; color:var(--muted); margin-bottom:4px"></div>
-      <label class="rlbl" for="rev1">إيه اللي نجح الأسبوع ده؟</label>
-      <textarea class="rta" id="rev1"></textarea>
-      <label class="rlbl" for="rev2">إيه اللي وقعك أو اتأخرت فيه؟</label>
-      <textarea class="rta" id="rev2"></textarea>
-      <label class="rlbl" for="rev3">أهم حاجة الأسبوع الجاي؟</label>
-      <textarea class="rta" id="rev3"></textarea>
+    <div class="card collapsecard" id="reviewCard">
+      <button class="collapsehead" id="reviewHead">
+        <span class="ct"><span data-icon="calendar"></span>المراجعة الأسبوعية <span id="revWeek" style="color:var(--faint); font-weight:400; font-size:13px"></span></span>
+        <span class="collapsearrow">›</span>
+      </button>
+      <div class="collapsebody">
+        <div id="revSummary" style="font-size:13px; color:var(--muted); margin-bottom:10px"></div>
+        <div id="revQuestions"></div>
+        <button class="btn ghost" id="addRevQBtn" style="margin-top:8px; font-size:13px">+ ضيف سؤال من عندك</button>
+      </div>
     </div>
 
     <div class="card">
@@ -994,7 +997,13 @@ nav.bottom button.on{color:var(--gold)}
 /* ================= state ================= */
 const K = {days:'yawmi_days', tasks:'yawmi_tasks', exp:'yawmi_exp', obl:'yawmi_obl', rev:'yawmi_rev', goals:'yawmi_goals', bh:'yawmi_bhdata', set:'yawmi_settings'};
 
-// أذكار جاهزة من السنة والقرآن — {نص، العدد المطلوب}
+// أسئلة المراجعة الأسبوعية الافتراضية — واقعية وتستاهل إجابة
+const DEFAULT_REV_Q = [
+  {id:'q1', q:'إيه أكتر حاجة تفتخر إنك عملتها الأسبوع ده؟'},
+  {id:'q2', q:'إيه اللي عطّلك أو خدلك وقت من غير فايدة؟'},
+  {id:'q3', q:'إيه الحاجة الوحيدة اللي لو ركّزت عليها الأسبوع الجاي هتفرق معاك؟'},
+  {id:'q4', q:'إزاي كانت علاقتك بربنا الأسبوع ده — صلاتك وأذكارك؟'},
+];
 const DEFAULT_DHIKR = [
   {text:'سُبْحَانَ اللهِ وَبِحَمْدِهِ', target:100},
   {text:'سُبْحَانَ اللهِ وَبِحَمْدِهِ، سُبْحَانَ اللهِ الْعَظِيمِ', target:100},
@@ -1970,6 +1979,7 @@ document.querySelectorAll('.segtab').forEach(t=>{
 });
 
 let saveDebounce;
+let revDebounce;
 function bindText(sel, key){
   $(sel).addEventListener('input', e=>{
     getDay(viewDate)[key] = e.target.value;
@@ -2512,16 +2522,56 @@ function renderDash(){
   // weekly review
   const wk = weekKeyOf();
   $('#revWeek').textContent = 'من الجمعة ' + arNum(wk.slice(5).split('-').reverse().join('/'));
-  const r = revs[wk] || {};
-  $('#rev1').value = r.q1 || '';
-  $('#rev2').value = r.q2 || '';
-  $('#rev3').value = r.q3 || '';
+  renderReviewQuestions(wk);
   const wkExp = exps.filter(e => e.d >= wk).reduce((a,e)=>a+e.a,0);
   $('#revSummary').textContent = cnt
     ? `أسبوعك: متوسط ${arNum((sum/cnt).toFixed(1))} من ١٠ · صرفت ${wkExp.toLocaleString('ar-EG')} ${settings.currency}`
     : '';
+  // فتح/قفل الكارت حسب وجود إجابات
+  const rev = revs[wk] || {};
+  const hasAns = (rev.answers && Object.values(rev.answers).some(v=>v && v.trim())) || rev.q1 || rev.q2 || rev.q3;
+  refreshCollapse('review', hasAns ? 'x' : '');
   renderHistory();
   renderPrayerCard();
+}
+// يبني قايمة أسئلة المراجعة (افتراضية + مخصّصة) مع الإجابات
+function renderReviewQuestions(wk){
+  const box = $('#revQuestions');
+  const rev = revs[wk] || {};
+  rev.answers = rev.answers || {};
+  // ترحيل الإجابات القديمة (q1/q2/q3) للنظام الجديد
+  ['q1','q2','q3'].forEach(qid=>{ if(rev[qid] && !rev.answers[qid]){ rev.answers[qid] = rev[qid]; } });
+  const customQs = rev.custom || [];
+  const allQs = [...DEFAULT_REV_Q, ...customQs];
+  box.innerHTML = '';
+  allQs.forEach(q=>{
+    const wrapEl = document.createElement('div');
+    wrapEl.className = 'revq';
+    const isCustom = customQs.some(c=>c.id === q.id);
+    wrapEl.innerHTML = `
+      <label class="rlbl">${q.q}${isCustom ? ' <button class="revqdel" data-id="'+q.id+'" aria-label="حذف السؤال">✕</button>' : ''}</label>
+      <textarea class="rta" data-qid="${q.id}"></textarea>`;
+    const ta = wrapEl.querySelector('textarea');
+    ta.value = rev.answers[q.id] || '';
+    ta.addEventListener('input', e=>{
+      revs[wk] = revs[wk] || {};
+      revs[wk].answers = revs[wk].answers || {};
+      revs[wk].answers[q.id] = e.target.value;
+      clearTimeout(revDebounce);
+      revDebounce = setTimeout(()=>{ store(K.rev, revs); toast(); }, 600);
+    });
+    const delBtn = wrapEl.querySelector('.revqdel');
+    if(delBtn){
+      delBtn.onclick = ()=>{
+        if(!confirm('تمسح السؤال ده؟')) return;
+        revs[wk].custom = (revs[wk].custom||[]).filter(c=>c.id !== q.id);
+        if(revs[wk].answers) delete revs[wk].answers[q.id];
+        store(K.rev, revs);
+        renderReviewQuestions(wk);
+      };
+    }
+    box.appendChild(wrapEl);
+  });
 }
 
 function renderPrayerCard(){
@@ -2848,7 +2898,8 @@ function renderBanners(){
   // تذكير المراجعة يوم الجمعة
   const wk = weekKeyOf();
   const r = revs[wk];
-  if(new Date().getDay() === 5 && !(r && (r.q1 || r.q2 || r.q3))){
+  const hasReview = r && ((r.answers && Object.values(r.answers).some(v=>v && v.trim())) || r.q1 || r.q2 || r.q3);
+  if(new Date().getDay() === 5 && !hasReview){
     const b = document.createElement('div');
     b.className = 'banner';
     b.style.cursor = 'pointer';
@@ -2858,17 +2909,18 @@ function renderBanners(){
   }
 }
 
-/* ================= weekly review autosave ================= */
-let revDebounce;
-['rev1','rev2','rev3'].forEach((id,i)=>{
-  $('#'+id).addEventListener('input', e=>{
-    const wk = weekKeyOf();
-    revs[wk] = revs[wk] || {};
-    revs[wk]['q'+(i+1)] = e.target.value;
-    clearTimeout(revDebounce);
-    revDebounce = setTimeout(()=>{ store(K.rev, revs); toast(); }, 600);
-  });
-});
+/* ================= weekly review ================= */
+$('#reviewHead').onclick = ()=> toggleCollapse('review');
+$('#addRevQBtn').onclick = ()=>{
+  const q = prompt('اكتب سؤالك:');
+  if(!q || !q.trim()) return;
+  const wk = weekKeyOf();
+  revs[wk] = revs[wk] || {};
+  revs[wk].custom = revs[wk].custom || [];
+  revs[wk].custom.push({id:'c'+Date.now(), q:q.trim()});
+  store(K.rev, revs);
+  renderReviewQuestions(wk);
+};
 
 /* ================= journal search ================= */
 $('#searchInp').addEventListener('input', e=>{
