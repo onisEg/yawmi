@@ -683,7 +683,7 @@ nav.bottom button.on{color:var(--gold)}
         <span class="collapsearrow" id="learnArrow">›</span>
       </button>
       <div class="collapsebody" id="learnBody">
-        <input type="text" id="learnedInp" placeholder="حاجة جديدة عرفتها اليوم...">
+        <input type="text" id="learnedInp" placeholder="حاجة جديدة عرفتها اليوم..." autocomplete="off" autocapitalize="sentences" name="yawmi-learned-field">
       </div>
     </div>
 
@@ -863,9 +863,14 @@ nav.bottom button.on{color:var(--gold)}
       <option value="10">١٠ دقائق</option>
       <option value="30">نص ساعة</option>
     </select>
+    <label style="margin-top:8px">تصدير بياناتك</label>
     <div class="btnrow">
-      <button class="btn ghost" id="exportBtn">تصدير نسخة احتياطية</button>
-      <button class="btn ghost" id="importBtn">استيراد نسخة</button>
+      <button class="btn ghost" id="exportBtn">📊 تنزيل Excel</button>
+      <button class="btn ghost" id="exportJsonBtn">💾 نسخة للاسترجاع</button>
+    </div>
+    <div style="font-size:12px; color:var(--faint); margin-top:-2px">Excel لعرض بياناتك · نسخة الاسترجاع لو حبيت ترجّعها للتطبيق تاني</div>
+    <div class="btnrow" style="margin-top:8px">
+      <button class="btn ghost" id="importBtn">استيراد نسخة استرجاع</button>
     </div>
     <input type="file" id="importFile" accept=".json" class="hidden">
 
@@ -1145,6 +1150,7 @@ function mergeData(local, remote){
 }
 let syncTimer = null, syncing = false, syncDirty = false, syncReady = false;
 
+let lastSyncError = '';
 async function syncPush(){
   if(!isLoggedIn() || !navigator.onLine || !sb) return false;
   try{
@@ -1153,17 +1159,19 @@ async function syncPush(){
       data: collectAllData(),
       updated_at: new Date().toISOString()
     });
+    if(error){ lastSyncError = 'رفع: ' + (error.message||error.code||'خطأ'); console.error('syncPush error', error); }
     return !error;
-  }catch(e){ return false; }
+  }catch(e){ lastSyncError = 'رفع: ' + (e.message||e); console.error('syncPush exception', e); return false; }
 }
 async function syncPull(){
-  if(!isLoggedIn() || !navigator.onLine || !sb) return null;
+  if(!isLoggedIn() || !navigator.onLine || !sb) return {status:'offline'};
   try{
     const { data, error } = await sb.from(DATA_TABLE)
       .select('data, updated_at').eq('user_id', currentUser.id).maybeSingle();
-    if(error) return null;
-    return data;
-  }catch(e){ return null; }
+    if(error){ lastSyncError = 'سحب: ' + (error.message||error.code||'خطأ'); console.error('syncPull error', error); return {status:'error'}; }
+    if(!data) return {status:'empty'};       // مفيش صف فعلاً
+    return {status:'ok', row:data};
+  }catch(e){ lastSyncError = 'سحب: ' + (e.message||e); console.error('syncPull exception', e); return {status:'error'}; }
 }
 // نسخة احتياطية محلية قبل أي دمج (أمان إضافي)
 function localSafetyBackup(){
@@ -1176,30 +1184,35 @@ async function syncFull(silent){
   if(syncing || !isLoggedIn()) return;
   syncing = true;
   if(!silent) toast('بيزامن...');
-  const remote = await syncPull();
+  const res = await syncPull();
   const local = collectAllData();
-  if(remote && remote.data){
-    // نسخة أمان قبل الدمج
+
+  if(res.status === 'error' || res.status === 'offline'){
+    // فشل السحب → منعملش أي رفع (عشان منمسحش بيانات السحابة بالغلط)
+    syncing = false;
+    if(!silent) toast('المزامنة فشلت: ' + (lastSyncError || 'النت') + ' — بياناتك سليمة');
+    return;
+  }
+
+  if(res.status === 'ok' && res.row && res.row.data){
     localSafetyBackup();
-    // دمج آمن: مفيش حاجة بتتمسح
-    const merged = mergeData(local, remote.data);
+    const merged = mergeData(local, res.row.data);
     applyAllData(merged);
     localStorage.setItem('yawmi_syncedat', String(Date.now()));
     reloadState();
-    // نرفع النتيجة المدموجة عشان السحابة تبقى محدّثة للأجهزة التانية
     const ok = await syncPush();
     if(ok) syncDirty = false;
     syncReady = true;
     syncing = false;
-    if(!silent) toast('اتزامن ✓ (دمجنا كل بياناتك)');
+    if(!silent) toast(ok ? 'اتزامن ✓ (دمجنا كل بياناتك)' : ('اتدمج محلياً، بس الرفع فشل: ' + lastSyncError));
     return;
   }
-  // مفيش بيانات على السحابة لسه → ارفع المحلي
+
+  // res.status === 'empty' → السحابة فاضية فعلاً → ارفع المحلي (أول مرة)
   const ok = await syncPush();
-  if(ok){ localStorage.setItem('yawmi_syncedat', String(Date.now())); syncDirty = false; }
-  syncReady = true;
+  if(ok){ localStorage.setItem('yawmi_syncedat', String(Date.now())); syncDirty = false; syncReady = true; }
   syncing = false;
-  if(!silent) toast(ok ? 'اتزامن ✓' : 'المزامنة فشلت، جرّب تاني');
+  if(!silent) toast(ok ? 'اتزامن ✓' : ('المزامنة فشلت: ' + (lastSyncError || 'جرّب تاني')));
 }
 function syncSoon(){
   if(!isLoggedIn()) return;
@@ -2583,7 +2596,7 @@ function renderDash(){
 
   $('#todayStats').innerHTML = `
     <div class="stat"><div class="num">${arNum(sc%1===0?sc:sc.toFixed(1))}</div><div class="lbl">نتيجة النهارده</div></div>
-    <div class="stat"><div class="num">${pr}/٥</div><div class="lbl">الصلوات</div></div>
+    <div class="stat"><div class="num">${arNum(pr)}/٥</div><div class="lbl">الصلوات</div></div>
     <div class="stat"><div class="num">${arNum(doneToday)}/${arNum(dueToday.length)}</div><div class="lbl">مهام النهارده</div></div>
     <div class="stat"><div class="num">${arMoney(expToday)}</div><div class="lbl">مصاريف النهارده (${settings.currency})</div></div>`;
 
@@ -2617,9 +2630,9 @@ function renderDash(){
   const lateOblSum = obls.filter(o=>o.due && o.due < t0).reduce((s,o)=>s+o.a,0);
   const allOblSum = obls.reduce((s,o)=>s+o.a,0);
   $('#monthStats').innerHTML = `
-    <div class="stat"><div class="num">${daysLogged}</div><div class="lbl">يوم مسجّل الشهر ده</div></div>
+    <div class="stat"><div class="num">${arNum(daysLogged)}</div><div class="lbl">يوم مسجّل الشهر ده</div></div>
     <div class="stat"><div class="num">${arMoney(mExp)}</div><div class="lbl">مصاريف الشهر (${settings.currency})</div></div>
-    <div class="stat"><div class="num">${late}</div><div class="lbl">مهام متأخرة</div></div>
+    <div class="stat"><div class="num">${arNum(late)}</div><div class="lbl">مهام متأخرة</div></div>
     <div class="stat"><div class="num">${arNum(prTotal? Math.round(prDone/prTotal*100) : 0)}٪</div><div class="lbl">التزام الصلوات</div></div>
     <div class="stat"><div class="num" ${lateOblSum?'style="color:var(--red)"':''}>${arMoney(lateOblSum)}</div><div class="lbl">التزامات متأخرة (${settings.currency})</div></div>
     <div class="stat"><div class="num">${arMoney(allOblSum)}</div><div class="lbl">إجمالي عليك (${settings.currency})</div></div>`;
@@ -2848,7 +2861,8 @@ $('#saveSettings').onclick = async ()=>{
 };
 
 /* ================= backup ================= */
-function doExport(){
+// نسخة JSON كاملة (للاستيراد/الاسترجاع)
+function doExportJSON(){
   const data = {v:1, exported:new Date().toISOString(), days, tasks, exps, obls, revs, goals, bhData, settings};
   const blob = new Blob([JSON.stringify(data,null,1)], {type:'application/json'});
   const a = document.createElement('a');
@@ -2857,9 +2871,58 @@ function doExport(){
   a.click();
   URL.revokeObjectURL(a.href);
   localStorage.setItem('yawmi_lastexp', todayISO());
-  toast('اتصدرت النسخة ✓');
+  toast('اتصدرت نسخة الاسترجاع ✓');
 }
-$('#exportBtn').onclick = doExport;
+// تهريب خانة CSV
+function csvCell(v){
+  const s = String(v==null?'':v);
+  return /[",\n]/.test(s) ? '"' + s.replace(/"/g,'""') + '"' : s;
+}
+// نسخة CSV (تتفتح في Excel) — كل يوم في سطر مع كل التفاصيل
+function doExportCSV(){
+  const PR = ['لسه','مفرد','جماعة','خارج الوقت'];
+  const rows = [];
+  // ورقة الأيام
+  const habitCols = settings.habits || [];
+  const azkarCols = settings.azkar || [];
+  const header = ['التاريخ','النتيجة','الفجر','الظهر','العصر','المغرب','العشاء',
+    ...habitCols, ...azkarCols, 'المزاج','ساعات النوم','تعلمت','يومياتي','ملاحظة نفسية'];
+  rows.push(header.map(csvCell).join(','));
+  Object.keys(days).sort().forEach(k=>{
+    const d = getDay(k);
+    const prayers = (d.p||[0,0,0,0,0]).map(x=>PR[x]||'لسه');
+    const habits = habitCols.map(h=> d.h && d.h[h] ? '✓' : '');
+    const azkar = azkarCols.map(z=> d.z && d.z[z] ? '✓' : '');
+    const mood = d.m ? ['','😔','😕','🙂','😄','🤩'][d.m] : '';
+    rows.push([k, scoreOf(d), ...prayers, ...habits, ...azkar, mood, d.s||'', d.l||'', d.j||'', d.mn||''].map(csvCell).join(','));
+  });
+  // فاصل + المصاريف
+  rows.push('');
+  rows.push('المصاريف');
+  rows.push(['التاريخ','المبلغ','التصنيف','ملاحظة'].map(csvCell).join(','));
+  [...exps].sort((a,b)=>a.d<b.d?1:-1).forEach(e=>{
+    rows.push([e.d, e.a, e.c, e.n||''].map(csvCell).join(','));
+  });
+  // فاصل + المهام
+  rows.push('');
+  rows.push('المهام');
+  rows.push(['المهمة','الميعاد','خلصت'].map(csvCell).join(','));
+  tasks.forEach(t=> rows.push([t.t, t.due||'', t.done?'نعم':'لا'].map(csvCell).join(',')));
+
+  // BOM عشان Excel يقرا العربي صح
+  const csv = '\uFEFF' + rows.join('\r\n');
+  const blob = new Blob([csv], {type:'text/csv;charset=utf-8'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `yawmi-${todayISO()}.csv`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+  localStorage.setItem('yawmi_lastexp', todayISO());
+  toast('اتصدرت نسخة Excel ✓');
+}
+function doExport(){ doExportCSV(); }
+$('#exportBtn').onclick = doExportCSV;
+$('#exportJsonBtn').onclick = doExportJSON;
 
 /* sync UI */
 function refreshAuthUI(){
