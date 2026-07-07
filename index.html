@@ -1116,6 +1116,38 @@ function applyAllData(d){
 
 // ====== الدمج الآمن: بيدمج بيانات الجهاز مع السحابة من غير ما يمسح حاجة ======
 // عدد الحقول المليانة في يوم (عشان نعرف اليوم الأغنى بالمحتوى)
+// دمج يوم واحد على مستوى الحقول (مش بنرمي أي حقل)
+function mergeDay(a, b){
+  // a = محلي, b = بعيد. النتيجة بتاخد الأغنى لكل حقل
+  if(!a) return b; if(!b) return a;
+  const out = {};
+  // الحقول النصية: ناخد اللي فيه محتوى؛ لو الاتنين مختلفين وفيهم محتوى، ناخد الأطول
+  ['j','l','mn'].forEach(f=>{
+    const av = (a[f]||'').trim(), bv = (b[f]||'').trim();
+    if(!av) out[f] = b[f] || '';
+    else if(!bv) out[f] = a[f];
+    else if(av === bv) out[f] = a[f];
+    else out[f] = av.length >= bv.length ? a[f] : b[f]; // الأطول (الأكمل)
+  });
+  // القيم المفردة: ناخد أي قيمة موجودة (المحلي أولوية لو الاتنين موجودين)
+  ['m','s','sq','dhSel'].forEach(f=>{
+    out[f] = (a[f] !== undefined && a[f] !== '' && a[f] !== 0) ? a[f]
+           : (b[f] !== undefined ? b[f] : a[f]);
+  });
+  // الصلوات: لكل صلاة ناخد أعلى حالة (اتصلّت > لسه)
+  out.p = [];
+  for(let i=0;i<5;i++){
+    const ap = (a.p && a.p[i]) || 0, bp = (b.p && b.p[i]) || 0;
+    out.p[i] = Math.max(ap, bp);
+  }
+  // العادات والأذكار وعدّاد الذِكر: اتحاد (أي حاجة اتعملت على أي جهاز تفضل)
+  out.h = Object.assign({}, b.h, a.h);
+  out.z = Object.assign({}, b.z, a.z);
+  // عدّاد الذِكر: ناخد الأعلى لكل ذِكر
+  out.dh = Object.assign({}, b.dh);
+  for(const k in (a.dh||{})){ out.dh[k] = Math.max(a.dh[k]||0, (b.dh||{})[k]||0); }
+  return out;
+}
 function dayScore(r){
   if(!r) return -1;
   let s = 0;
@@ -1126,15 +1158,12 @@ function dayScore(r){
   if(r.dh) s += Object.values(r.dh).filter(v=>v>0).length;
   return s;
 }
-// دمج كائنات مفتاحها التاريخ (الأيام والمراجعات): بناخد الأغنى بالمحتوى لكل مفتاح
+// دمج كائنات مفتاحها التاريخ (الأيام): دمج على مستوى الحقول لكل يوم
 function mergeByKey(localObj, remoteObj, scoreFn){
   const out = Object.assign({}, remoteObj || {});
   for(const k in (localObj || {})){
     if(!(k in out)) out[k] = localObj[k];
-    else {
-      // موجود في الاتنين → ناخد الأغنى
-      out[k] = scoreFn(localObj[k]) >= scoreFn(remoteObj[k]) ? localObj[k] : remoteObj[k];
-    }
+    else out[k] = mergeDay(localObj[k], remoteObj[k]); // دمج بالحقول بدل ما نرمي يوم
   }
   return out;
 }
@@ -1181,6 +1210,40 @@ function mergeGoals(localG, remoteG){
   return [...map.values()];
 }
 // الدمج الكامل: يرجّع بيانات مدموجة من المحلي + السحابة
+// دمج الإعدادات: لكل مفتاح ناخد القيمة اللي ليها معنى (مش فاضية/مش افتراضية)
+function mergeSettings(localS, remoteS){
+  localS = localS || {}; remoteS = remoteS || {};
+  const out = Object.assign({}, remoteS, localS);
+  // القيم النصية اللي ممكن تبقى فاضية على جهاز جديد → لو المحلي فاضي والبعيد مليان، ناخد البعيد
+  const preferFilled = ['name','currency','country','city','income'];
+  preferFilled.forEach(k=>{
+    const l = localS[k], r = remoteS[k];
+    const lEmpty = (l === undefined || l === null || l === '' || l === 0);
+    if(lEmpty && r !== undefined && r !== null && r !== '' && r !== 0){
+      out[k] = r;
+    }
+  });
+  // القوائم (عادات، أذكار، تصنيفات...) — ناخد الأطول (الأغنى) لو واحد فاضي
+  const listKeys = ['habits','badHabits','azkar','dhikrList','oblTypes','cats'];
+  listKeys.forEach(k=>{
+    const l = Array.isArray(localS[k]) ? localS[k] : [];
+    const r = Array.isArray(remoteS[k]) ? remoteS[k] : [];
+    // اتحاد بدون تكرار (للقوائم النصية البسيطة)
+    if(k === 'dhikrList'){
+      // dhikrList عناصرها كائنات {text,target} → دمج بالنص
+      const map = new Map();
+      r.forEach(x=> map.set(x.text, x));
+      l.forEach(x=> map.set(x.text, x));
+      if(map.size) out[k] = [...map.values()];
+    } else {
+      const merged = [...new Set([...r, ...l])];
+      if(merged.length) out[k] = merged;
+    }
+  });
+  // budgets: دمج الكائنين
+  out.budgets = Object.assign({}, remoteS.budgets, localS.budgets);
+  return out;
+}
 function mergeData(local, remote){
   local = local || {}; remote = remote || {};
   return {
@@ -1191,7 +1254,7 @@ function mergeData(local, remote){
     revs: mergeRevs(local.revs, remote.revs),
     goals: mergeGoals(local.goals, remote.goals),
     bhData: Object.assign({}, remote.bhData, local.bhData),
-    settings: Object.assign({}, remote.settings, local.settings),
+    settings: mergeSettings(local.settings, remote.settings),
     _syncedAt: Date.now()
   };
 }
