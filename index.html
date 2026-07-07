@@ -491,6 +491,10 @@ nav.bottom button.on{color:var(--gold)}
 #authOverlay.show{opacity:1; visibility:visible}
 #authModal{background:var(--card); border-radius:20px 20px 0 0; width:100%; max-width:560px; padding:20px 20px calc(24px + env(safe-area-inset-bottom)); max-height:90vh; overflow-y:auto; transform:translateY(100%); transition:transform .3s cubic-bezier(.32,.72,0,1)}
 #authOverlay.show #authModal{transform:translateY(0)}
+#changePassOv{position:fixed; inset:0; background:rgba(0,0,0,.6); display:flex; align-items:flex-end; justify-content:center; z-index:59; opacity:0; visibility:hidden; transition:opacity .25s ease, visibility .25s}
+#changePassOv.show{opacity:1; visibility:visible}
+#changePassModal{background:var(--card); border-radius:20px 20px 0 0; width:100%; max-width:560px; padding:20px 20px calc(24px + env(safe-area-inset-bottom)); max-height:90vh; overflow-y:auto; transform:translateY(100%); transition:transform .3s cubic-bezier(.32,.72,0,1)}
+#changePassOv.show #changePassModal{transform:translateY(0)}
 .btn.google{width:100%; background:var(--card2); border:1px solid var(--line); color:var(--text); display:flex; align-items:center; justify-content:center; gap:10px; font-size:15px}
 .btn.google span{display:inline-flex; align-items:center; justify-content:center; width:22px; height:22px; border-radius:50%; background:#fff; color:#4285F4; font-weight:700; font-family:Arial, sans-serif}
 .authdivider{display:flex; align-items:center; gap:12px; margin:16px 0; color:var(--faint); font-size:12px}
@@ -953,6 +957,9 @@ nav.bottom button.on{color:var(--gold)}
         <button class="btn ghost" id="syncNowBtn">مزامنة دلوقتي ⇅</button>
         <button class="btn ghost" id="signOutBtn">تسجيل خروج</button>
       </div>
+      <div class="btnrow" style="margin-top:8px">
+        <button class="btn ghost" id="changePassBtn">🔒 غيّر الباسورد</button>
+      </div>
     </div>
 
     <div class="btnrow">
@@ -1032,12 +1039,29 @@ nav.bottom button.on{color:var(--gold)}
     <input type="email" id="authEmail" placeholder="you@example.com" autocomplete="email" style="width:100%">
     <label for="authPass">الباسورد</label>
     <input type="password" id="authPass" placeholder="6 حروف على الأقل" autocomplete="current-password" style="width:100%">
+    <button id="authForgot" style="background:none; border:none; color:var(--gold); font-size:12px; cursor:pointer; padding:6px 0; display:none">نسيت الباسورد؟</button>
     <div id="authError" class="autherror hidden"></div>
     <button class="btn primary" id="authSubmit" style="width:100%; margin-top:14px">تسجيل جديد</button>
     <div class="authswitch">
       <span id="authSwitchTxt">عندك حساب بالفعل؟</span>
       <button id="authSwitchBtn">سجّل دخول</button>
     </div>
+  </div>
+</div>
+
+<div id="changePassOv">
+  <div id="changePassModal">
+    <div class="bhdhead">
+      <h2>غيّر الباسورد</h2>
+      <button class="iconbtn" id="changePassClose" aria-label="إغلاق">✕</button>
+    </div>
+    <p style="font-size:13px; color:var(--muted); margin:0 0 14px; line-height:1.7">اكتب باسورد جديد لحسابك (٦ حروف على الأقل).</p>
+    <label for="newPass">الباسورد الجديد</label>
+    <input type="password" id="newPass" placeholder="6 حروف على الأقل" autocomplete="new-password" style="width:100%">
+    <label for="newPass2" style="margin-top:10px">أكّد الباسورد</label>
+    <input type="password" id="newPass2" placeholder="اكتبه تاني" autocomplete="new-password" style="width:100%">
+    <div id="changePassError" class="autherror hidden"></div>
+    <button class="btn primary" id="changePassSubmit" style="width:100%; margin-top:14px">حفظ الباسورد الجديد</button>
   </div>
 </div>
 
@@ -1144,6 +1168,16 @@ function initSupabase(){
   sb.auth.onAuthStateChange((event, session)=>{
     currentUser = session ? session.user : null;
     refreshAuthUI();
+    if(event === 'PASSWORD_RECOVERY'){
+      // المستخدم جه من لينك إعادة التعيين → نفتحله شاشة تغيير الباسورد
+      setTimeout(()=>{
+        $('#newPass').value=''; $('#newPass2').value='';
+        $('#changePassError').classList.add('hidden');
+        $('#changePassOv').classList.add('show');
+        toast('اكتب باسوردك الجديد');
+      }, 600);
+      return;
+    }
     if(currentUser && (event === 'SIGNED_IN' || event === 'INITIAL_SESSION')){
       syncFull(true); // أول ما يسجّل دخول، نزامن
     }
@@ -1436,6 +1470,22 @@ async function authSignOut(){
   await sb.auth.signOut();
   currentUser = null;
   refreshAuthUI();
+}
+// نسيت الباسورد: يبعت إيميل فيه لينك إعادة تعيين
+async function authResetPassword(email){
+  if(!sb) return {error:'مفيش اتصال بالسيرفر'};
+  const { error } = await sb.auth.resetPasswordForEmail(email, {
+    redirectTo: 'https://oniseg.github.io/yawmi/'
+  });
+  if(error) return {error: authErrArabic(error.message)};
+  return {ok:true};
+}
+// تغيير الباسورد (وهو داخل بحسابه)
+async function authUpdatePassword(newPass){
+  if(!sb) return {error:'مفيش اتصال بالسيرفر'};
+  const { error } = await sb.auth.updateUser({ password: newPass });
+  if(error) return {error: authErrArabic(error.message)};
+  return {ok:true};
 }
 function authErrArabic(msg){
   const m = (msg||'').toLowerCase();
@@ -3568,6 +3618,7 @@ function applyAuthMode(){
   $('#authSwitchTxt').textContent = signup ? 'عندك حساب بالفعل؟' : 'لسه معملتش حساب؟';
   $('#authSwitchBtn').textContent = signup ? 'سجّل دخول' : 'تسجيل جديد';
   $('#authIntro').style.display = signup ? 'block' : 'none';
+  $('#authForgot').style.display = signup ? 'none' : 'block';
 }
 function closeAuth(){ $('#authOverlay').classList.remove('show'); }
 function showAuthError(msg){ const e = $('#authError'); e.textContent = msg; e.classList.remove('hidden'); }
@@ -3576,6 +3627,19 @@ $('#openAuthBtn').onclick = ()=> openAuth('signin');
 $('#authClose').onclick = closeAuth;
 $('#authOverlay').onclick = e=>{ if(e.target.id==='authOverlay') closeAuth(); };
 $('#authSwitchBtn').onclick = ()=>{ authMode = authMode==='signup'?'signin':'signup'; applyAuthMode(); $('#authError').classList.add('hidden'); };
+$('#authForgot').onclick = async ()=>{
+  const email = $('#authEmail').value.trim();
+  if(!email){ showAuthError('اكتب إيميلك الأول عشان نبعتلك لينك إعادة التعيين'); return; }
+  $('#authForgot').disabled = true;
+  $('#authForgot').textContent = 'بيبعت...';
+  const res = await authResetPassword(email);
+  $('#authForgot').disabled = false;
+  $('#authForgot').textContent = 'نسيت الباسورد؟';
+  if(res.error){ showAuthError(res.error); return; }
+  $('#authError').classList.remove('hidden');
+  $('#authError').style.color = 'var(--teal)';
+  $('#authError').textContent = 'بعتنالك إيميل فيه لينك تغيّر منه الباسورد — افتحه واتبع الخطوات';
+};
 $('#authSubmit').onclick = async ()=>{
   const email = $('#authEmail').value.trim();
   const pass = $('#authPass').value;
@@ -3607,6 +3671,28 @@ $('#googleBtn').onclick = async ()=>{
 $('#syncNowBtn').onclick = async ()=>{
   await syncFull(false);
   refreshAuthUI();
+};
+$('#changePassBtn').onclick = ()=>{
+  $('#newPass').value=''; $('#newPass2').value='';
+  $('#changePassError').classList.add('hidden');
+  $('#changePassOv').classList.add('show');
+};
+$('#changePassClose').onclick = ()=> $('#changePassOv').classList.remove('show');
+$('#changePassOv').onclick = e=>{ if(e.target.id==='changePassOv') $('#changePassOv').classList.remove('show'); };
+$('#changePassSubmit').onclick = async ()=>{
+  const p1 = $('#newPass').value, p2 = $('#newPass2').value;
+  const err = $('#changePassError');
+  err.classList.add('hidden'); err.style.color = '';
+  if(p1.length < 6){ err.textContent='الباسورد لازم ٦ حروف على الأقل'; err.classList.remove('hidden'); return; }
+  if(p1 !== p2){ err.textContent='الباسوردين مش زي بعض'; err.classList.remove('hidden'); return; }
+  $('#changePassSubmit').disabled = true;
+  $('#changePassSubmit').textContent = 'بيحفظ...';
+  const res = await authUpdatePassword(p1);
+  $('#changePassSubmit').disabled = false;
+  $('#changePassSubmit').textContent = 'حفظ الباسورد الجديد';
+  if(res.error){ err.textContent = res.error; err.classList.remove('hidden'); return; }
+  $('#changePassOv').classList.remove('show');
+  toast('اتغيّر الباسورد ✓');
 };
 $('#signOutBtn').onclick = async ()=>{
   if(!confirm('تسجّل خروج؟ بياناتك المحلية هتفضل على الجهاز، والباك أب هيقف لحد ما تسجّل دخول تاني.')) return;
