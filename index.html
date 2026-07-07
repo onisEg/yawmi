@@ -1860,6 +1860,7 @@ function openOblTypePicker(current, onPick){
   });
   ov.classList.add('show');
 }
+const iso = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 const todayISO = () => iso(new Date());
 let viewDate = todayISO();
 let prayerQuoteOverride = -1; // -1 = يتبع الساعة، غير كده = اختيار المستخدم يدوي
