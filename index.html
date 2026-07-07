@@ -236,6 +236,11 @@ main{padding:0 16px; max-width:560px; margin:0 auto}
 .prayeralert{margin-top:12px; padding:10px 12px; border-radius:10px; font-size:13px; line-height:1.6; background:var(--gold-soft); color:var(--gold); text-align:center}
 #prayerQuote{font-size:13px; color:var(--gold); font-style:italic; margin-top:6px; line-height:1.7; opacity:.9; display:flex; align-items:center; gap:6px}
 #prayerQuote .pqicon{font-style:normal; font-size:15px; flex-shrink:0}
+#prayerQuoteRow{display:flex; align-items:center; gap:8px}
+#prayerQuoteRow #prayerQuote{flex:1; margin-top:6px}
+#prayerQuoteBtn{background:none; border:none; color:var(--gold); opacity:.6; cursor:pointer; padding:6px; flex-shrink:0; margin-top:6px; display:flex; align-items:center; -webkit-tap-highlight-color:transparent}
+#prayerQuoteBtn:active{transform:rotate(180deg); transition:transform .3s}
+#prayerQuoteBtn .ico-svg{width:16px; height:16px}
 .prayeralert.urgent{background:rgba(217,112,102,.12); color:var(--red); font-weight:500}
 
 /* ---------- task-project link ---------- */
@@ -629,7 +634,10 @@ nav.bottom button.on{color:var(--gold)}
         <h3 id="prayH3" class="h3ic" style="margin:0"><span data-icon="beads"></span>الصلاة</h3>
         <button class="linkbtn" id="prayDetailsBtn" style="margin:0">المواعيد والتقدم ›</button>
       </div>
-      <div id="prayerQuote"></div>
+      <div id="prayerQuoteRow">
+        <div id="prayerQuote"></div>
+        <button id="prayerQuoteBtn" aria-label="جملة تانية"><span data-icon="refresh"></span></button>
+      </div>
       <div class="beads" id="beads" style="margin-top:12px"></div>
       <div id="prayerAlert" class="hidden"></div>
     </div>
@@ -1420,6 +1428,20 @@ const PRAYER_QUOTES = [
   {i:'⭐', t:'كل سجدة بترفعك درجة عند ربنا'},
   {i:'💚', t:'الصلاة مش واجب تقيل، دي هديّة وفرصة قرب'},
   {i:'🚀', t:'قوم اتوضّى وصلّي، جسمك وقلبك هيشكروك'},
+  {i:'📖', t:'«وَاستَعينوا بِالصَّبرِ وَالصَّلاةِ»'},
+  {i:'🌸', t:'الصلاة بتغسل ذنوبك زي ما الميّة بتغسل الوسخ'},
+  {i:'🛡️', t:'صلاتك حصنك من الشيطان ومن الهمّ'},
+  {i:'💫', t:'مهما كنت مشغول، ربنا مستاهل خمس دقايق'},
+  {i:'🤲', t:'اللي بيحافظ على صلاته، ربنا بيحفظه'},
+  {i:'☀️', t:'صلاة الفجر في وقتها بركة ليومك كله'},
+  {i:'🤍', t:'كل ما تصلّي، بتقرّب خطوة من الجنة'},
+  {i:'⛅', t:'الصلاة استراحة من ضغط الدنيا وتعبها'},
+  {i:'🕊️', t:'قلبك هيرتاح أول ما تقول الله أكبر'},
+  {i:'🌊', t:'الدنيا بتعدّي، والصلاة هي اللي فاضلة'},
+  {i:'🎯', t:'متسبّش صلاة لآخر وقتها — صلّيها وارتاح'},
+  {i:'💐', t:'«إنَّ الصَّلاةَ كانَت عَلَى المُؤمِنينَ كِتابًا مَوقوتًا»'},
+  {i:'🌱', t:'كل صلاة فرصة جديدة تبدأ بيها صفحة نضيفة'},
+  {i:'❄️', t:'برد قلبك بسجدة، وريّح بالك بصلاة'},
 
 ];
 const MOODS = ['😔','😕','🙂','😄','🤩'];
@@ -1677,6 +1699,7 @@ function openCatPicker(current, onPick){
 const iso = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 const todayISO = () => iso(new Date());
 let viewDate = todayISO();
+let prayerQuoteOverride = -1; // -1 = يتبع الساعة، غير كده = اختيار المستخدم يدوي
 let expMonthOffset = 0;
 
 function getDay(dISO){
@@ -2084,10 +2107,11 @@ function renderToday(){
   // prayer streak (كل الخمسة)
   const pn = streak(k=>{ const r = days[k]; return !!(r && r.p && r.p.reduce((a,b)=>a+(b?1:0),0) === 5); }, viewDate);
   $('#prayH3').innerHTML = icon('beads') + 'الصلاة';
-  // جملة ملهمة/تحفيزية بتتغير كل ساعة، مع أيقونة
-  const quoteIdx = Math.floor(Date.now() / (3600*1000)) % PRAYER_QUOTES.length;
-  const q = PRAYER_QUOTES[quoteIdx];
-  $('#prayerQuote').innerHTML = `<span class="pqicon">${q.i}</span> ${q.t}`;
+  // جملة ملهمة/تحفيزية بتتغير كل ساعة، مع أيقونة وزرار تغيير
+  const hourIdx = Math.floor(Date.now() / (3600*1000)) % PRAYER_QUOTES.length;
+  const idx = (prayerQuoteOverride >= 0 ? prayerQuoteOverride : hourIdx) % PRAYER_QUOTES.length;
+  const q = PRAYER_QUOTES[idx];
+  $('#prayerQuote').innerHTML = `<span class="pqicon">${q.i}</span> <span class="pqtxt">${q.t}</span>`;
 
   // في يوم زي ده
   const mmdd = viewDate.slice(5);
@@ -2264,6 +2288,13 @@ function shiftDay(n){
 $('#prevDayBtn').onclick = ()=> shiftDay(-1);
 $('#nextDayBtn').onclick = ()=> shiftDay(1);
 $('#backToday').onclick = ()=>{ viewDate = todayISO(); renderToday(); };
+$('#prayerQuoteBtn').onclick = ()=>{
+  const cur = prayerQuoteOverride >= 0 ? prayerQuoteOverride : Math.floor(Date.now() / (3600*1000)) % PRAYER_QUOTES.length;
+  prayerQuoteOverride = (cur + 1) % PRAYER_QUOTES.length;
+  const q = PRAYER_QUOTES[prayerQuoteOverride];
+  $('#prayerQuote').innerHTML = `<span class="pqicon">${q.i}</span> <span class="pqtxt">${q.t}</span>`;
+  if(navigator.vibrate) navigator.vibrate(10);
+};
 $('#prayDetailsBtn').onclick = ()=>{
   document.querySelector('nav.bottom button[data-tab=dash]').click();
   setTimeout(()=>{ const c = $('#prayerCard'); if(c) c.scrollIntoView({behavior:'smooth', block:'start'}); }, 100);
