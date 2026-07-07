@@ -340,6 +340,7 @@ input[type=number]{color-scheme:dark light}
   width:44px; font-size:22px; cursor:pointer; flex-shrink:0; font-weight:700;
 }
 .grouptitle{font-size:13px; color:var(--muted); margin:16px 4px 8px}
+.groupmotiv{font-size:12px; color:var(--gold); background:var(--gold-soft); border-radius:8px; padding:8px 10px; margin:0 0 10px; line-height:1.6}
 .grouptitle.late{color:var(--red)}
 .titem{
   display:flex; align-items:center; gap:12px; background:var(--card);
@@ -596,6 +597,18 @@ nav.bottom button.on{color:var(--gold)}
 .histmini .m{font-size:11px; color:var(--faint)}
 .histmini .m.on{color:var(--gold)}
 .histmore{text-align:center; padding:12px 0 2px; color:var(--gold); font-size:13px; cursor:pointer}
+/* splash screen */
+#splash{position:fixed; inset:0; z-index:100; background:var(--bg); display:flex; align-items:center; justify-content:center; opacity:1; transition:opacity .5s ease; pointer-events:none}
+#splash.hide{opacity:0}
+.splashinner{text-align:center; animation:splashfade .6s ease}
+.splashlogo{font-size:56px; margin-bottom:12px}
+.splashname{font-size:32px; font-weight:700; color:var(--gold); margin-bottom:16px}
+.splashsig{font-size:13px; color:var(--muted); line-height:1.7; max-width:260px; margin:0 auto}
+@keyframes splashfade{from{opacity:0; transform:translateY(10px)} to{opacity:1; transform:translateY(0)}}
+/* onboarding */
+#onboardOverlay{position:fixed; inset:0; z-index:99; background:rgba(0,0,0,.6); display:none; align-items:center; justify-content:center; padding:20px}
+#onboardOverlay.show{display:flex}
+#onboardBox{background:var(--card); border-radius:20px; padding:32px 24px; max-width:360px; width:100%; text-align:center}
 </style>
 </head>
 <body>
@@ -1052,6 +1065,25 @@ nav.bottom button.on{color:var(--gold)}
   <div class="pickerbox">
     <h3>اربط المهمة بمشروع</h3>
     <div id="projPickerList"></div>
+  </div>
+</div>
+
+<div id="onboardOverlay">
+  <div id="onboardBox">
+    <div style="font-size:40px; margin-bottom:8px">📿</div>
+    <h2 style="margin:0 0 6px; color:var(--gold)">أهلاً بيك في يومي</h2>
+    <p style="font-size:14px; color:var(--muted); margin:0 0 20px; line-height:1.7">تطبيقك الشخصي لمتابعة يومك، عباداتك، وعاداتك. قولّي اسمك الأول عشان نحييك بيه.</p>
+    <input type="text" id="onboardName" placeholder="اسمك..." autocomplete="off" style="width:100%; text-align:center; font-size:16px; margin-bottom:14px">
+    <button class="btn primary" id="onboardBtn" style="width:100%">يلا نبدأ</button>
+    <button class="btn ghost" id="onboardSkip" style="width:100%; margin-top:8px; font-size:13px">تخطّي</button>
+  </div>
+</div>
+
+<div id="splash">
+  <div class="splashinner">
+    <div class="splashlogo">📿</div>
+    <div class="splashname">يومي</div>
+    <div class="splashsig">صنعه أنس بحب — ادعيله ربنا يصلح حاله 🤍</div>
   </div>
 </div>
 
@@ -2490,6 +2522,30 @@ $('#addDhikrBtn').onclick = ()=>{
 };
 
 /* ================= tasks ================= */
+// جُمل تحفيزية للمهام (بتتغير كل يوم عشان متملّش)
+const TASK_MOTIV_LATE = [
+  'المهام دي مستنياك من زمان — خلّص واحدة بس دلوقتي وهتحس بفرق 💪',
+  'التأجيل بيكبّر المهمة في دماغك. ابدأ وهتلاقيها أسهل مما تتخيّل 🚀',
+  'أصعب خطوة هي البداية. اعمل أول مهمة والباقي هيمشي ⚡',
+  'كل مهمة متأخرة بتخلّص = حمل بيتشال من على كتافك 🌤️',
+  'متبصّش للكومة كلها، بُص لأقرب مهمة بس وخلّصها ✅',
+];
+const TASK_MOTIV_TODAY = [
+  'يومك النهارده في إيدك — خلّص مهامك وارتاح بضمير مطمّن 🌟',
+  'إنجاز صغير النهارده أحسن من خطة كبيرة بكرة. يلا! 💫',
+  'كل مهمة بتخلّصها بتقرّبك من نسخة أحسن منك 🌱',
+  'ركّز على مهمة واحدة في المرة، وهتخلّص كله 🎯',
+];
+function groupMotivation(name){
+  const dayIdx = Math.floor(Date.now() / 86400000);
+  if(name.includes('متأخرة') || name === 'أمس'){
+    return TASK_MOTIV_LATE[dayIdx % TASK_MOTIV_LATE.length];
+  }
+  if(name === 'النهارده'){
+    return TASK_MOTIV_TODAY[dayIdx % TASK_MOTIV_TODAY.length];
+  }
+  return '';
+}
 function renderTasks(){
   const list = $('#taskList');
   list.innerHTML = '';
@@ -2511,6 +2567,14 @@ function renderTasks(){
     h.className = 'grouptitle ' + g.cls;
     h.textContent = `${g.name} (${g.items.length})`;
     list.appendChild(h);
+    // جملة تحفيزية حسب المجموعة
+    const motiv = groupMotivation(g.name);
+    if(motiv){
+      const m = document.createElement('div');
+      m.className = 'groupmotiv';
+      m.textContent = motiv;
+      list.appendChild(m);
+    }
     g.items.forEach(t=>{
       const el = document.createElement('div');
       el.className = 'titem' + (t.done ? ' done' : '');
@@ -3708,6 +3772,36 @@ renderIcons();
 updateNavCurr();
 renderToday();
 renderGreeting();
+
+// شاشة الترحيب (splash) + سؤال الاسم أول مرة
+(function initSplashOnboard(){
+  const splash = $('#splash');
+  const seenSplash = localStorage.getItem('yawmi_splash_seen');
+  // نظهر السبلاش أول فتح في الجلسة
+  if(splash){
+    setTimeout(()=>{ splash.classList.add('hide'); setTimeout(()=>{ splash.style.display='none'; }, 500); }, seenSplash ? 1200 : 1800);
+    localStorage.setItem('yawmi_splash_seen', '1');
+  }
+  // لو مفيش اسم، نسأل عنه بعد ما السبلاش يختفي
+  const hasName = (settings.name || '').trim();
+  const askedName = localStorage.getItem('yawmi_asked_name');
+  if(!hasName && !askedName){
+    setTimeout(()=>{ $('#onboardOverlay').classList.add('show'); $('#onboardName').focus(); }, 2000);
+  }
+})();
+$('#onboardBtn').onclick = ()=>{
+  const n = $('#onboardName').value.trim();
+  if(n){ settings.name = n; store(K.set, settings); }
+  localStorage.setItem('yawmi_asked_name', '1');
+  $('#onboardOverlay').classList.remove('show');
+  renderGreeting();
+  if(n) toast(`أهلاً بيك يا ${n} 🤍`);
+};
+$('#onboardSkip').onclick = ()=>{
+  localStorage.setItem('yawmi_asked_name', '1');
+  $('#onboardOverlay').classList.remove('show');
+};
+$('#onboardName').addEventListener('keydown', e=>{ if(e.key==='Enter') $('#onboardBtn').click(); });
 (function initLock(){
   if(!settings.pinH) return;
   const last = parseInt(localStorage.getItem('yawmi_active') || '0', 10);
