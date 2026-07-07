@@ -234,6 +234,7 @@ main{padding:0 16px; max-width:560px; margin:0 auto}
 .sleepbtn.on.bad{background:rgba(217,112,102,.12); border-color:var(--red); color:var(--red)}
 .otype{display:inline-block; font-size:11px; background:var(--gold-soft); color:var(--gold); border-radius:6px; padding:1px 7px; margin-left:6px}
 .prayeralert{margin-top:12px; padding:10px 12px; border-radius:10px; font-size:13px; line-height:1.6; background:var(--gold-soft); color:var(--gold); text-align:center}
+#prayerQuote{font-size:13px; color:var(--gold); font-style:italic; margin-top:6px; line-height:1.7; opacity:.9}
 .prayeralert.urgent{background:rgba(217,112,102,.12); color:var(--red); font-weight:500}
 
 /* ---------- task-project link ---------- */
@@ -624,9 +625,10 @@ nav.bottom button.on{color:var(--gold)}
 
     <div class="card">
       <div style="display:flex; justify-content:space-between; align-items:center">
-        <h3 id="prayH3" class="h3ic" style="margin:0"><span data-icon="beads"></span>الصلوات</h3>
+        <h3 id="prayH3" class="h3ic" style="margin:0"><span data-icon="beads"></span>الصلاة</h3>
         <button class="linkbtn" id="prayDetailsBtn" style="margin:0">المواعيد والتقدم ›</button>
       </div>
+      <div id="prayerQuote"></div>
       <div class="beads" id="beads" style="margin-top:12px"></div>
       <div id="prayerAlert" class="hidden"></div>
     </div>
@@ -1394,6 +1396,23 @@ const _awayHours = _lastSeen ? (Date.now() - _lastSeen) / 3600000 : 0;
 localStorage.setItem('yawmi_lastseen', String(Date.now()));
 
 const PRAYERS = ['الفجر','الظهر','العصر','المغرب','العشاء'];
+// جُمل ملهمة عن الصلاة (آيات وأحاديث) — بتتغير كل ٥ ساعات
+const PRAYER_QUOTES = [
+  'الصلاة عماد الدين',
+  '«إنَّ الصَّلاةَ تَنْهى عَنِ الفَحْشاءِ وَالمُنكَرِ»',
+  'أول ما يُحاسَب عليه العبد يوم القيامة: الصلاة',
+  '«فَوَيْلٌ لِلْمُصَلِّينَ الَّذينَ هُم عَن صَلاتِهِم ساهون»',
+  'الصلاة نور، ونور لصاحبها يوم القيامة',
+  '«حافِظوا عَلَى الصَّلَواتِ وَالصَّلاةِ الوُسطى»',
+  'بين العبد وبين الكفر تركُ الصلاة',
+  'الصلاة راحة القلب وسكينة النفس',
+  '«وَأقِمِ الصَّلاةَ لِذِكري»',
+  'الصلوات الخمس كفّارة لما بينهنّ ما اجتُنبت الكبائر',
+  'قُرّة عين النبي ﷺ جُعلت في الصلاة',
+  '«قَد أفلَحَ المُؤمِنونَ الَّذينَ هُم في صَلاتِهِم خاشِعون»',
+  'الصلاة على وقتها أحبّ الأعمال إلى الله',
+  'أقرب ما يكون العبد من ربه وهو ساجد',
+];
 const MOODS = ['😔','😕','🙂','😄','🤩'];
 // رسالة/سؤال لكل حالة (1=😔 ... 5=🤩)
 const MOOD_PROMPTS = {
@@ -2055,7 +2074,10 @@ function renderToday(){
 
   // prayer streak (كل الخمسة)
   const pn = streak(k=>{ const r = days[k]; return !!(r && r.p && r.p.reduce((a,b)=>a+(b?1:0),0) === 5); }, viewDate);
-  $('#prayH3').innerHTML = icon('beads') + 'الصلوات';
+  $('#prayH3').innerHTML = icon('beads') + 'الصلاة';
+  // جملة ملهمة بتتغير كل ٥ ساعات
+  const quoteIdx = Math.floor(Date.now() / (5*3600*1000)) % PRAYER_QUOTES.length;
+  $('#prayerQuote').textContent = PRAYER_QUOTES[quoteIdx];
 
   // في يوم زي ده
   const mmdd = viewDate.slice(5);
