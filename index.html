@@ -297,6 +297,17 @@ main{padding:0 16px; max-width:560px; margin:0 auto}
 .namedisplay{display:flex; align-items:center; justify-content:space-between; gap:8px; background:var(--card2); border:1.5px solid var(--line); border-radius:999px; padding:12px 18px}
 .namedisplay #nameGreet{font-size:15px; font-weight:600; color:var(--gold)}
 .namedisplay #editNameBtn{background:none; border:none; cursor:pointer; font-size:16px; padding:2px 6px}
+.deedscard h3{margin:0 0 12px}
+.deeditem{display:flex; align-items:flex-start; gap:12px; padding:12px; background:var(--card2); border:1px solid var(--line); border-radius:16px; margin-bottom:8px; transition:all .15s}
+.deeditem.done{opacity:.6}
+.deeditem.done .deednm{text-decoration:line-through}
+.deedcheck{width:28px; height:28px; border-radius:50%; border:1.5px solid var(--teal); background:none; color:var(--teal); font-size:15px; cursor:pointer; flex-shrink:0; display:flex; align-items:center; justify-content:center; transition:all .15s}
+.deeditem.done .deedcheck{background:var(--teal); color:#fff}
+.deedinfo{flex:1; min-width:0}
+.deednm{font-size:14px; font-weight:600; margin-bottom:2px}
+.deedicon{font-size:15px}
+.deeddesc{font-size:12px; color:var(--muted); line-height:1.6}
+.occbanner .occlink{color:var(--gold); font-weight:600; white-space:nowrap; margin-right:8px}
 #tdTime, #taskDetailSheet input[type=time]{width:100%; background:var(--card2); border:1.5px solid var(--line); border-radius:12px; padding:12px 14px; font-family:inherit; font-size:15px; color:var(--text); outline:none; text-align:center; letter-spacing:1px}
 #tdTime:focus{border-color:var(--gold)}
 input[type=time]::-webkit-calendar-picker-indicator, input[type=date]::-webkit-calendar-picker-indicator{filter:opacity(.5)}
@@ -764,6 +775,11 @@ nav.bottom button.on{color:var(--gold)}
         </button>
         <div class="dhikrhint" id="dhikrHint">دوس في أي حتة في الكارت مع كل مرة</div>
       </div>
+    </div>
+
+    <div class="card deedscard hidden" id="deedsCard">
+      <h3 class="h3ic"><span>🌿</span> الأعمال المستحبة النهارده</h3>
+      <div id="deedsList"></div>
     </div>
 
     <div class="card collapsecard" id="moodCard">
@@ -1346,6 +1362,8 @@ function mergeDay(a, b){
   // العادات والأذكار وعدّاد الذِكر: اتحاد (أي حاجة اتعملت على أي جهاز تفضل)
   out.h = Object.assign({}, b.h, a.h);
   out.z = Object.assign({}, b.z, a.z);
+  // الأعمال المستحبة: اتحاد
+  if(a.deeds || b.deeds) out.deeds = Object.assign({}, b.deeds, a.deeds);
   // عدّاد الذِكر: ناخد الأعلى لكل ذِكر
   out.dh = Object.assign({}, b.dh);
   for(const k in (a.dh||{})){ out.dh[k] = Math.max(a.dh[k]||0, (b.dh||{})[k]||0); }
@@ -2493,6 +2511,7 @@ function renderToday(){
   });
 
   renderBanners();
+  renderDeeds();
 }
 
 function streak(test, anchor){
@@ -4077,6 +4096,101 @@ function renderGreeting(){
   el.classList.remove('hidden');
 }
 
+// ===== التقويم الهجري والمناسبات =====
+function hijriOf(date){
+  try{
+    const parts = new Intl.DateTimeFormat('en-u-ca-islamic-umalqura', {day:'numeric', month:'numeric', year:'numeric'}).formatToParts(date);
+    const o = {};
+    parts.forEach(p=>{ if(p.type!=='literal') o[p.type] = parseInt(p.value,10); });
+    return {d:o.day, m:o.month, y:o.year};
+  }catch(e){ return null; }
+}
+const HIJRI_MONTHS = ['','محرّم','صفر','ربيع الأول','ربيع الآخر','جمادى الأولى','جمادى الآخرة','رجب','شعبان','رمضان','شوّال','ذو القعدة','ذو الحجة'];
+// أعمال مستحبة عامة حسب اليوم (بترجع مصفوفة)
+function deedsForDay(date){
+  const deeds = [];
+  const wd = date.getDay(); // 0=الأحد ... 5=الجمعة
+  const h = hijriOf(date);
+  // الاثنين والخميس: صيام
+  if(wd === 1) deeds.push({t:'صيام الاثنين', d:'يوم بتُعرض فيه الأعمال، والنبي ﷺ كان بيصومه', i:'🌙'});
+  if(wd === 4) deeds.push({t:'صيام الخميس', d:'يوم بتُرفع فيه الأعمال، من السنن المستحبة', i:'🌙'});
+  // الجمعة
+  if(wd === 5){
+    deeds.push({t:'الإكثار من الصلاة على النبي ﷺ', d:'أكثِروا عليّ من الصلاة يوم الجمعة', i:'🕌'});
+    deeds.push({t:'قراءة سورة الكهف', d:'من قرأها يوم الجمعة أضاء له من النور ما بين الجمعتين', i:'📖'});
+    deeds.push({t:'ساعة الإجابة والدعاء', d:'في الجمعة ساعة لا يوافقها مسلم يدعو إلا استُجيب له', i:'🤲'});
+  }
+  if(h){
+    // أيام البيض (13,14,15 من كل شهر هجري)
+    if([13,14,15].includes(h.d)) deeds.push({t:'صيام الأيام البيض', d:`النهارده ${arNum(h.d)} ${HIJRI_MONTHS[h.m]} — من أيام البيض المستحب صيامها`, i:'🤍'});
+    // عاشوراء (10 محرم) وتاسوعاء (9)
+    if(h.m === 1 && h.d === 9) deeds.push({t:'صيام تاسوعاء', d:'اليوم التاسع من محرّم، يُصام مع عاشوراء', i:'🌙'});
+    if(h.m === 1 && h.d === 10) deeds.push({t:'صيام عاشوراء', d:'يُكفّر السنة الماضية، من أفضل الصيام بعد رمضان', i:'⭐'});
+    // عرفة (9 ذو الحجة)
+    if(h.m === 12 && h.d === 9) deeds.push({t:'صيام يوم عرفة', d:'يُكفّر سنتين، وأكثِر من الدعاء فخير الدعاء دعاء يوم عرفة', i:'🏔️'});
+    // عشر ذي الحجة الأولى
+    if(h.m === 12 && h.d >= 1 && h.d <= 9) deeds.push({t:'أعمال عشر ذي الحجة', d:'أفضل أيام الدنيا — أكثِر من الذكر والتكبير والعمل الصالح', i:'✨'});
+    // رمضان
+    if(h.m === 9) deeds.push({t:'اغتنم رمضان', d:'صيام، قيام، قرآن، وصدقة — شهر المغفرة والعتق من النار', i:'🌙'});
+    // ست من شوال
+    if(h.m === 10 && h.d >= 2 && h.d <= 28) deeds.push({t:'ست من شوّال', d:'من صام رمضان وأتبعه ستاً من شوّال كأنما صام الدهر', i:'🌙'});
+  }
+  return deeds;
+}
+// رسالة المناسبة القادمة (للبانر)
+function upcomingOccasion(){
+  const today = new Date();
+  const wd = today.getDay();
+  // بكرة الجمعة؟
+  if(wd === 4) return {msg:'بكرة الجمعة — استعد لها، وأكثِر من الصلاة على النبي ﷺ', tab:'today'};
+  const h = hijriOf(today);
+  if(h){
+    // قرب رمضان (شعبان أواخره)
+    if(h.m === 8 && h.d >= 20) return {msg:'رمضان على الأبواب 🌙 — استعد بالتوبة والنية الصالحة', tab:'today'};
+    // قرب عرفة
+    if(h.m === 12 && h.d >= 1 && h.d <= 8) return {msg:'عشر ذي الحجة — أفضل أيام الدنيا، اغتنمها ✨', tab:'today'};
+    if(h.m === 12 && h.d === 8) return {msg:'بكرة يوم عرفة 🏔️ — جهّز نيّتك للصيام والدعاء', tab:'today'};
+    // قرب عاشوراء
+    if(h.m === 1 && h.d >= 1 && h.d <= 8) return {msg:'عاشوراء قرّب — استعد لصيام يوم يُكفّر السنة الماضية', tab:'today'};
+    // أيام بيض بكرة
+    if([12,13,14].includes(h.d)) return {msg:'الأيام البيض قرّبت 🤍 — صيامها من السنن الجميلة', tab:'today'};
+  }
+  return null;
+}
+
+// كارت الأعمال المستحبة
+function renderDeeds(){
+  const card = $('#deedsCard');
+  const list = $('#deedsList');
+  if(!card || !list) return;
+  const date = new Date(viewDate + 'T12:00:00');
+  const deeds = deedsForDay(date);
+  if(!deeds.length){ card.classList.add('hidden'); return; }
+  card.classList.remove('hidden');
+  const rec = getDay(viewDate);
+  rec.deeds = rec.deeds || {};
+  list.innerHTML = '';
+  deeds.forEach((d, i)=>{
+    const key = d.t;
+    const done = !!rec.deeds[key];
+    const el = document.createElement('div');
+    el.className = 'deeditem' + (done ? ' done' : '');
+    el.innerHTML = `
+      <button class="deedcheck" aria-label="علّم">${done ? '✓' : '○'}</button>
+      <div class="deedinfo">
+        <div class="deednm"><span class="deedicon">${d.i}</span> ${d.t}</div>
+        <div class="deeddesc">${d.d}</div>
+      </div>`;
+    el.querySelector('.deedcheck').onclick = ()=>{
+      rec.deeds[key] = !rec.deeds[key];
+      saveDays();
+      if(navigator.vibrate) navigator.vibrate(10);
+      renderDeeds();
+    };
+    list.appendChild(el);
+  });
+}
+
 function renderBanners(){
   const wrap = $('#banners');
   wrap.innerHTML = '';
@@ -4090,6 +4204,20 @@ function renderBanners(){
     b.innerHTML = `<span style="flex:1">${last ? `آخر نسخة احتياطية من ${daysSince} يوم` : 'لسه معملتش نسخة احتياطية من بياناتك'} ⚠</span><button class="bbtn">صدّر دلوقتي</button><button class="bx" aria-label="إخفاء">✕</button>`;
     b.querySelector('.bbtn').onclick = ()=>{ doExport(); renderBanners(); };
     b.querySelector('.bx').onclick = ()=>{ localStorage.setItem('yawmi_snooze', todayISO()); renderBanners(); };
+    wrap.appendChild(b);
+  }
+  // بانر المناسبة الدينية القادمة
+  const occ = upcomingOccasion();
+  if(occ && localStorage.getItem('yawmi_occ_snooze') !== todayISO()){
+    const b = document.createElement('div');
+    b.className = 'banner occbanner';
+    b.innerHTML = `<span style="flex:1">${occ.msg}</span><span class="occlink">شوف الأعمال ›</span>`;
+    b.style.cursor = 'pointer';
+    b.onclick = (e)=>{
+      // ننزل لكارت الأعمال المستحبة في صفحة اليوم
+      const card = $('#deedsCard');
+      if(card){ document.querySelector('nav.bottom button[data-tab=today]').click(); setTimeout(()=>card.scrollIntoView({behavior:'smooth', block:'center'}), 100); }
+    };
     wrap.appendChild(b);
   }
   // تذكير المراجعة يوم الجمعة
