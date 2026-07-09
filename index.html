@@ -241,6 +241,8 @@ main{padding:0 16px; max-width:560px; margin:0 auto}
 .collapsehead .ct .ico-svg{width:18px; height:18px}
 .collapsearrow{color:var(--muted); font-size:22px; transition:transform .25s ease; line-height:1}
 .collapsecard.open .collapsearrow{transform:rotate(90deg)}
+.collapsecard:not(.open){border-radius:999px}
+.collapsecard{transition:border-radius .3s ease}
 .collapsebody{max-height:0; overflow:hidden; transition:max-height .3s ease, margin-top .3s ease; margin-top:0}
 .collapsecard.open .collapsebody{max-height:400px; margin-top:14px}
 .collapsecard.filled:not(.open) .collapsehead .ct::after{content:'✓'; color:var(--teal); font-size:13px; margin-right:4px}
@@ -349,10 +351,11 @@ input[type=time]::-webkit-calendar-picker-indicator, input[type=date]::-webkit-c
 /* ---------- inputs ---------- */
 input[type=text],input[type=number],input[type=date],input[type=email],input[type=password],input[type=tel],textarea,select{
   background:var(--card2); border:1.5px solid var(--line); color:var(--text);
-  border-radius:16px; padding:13px 16px; font-family:inherit; font-size:15px;
+  border-radius:999px; padding:13px 18px; font-family:inherit; font-size:15px;
   width:100%; outline:none; transition:border-color .15s, box-shadow .15s, background .15s;
   -webkit-appearance:none; appearance:none;
 }
+textarea{border-radius:18px}
 input[type=text]:focus,input[type=number]:focus,input[type=email]:focus,input[type=password]:focus,input[type=tel]:focus,textarea:focus,select:focus{
   border-color:var(--gold); background:var(--card); box-shadow:0 0 0 3px var(--gold-soft);
 }
@@ -364,7 +367,7 @@ input[type=number]{color-scheme:dark light}
 
 /* ---------- tasks ---------- */
 .addrow{display:flex; gap:8px; margin-bottom:16px; align-items:center}
-.tasksearchwrap{display:flex; align-items:center; gap:8px; background:var(--card2); border:1px solid var(--line); border-radius:16px; padding:0 12px; margin-bottom:14px}
+.tasksearchwrap{display:flex; align-items:center; gap:8px; background:var(--card2); border:1px solid var(--line); border-radius:999px; padding:0 16px; margin-bottom:14px}
 .tasksearchwrap .tasksearchicon .ico-svg{width:16px; height:16px; color:var(--muted)}
 .tasksearchwrap input{flex:1; background:none; border:none; padding:11px 0; font-family:inherit; font-size:14px; color:var(--text); outline:none}
 .tasksearchwrap #taskSearchClear{background:none; border:none; color:var(--muted); font-size:16px; cursor:pointer; padding:4px}
@@ -472,7 +475,7 @@ input[type=number]{color-scheme:dark light}
 nav.bottom{
   position:fixed; bottom:calc(12px + env(safe-area-inset-bottom)); right:12px; left:12px;
   background:var(--nav-glass); backdrop-filter:blur(20px) saturate(1.4); -webkit-backdrop-filter:blur(20px) saturate(1.4);
-  border:1px solid var(--nav-glass-border); border-radius:22px;
+  border:1px solid var(--nav-glass-border); border-radius:999px;
   display:flex; padding:8px 6px;
   box-shadow:0 8px 32px rgba(0,0,0,.18), 0 2px 8px rgba(0,0,0,.1);
   max-width:540px; margin:0 auto;
@@ -3851,6 +3854,8 @@ function refreshAuthUI(){
     if(outEl) outEl.classList.remove('hidden');
     if(inEl) inEl.classList.add('hidden');
   }
+  // نحدّث البانرات عشان تذكير الباك أب يختفي/يظهر حسب تسجيل الدخول
+  if(typeof renderBanners === 'function') renderBanners();
 }
 // وضع المصادقة: 'signup' أو 'signin'
 let authMode = 'signin';
@@ -4003,11 +4008,11 @@ function renderGreeting(){
 function renderBanners(){
   const wrap = $('#banners');
   wrap.innerHTML = '';
-  // تذكير النسخة الاحتياطية
+  // تذكير النسخة الاحتياطية — منظهروش لو مسجّل دخول (عنده باك أب سحابي)
   const last = localStorage.getItem('yawmi_lastexp');
   const snooze = localStorage.getItem('yawmi_snooze');
   const daysSince = last ? Math.floor((Date.now() - new Date(last+'T12:00:00').getTime()) / 86400000) : null;
-  if(Object.keys(days).length >= 3 && (!last || daysSince >= 7) && snooze !== todayISO()){
+  if(!isLoggedIn() && Object.keys(days).length >= 3 && (!last || daysSince >= 7) && snooze !== todayISO()){
     const b = document.createElement('div');
     b.className = 'banner';
     b.innerHTML = `<span style="flex:1">${last ? `آخر نسخة احتياطية من ${daysSince} يوم` : 'لسه معملتش نسخة احتياطية من بياناتك'} ⚠</span><button class="bbtn">صدّر دلوقتي</button><button class="bx" aria-label="إخفاء">✕</button>`;
