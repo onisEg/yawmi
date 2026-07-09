@@ -98,17 +98,18 @@ main{padding:0 16px; max-width:560px; margin:0 auto}
 
 /* ---------- score ring ---------- */
 .scorecard{display:flex; align-items:center; gap:18px}
-.ringwrap{position:relative; width:88px; height:88px; flex-shrink:0}
+.ringwrap{position:relative; width:96px; height:96px; flex-shrink:0}
 .ringwrap svg{transform:rotate(-90deg)}
-.ringbg{stroke:var(--line)}
-.ringfg{stroke:var(--gold); transition:stroke-dashoffset .5s ease}
+.ringbg{stroke:var(--line); opacity:.5}
+.ringfg{stroke:url(#ringGrad); transition:stroke-dashoffset .6s cubic-bezier(.4,0,.2,1); filter:drop-shadow(0 0 4px rgba(217,164,65,.35))}
 .ringnum{
   position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
-  font-size:24px; font-weight:700;
+  font-size:28px; font-weight:700; background:linear-gradient(135deg, var(--gold), var(--teal)); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;
 }
 .scoretxt{flex:1}
-.scoretxt .big{font-size:15px; font-weight:500}
-.scoretxt .sub{font-size:13px; color:var(--muted); margin-top:2px}
+.scoretxt .big{font-size:16px; font-weight:600}
+.scoretxt .scoreof{font-size:12px; color:var(--faint); margin-top:1px}
+.scoretxt .sub{font-size:12px; color:var(--muted); margin-top:6px}
 .streakbadge{display:inline-block; margin-top:8px; font-size:12px; color:var(--gold); background:var(--gold-soft); border-radius:8px; padding:3px 10px; font-weight:600}
 #installBanner{position:fixed; bottom:calc(88px + env(safe-area-inset-bottom)); right:12px; left:12px; max-width:540px; margin:0 auto; z-index:57; display:flex; align-items:center; gap:12px; background:var(--card); border:1px solid var(--gold); border-radius:16px; padding:12px 14px; box-shadow:0 8px 32px rgba(0,0,0,.25)}
 #installBanner .installicon{color:var(--gold); flex-shrink:0}
@@ -310,17 +311,18 @@ input[type=time]::-webkit-calendar-picker-indicator, input[type=date]::-webkit-c
 .projtask .pt-check{color:var(--teal); font-size:13px}
 
 /* ---------- bad habits (recovery) ---------- */
-.bhcard2{display:flex; align-items:center; gap:12px; background:var(--card2); border:1px solid var(--line); border-radius:14px; padding:12px; margin-bottom:12px; cursor:pointer; transition:background .1s}
-.bhcard2:active{background:var(--card)}
-.bhring{position:relative; width:64px; height:64px; flex-shrink:0}
-.bhringtxt{position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; font-size:18px; font-weight:700; line-height:1}
-.bhringtxt small{font-size:9px; font-weight:400; color:var(--muted)}
+.bhcard2{display:flex; align-items:center; gap:14px; background:linear-gradient(135deg, var(--card2), var(--card)); border:1px solid var(--line); border-radius:20px; padding:14px; margin-bottom:12px; cursor:pointer; transition:transform .1s, box-shadow .15s; box-shadow:0 2px 8px rgba(0,0,0,.04)}
+.bhcard2:active{transform:scale(.99)}
+.bhring{position:relative; width:68px; height:68px; flex-shrink:0}
+.bhringtxt{position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; font-size:11px; line-height:1.1; gap:1px}
+.bhringtxt b{font-size:20px; font-weight:700; color:var(--teal)}
 .bhinfo{flex:1; min-width:0}
-.bhnm{font-size:15px; font-weight:500; margin-bottom:2px}
-.bhtimer{font-size:14px; color:var(--red); font-weight:700; direction:ltr; text-align:right; font-variant-numeric:tabular-nums}
-.bhsub{font-size:11px; color:var(--muted); margin-top:2px}
-.bhrelapse{background:none; border:1px solid var(--red); color:var(--red); border-radius:10px; padding:8px 12px; font-family:inherit; font-size:13px; cursor:pointer; flex-shrink:0; white-space:nowrap}
-.bhrelapse:active{background:var(--gold-soft)}
+.bhnm{font-size:15px; font-weight:600; margin-bottom:3px}
+.bhtimer{font-size:14px; color:var(--teal); font-weight:700; direction:ltr; text-align:right; font-variant-numeric:tabular-nums}
+.bhsub{font-size:11px; color:var(--muted); margin-top:4px; display:flex; gap:6px; flex-wrap:wrap}
+.bhchip{background:var(--card2); border:1px solid var(--line); border-radius:999px; padding:2px 8px; font-size:10px}
+.bhrelapse{background:none; border:1.5px solid var(--red); color:var(--red); border-radius:999px; padding:8px 14px; font-family:inherit; font-size:13px; font-weight:500; cursor:pointer; flex-shrink:0; white-space:nowrap; transition:all .15s}
+.bhrelapse:active{background:rgba(217,112,102,.12)}
 
 /* detail popup */
 #bhOverlay{position:fixed; inset:0; background:rgba(0,0,0,.6); display:flex; align-items:flex-end; justify-content:center; z-index:55; opacity:0; visibility:hidden; transition:opacity .25s ease, visibility .25s}
@@ -693,15 +695,22 @@ nav.bottom button.on{color:var(--gold)}
 
     <div class="card scorecard">
       <div class="ringwrap">
-        <svg width="88" height="88" viewBox="0 0 88 88">
-          <circle class="ringbg" cx="44" cy="44" r="36" fill="none" stroke-width="7"/>
-          <circle class="ringfg" id="ringfg" cx="44" cy="44" r="36" fill="none" stroke-width="7"
-            stroke-linecap="round" stroke-dasharray="226.2" stroke-dashoffset="226.2"/>
+        <svg width="96" height="96" viewBox="0 0 96 96">
+          <defs>
+            <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="var(--gold)"/>
+              <stop offset="100%" stop-color="var(--teal)"/>
+            </linearGradient>
+          </defs>
+          <circle class="ringbg" cx="48" cy="48" r="40" fill="none" stroke-width="8"/>
+          <circle class="ringfg" id="ringfg" cx="48" cy="48" r="40" fill="none" stroke-width="8"
+            stroke-linecap="round" stroke-dasharray="251.3" stroke-dashoffset="251.3"/>
         </svg>
         <div class="ringnum" id="scoreNum">0</div>
       </div>
       <div class="scoretxt">
-        <div class="big">نتيجة اليوم من ١٠</div>
+        <div class="big">نتيجة اليوم</div>
+        <div class="scoreof">من ١٠</div>
         <div class="sub" id="scoreSub">الصلوات والعادات بيتحسبوا تلقائي</div>
       </div>
     </div>
@@ -2380,21 +2389,21 @@ function renderToday(){
     const card = document.createElement('div');
     card.className = 'bhcard2';
     card.dataset.bh = name;
-    const R = 26, C = 2*Math.PI*R;
+    const R = 28, C = 2*Math.PI*R;
     card.innerHTML = `
       <div class="bhring">
-        <svg width="64" height="64" viewBox="0 0 64 64">
-          <circle cx="32" cy="32" r="${R}" fill="none" stroke="var(--line)" stroke-width="5"/>
-          <circle cx="32" cy="32" r="${R}" fill="none" stroke="var(--red)" stroke-width="5"
-            stroke-linecap="round" stroke-dasharray="${C}" stroke-dashoffset="${C - pct/100*C}"
-            transform="rotate(-90 32 32)"/>
+        <svg width="68" height="68" viewBox="0 0 68 68">
+          <circle cx="34" cy="34" r="${R}" fill="none" stroke="var(--line)" stroke-width="5" opacity=".5"/>
+          <circle cx="34" cy="34" r="${R}" fill="none" stroke="var(--teal)" stroke-width="5"
+            stroke-linecap="round" stroke-dasharray="${C.toFixed(1)}" stroke-dashoffset="${(C - pct/100*C).toFixed(1)}"
+            transform="rotate(-90 34 34)"/>
         </svg>
-        <span class="bhringtxt">${arNum(days)}<small>يوم</small></span>
+        <span class="bhringtxt">🔥<b>${arNum(days)}</b></span>
       </div>
       <div class="bhinfo">
         <div class="bhnm"></div>
         <div class="bhtimer" data-since="${d.last}">—</div>
-        <div class="bhsub">التارجت: ${arNum(target)} يوم · ${arNum(d.relapses.length)} محاولة</div>
+        <div class="bhsub"><span class="bhchip">🎯 التارجت ${arNum(target)} يوم</span> <span class="bhchip">↻ ${arNum(d.relapses.length)} محاولة</span></div>
       </div>
       <button class="bhrelapse" aria-label="سجّل انتكاسة">انتكاسة</button>`;
     card.querySelector('.bhnm').textContent = name;
@@ -2444,7 +2453,7 @@ function renderToday(){
   // score ring
   const sc = scoreOf(rec);
   $('#scoreNum').textContent = arNum(sc % 1 === 0 ? sc : sc.toFixed(1));
-  const C = 226.2;
+  const C = 251.3;
   $('#ringfg').style.strokeDashoffset = C - (sc/10)*C;
   const pr = rec.p.reduce((a,b)=>a+(b?1:0),0);
   const hd = settings.habits.filter(h=>rec.h[h]).length;
@@ -2667,7 +2676,7 @@ function renderScoreOnly(){
   const rec = getDay(viewDate);
   const sc = scoreOf(rec);
   $('#scoreNum').textContent = arNum(sc % 1 === 0 ? sc : sc.toFixed(1));
-  $('#ringfg').style.strokeDashoffset = 226.2 - (sc/10)*226.2;
+  $("#ringfg").style.strokeDashoffset = 251.3 - (sc/10)*251.3;
 }
 bindText('#journalInp','j');
 bindText('#learnedInp','l');
