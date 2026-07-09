@@ -453,21 +453,10 @@ nav.bottom button .ic .ico-svg{width:20px; height:20px}
 nav.bottom button.on{color:var(--gold)}
 
 /* ---------- modal ---------- */
-#overlay{
-  position:fixed; inset:0; background:rgba(0,0,0,.6);
-  display:flex; align-items:flex-end; justify-content:center; z-index:50;
-  opacity:0; visibility:hidden; transition:opacity .25s ease, visibility .25s;
-}
-#overlay.show{opacity:1; visibility:visible}
-#modal{
-  background:var(--card); border-radius:20px 20px 0 0; width:100%; max-width:560px;
-  padding:22px 20px calc(22px + env(safe-area-inset-bottom)); max-height:85vh; overflow-y:auto;
-  transform:translateY(100%); transition:transform .3s cubic-bezier(.32,.72,0,1);
-}
-#overlay.show #modal{transform:translateY(0)}
-#modal h2{margin:0 0 18px; font-size:18px; font-weight:500}
-#modal label{display:block; font-size:13px; color:var(--muted); margin:14px 0 6px}
-#modal textarea{min-height:90px}
+.settingsinner{max-width:560px; margin:0 auto}
+.settingsinner h2{margin:0 0 18px; font-size:20px; font-weight:600}
+.settingsinner label{display:block; font-size:13px; color:var(--muted); margin:14px 0 6px}
+.settingsinner textarea{min-height:90px}
 .btnrow{display:flex; gap:10px; margin-top:20px}
 .btn{
   flex:1; border:none; border-radius:12px; padding:12px; font-family:inherit;
@@ -895,11 +884,11 @@ nav.bottom button.on{color:var(--gold)}
   <button data-tab="goals"><span class="ic" data-icon="target"></span>الأهداف</button>
   <button data-tab="exp"><span class="ic" data-icon="wallet"></span>المصاريف</button>
   <button data-tab="dash"><span class="ic" data-icon="chart"></span>نظرة</button>
-  <button id="navSettings"><span class="ic" data-icon="settings"></span>الإعدادات</button>
+  <button data-tab="settings" id="navSettings"><span class="ic" data-icon="settings"></span>الإعدادات</button>
 </nav>
 
-<div id="overlay">
-  <div id="modal">
+<section id="tab-settings" class="tab">
+  <div class="settingsinner">
     <h2>الإعدادات</h2>
     <label for="setName">اسمك</label>
     <input type="text" id="setName" placeholder="عشان نحييك باسمك" style="width:100%" autocomplete="off">
@@ -963,11 +952,10 @@ nav.bottom button.on{color:var(--gold)}
     </div>
 
     <div class="btnrow">
-      <button class="btn ghost" id="closeModal">إلغاء</button>
-      <button class="btn primary" id="saveSettings">حفظ الإعدادات</button>
+      <button class="btn primary" id="saveSettings" style="width:100%">حفظ الإعدادات</button>
     </div>
   </div>
-</div>
+</section>
 
 <div id="lockScreen" class="hidden">
   <div class="lockcard">
@@ -3359,6 +3347,8 @@ document.querySelectorAll('nav.bottom button').forEach(b=>{
     if(b.dataset.tab==='goals') renderGoals();
     if(b.dataset.tab==='exp') renderExp();
     if(b.dataset.tab==='dash') renderDash();
+    if(b.dataset.tab==='settings') populateSettings();
+    localStorage.setItem('yawmi_active_tab', b.dataset.tab);
     window.scrollTo({top:0});
   };
 });
@@ -3372,7 +3362,7 @@ function updateNavCurr(){
   el.style.fontWeight = '700';
   el.style.lineHeight = '1.4';
 }
-$('#gearBtn').onclick = ()=>{
+function populateSettings(){
   $('#setName').value = settings.name || '';
   refreshAuthUI();
   $('#setHabits').value = settings.habits.join('\n');
@@ -3386,9 +3376,9 @@ $('#gearBtn').onclick = ()=>{
   $('#pinStatus').textContent = settings.pinH ? 'مفعّل ✓ — اكتب رقم جديد لو عايز تغيّره' : 'غير مفعّل — اكتب رقم عشان تفعّله';
   $('#setLockMins').value = String(settings.lockMins != null ? settings.lockMins : 2);
   $('#removePin').classList.toggle('hidden', !settings.pinH);
-  $('#overlay').classList.add('show');
-};
-$('#navSettings').onclick = ()=> $('#gearBtn').click();
+}
+// زرار الترس فوق يروح لتبويب الإعدادات
+$('#gearBtn').onclick = ()=> document.querySelector('nav.bottom button[data-tab=settings]').click();
 function fillCitiesFor(country, selectedCity){
   const co = COUNTRIES.find(c=>c.n===country) || COUNTRIES[0];
   $('#setCity').innerHTML = co.cities.map(ct=>`<option ${ct.n===selectedCity?'selected':''}>${ct.n}</option>`).join('');
@@ -3409,9 +3399,7 @@ $('#removePin').onclick = ()=>{
 $('#setPin').addEventListener('input', e=>{
   e.target.value = e.target.value.replace(/\D/g,'').slice(0,6);
 });
-$('#closeModal').onclick = ()=> $('#overlay').classList.remove('show');
 $('#prayerPicker').onclick = e=>{ if(e.target.id==='prayerPicker') $('#prayerPicker').classList.remove('show'); };
-$('#overlay').onclick = e=>{ if(e.target.id==='overlay') $('#overlay').classList.remove('show'); };
 function closeBHDetail(){ $('#bhOverlay').classList.remove('show'); if(bhdTimerInt) clearInterval(bhdTimerInt); }
 $('#bhdClose').onclick = closeBHDetail;
 $('#bhOverlay').onclick = e=>{ if(e.target.id==='bhOverlay') closeBHDetail(); };
@@ -3447,7 +3435,6 @@ $('#saveSettings').onclick = async ()=>{
   else if(newPin.length > 0){ alert('الرقم السري لازم يكون ٤ أرقام على الأقل'); return; }
   settings.lockMins = parseInt($('#setLockMins').value, 10);
   store(K.set, settings);
-  $('#overlay').classList.remove('show');
   updateNavCurr();
   renderToday(); renderGreeting(); toast('الإعدادات اتحفظت ✓');
 };
@@ -3713,7 +3700,7 @@ $('#importFile').onchange = e=>{
       settings = Object.assign(settings, data.settings||{});
       settings.budgets = settings.budgets || {};
       store(K.days,days); store(K.tasks,tasks); store(K.exp,exps); store(K.obl,obls); store(K.rev,revs); store(K.goals,goals); store(K.bh,bhData); store(K.set,settings);
-      $('#overlay').classList.remove('show');
+      document.querySelector('nav.bottom button[data-tab=today]').click();
       renderToday(); toast('اتسترجعت البيانات ✓');
     }catch(err){ alert('الملف ده مش نسخة احتياطية صالحة'); }
   };
@@ -3981,6 +3968,15 @@ renderIcons();
 updateNavCurr();
 renderToday();
 renderGreeting();
+
+// استرجاع آخر تبويب كان مفتوح (بعد الريفريش يفضل في نفس المكان)
+(function restoreActiveTab(){
+  const savedTab = localStorage.getItem('yawmi_active_tab');
+  if(savedTab && savedTab !== 'today'){
+    const btn = document.querySelector(`nav.bottom button[data-tab=${savedTab}]`);
+    if(btn) btn.click();
+  }
+})();
 
 // شاشة الترحيب (splash) + سؤال الاسم أول مرة
 (function initSplashOnboard(){
