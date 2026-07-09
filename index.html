@@ -258,6 +258,23 @@ main{padding:0 16px; max-width:560px; margin:0 auto}
 .taskprojtag.mini{font-size:10px; padding:1px 6px; cursor:pointer}
 .projdot{width:10px; height:10px; border-radius:50%; flex-shrink:0; display:inline-block}
 .projauto{font-size:12px; color:var(--muted); flex:1}
+/* task priority + time + detail */
+.ttxtline{display:flex; align-items:center; gap:6px}
+.pridot{width:8px; height:8px; border-radius:50%; flex-shrink:0; display:inline-block}
+.pri-urgent{background:var(--red)}
+.pri-important{background:var(--gold)}
+.pri-soon{background:#7BA7D9}
+.tmeta{display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-top:3px}
+.ttime{font-size:10px; color:var(--muted); background:var(--card2); border-radius:6px; padding:1px 6px}
+.tdetailbtn{background:none; border:none; color:var(--muted); font-size:18px; cursor:pointer; padding:2px 8px; flex-shrink:0; line-height:1}
+#taskDetailOv{position:fixed; inset:0; background:rgba(0,0,0,.6); display:flex; align-items:flex-end; justify-content:center; z-index:60; opacity:0; visibility:hidden; transition:opacity .25s, visibility .25s}
+#taskDetailOv.show{opacity:1; visibility:visible}
+#taskDetailSheet{background:var(--card); border-radius:20px 20px 0 0; width:100%; max-width:560px; padding:20px 20px calc(24px + env(safe-area-inset-bottom)); max-height:88vh; overflow-y:auto; transform:translateY(100%); transition:transform .3s cubic-bezier(.32,.72,0,1)}
+#taskDetailOv.show #taskDetailSheet{transform:translateY(0)}
+#taskDetailSheet label{display:block; font-size:13px; color:var(--muted); margin:0 0 8px}
+.pripicker{display:grid; grid-template-columns:1fr 1fr; gap:8px}
+.pribtn{background:var(--card2); border:1.5px solid var(--line); border-radius:12px; padding:12px 8px; font-family:inherit; font-size:13px; color:var(--text); cursor:pointer; transition:all .15s}
+.pribtn.on{border-color:var(--gold); background:var(--gold-soft); color:var(--gold)}
 .tpj:not(.set){opacity:.55}
 .tdue{cursor:pointer}
 .teditdate{cursor:pointer}
@@ -1080,6 +1097,27 @@ nav.bottom button.on{color:var(--gold)}
         <button class="btn primary" id="addDhikrBtn" style="flex:1">إضافة</button>
       </div>
     </div>
+  </div>
+</div>
+
+<div id="taskDetailOv">
+  <div id="taskDetailSheet">
+    <div class="bhdhead">
+      <h2 id="tdTitle">تفاصيل المهمة</h2>
+      <button class="iconbtn" id="tdClose" aria-label="إغلاق">✕</button>
+    </div>
+    <label>الأولوية</label>
+    <div class="pripicker" id="tdPriPicker">
+      <button class="pribtn" data-pri="urgent">🔴 عاجل ومهم</button>
+      <button class="pribtn" data-pri="important">🟡 مهم</button>
+      <button class="pribtn" data-pri="soon">🔵 عاجل</button>
+      <button class="pribtn" data-pri="normal">⚪ عادي</button>
+    </div>
+    <label for="tdTime" style="margin-top:14px">وقت المهمة (اختياري)</label>
+    <input type="time" id="tdTime" style="width:100%">
+    <label for="tdDesc" style="margin-top:14px">تفاصيل / ملاحظات</label>
+    <textarea id="tdDesc" placeholder="اكتب تفاصيل المهمة..." style="min-height:90px" autocomplete="off"></textarea>
+    <button class="btn primary" id="tdSave" style="width:100%; margin-top:16px">حفظ</button>
   </div>
 </div>
 
@@ -2651,6 +2689,39 @@ function groupMotivation(name){
   }
   return '';
 }
+// تفاصيل المهمة (أولوية، وقت، ملاحظات)
+let tdCurrentTask = null;
+function openTaskDetail(t){
+  tdCurrentTask = t;
+  $('#tdTitle').textContent = t.t || 'تفاصيل المهمة';
+  $('#tdTime').value = t.time || '';
+  $('#tdDesc').value = t.desc || '';
+  // تحديد الأولوية الحالية
+  document.querySelectorAll('#tdPriPicker .pribtn').forEach(b=>{
+    b.classList.toggle('on', (t.pri || 'normal') === b.dataset.pri);
+  });
+  $('#taskDetailOv').classList.add('show');
+}
+document.querySelectorAll('#tdPriPicker .pribtn').forEach(b=>{
+  b.onclick = ()=>{
+    document.querySelectorAll('#tdPriPicker .pribtn').forEach(x=>x.classList.remove('on'));
+    b.classList.add('on');
+  };
+});
+$('#tdClose').onclick = ()=> $('#taskDetailOv').classList.remove('show');
+$('#taskDetailOv').onclick = e=>{ if(e.target.id==='taskDetailOv') $('#taskDetailOv').classList.remove('show'); };
+$('#tdSave').onclick = ()=>{
+  if(!tdCurrentTask) return;
+  const sel = document.querySelector('#tdPriPicker .pribtn.on');
+  tdCurrentTask.pri = sel ? sel.dataset.pri : 'normal';
+  tdCurrentTask.time = $('#tdTime').value || '';
+  tdCurrentTask.desc = $('#tdDesc').value.trim();
+  store(K.tasks, tasks);
+  $('#taskDetailOv').classList.remove('show');
+  renderTasks();
+  toast('اتحفظت التفاصيل ✓');
+};
+
 function renderTasks(){
   const list = $('#taskList');
   list.innerHTML = '';
@@ -2698,6 +2769,9 @@ function renderTasks(){
       list.appendChild(body);
       container = body;
     }
+    // ترتيب حسب الأولوية (العاجل المهم الأول)
+    const priOrder = {urgent:0, important:1, soon:2, normal:3};
+    g.items.sort((a,b)=> (priOrder[a.pri||'normal']) - (priOrder[b.pri||'normal']));
     g.items.forEach(t=>{
       const el = document.createElement('div');
       el.className = 'titem' + (t.done ? ' done' : '');
@@ -2705,10 +2779,13 @@ function renderTasks(){
       const proj = t.pj ? findProject(t.pj) : null;
       const pcolor = proj ? projColor(t.pj) : null;
       const projTag = proj ? `<span class="taskprojtag mini">🎯 ${proj.project.t}</span>` : '';
+      const priDot = t.pri && t.pri !== 'normal' ? `<span class="pridot pri-${t.pri}"></span>` : '';
+      const timeTag = t.time ? `<span class="ttime">🕐 ${arNum(t.time)}</span>` : '';
       el.innerHTML = `
         <button class="tcheck" aria-label="إنجاز">✓</button>
-        <div class="ttxtwrap"><span class="ttxt"></span><span class="taskprojtag mini tpj${proj ? ' set' : ''}"${proj ? ` style="color:${pcolor}; background:${hexToSoft(pcolor)}"` : ''}>${proj ? '🎯 ' + proj.project.t : '🎯 اربط بمشروع'}</span></div>
+        <div class="ttxtwrap"><div class="ttxtline">${priDot}<span class="ttxt"></span></div><div class="tmeta">${timeTag}<span class="taskprojtag mini tpj${proj ? ' set' : ''}"${proj ? ` style="color:${pcolor}; background:${hexToSoft(pcolor)}"` : ''}>${proj ? '🎯 ' + proj.project.t : '🎯 اربط بمشروع'}</span></div></div>
         <span class="tdue ${late?'late':''} teditdate">${t.due ? arNum(t.due.slice(5).split('-').reverse().join('/')) : '📅 تاريخ'}</span>
+        <button class="tdetailbtn" aria-label="تفاصيل">⋯</button>
         <button class="delbtn" aria-label="حذف">${icon("trash",16)}</button>`;
       el.querySelector('.ttxt').textContent = t.t;
       // تعديل التاريخ
@@ -2717,6 +2794,11 @@ function renderTasks(){
       el.querySelector('.tpj').onclick = (ev)=>{
         ev.stopPropagation();
         openProjPicker(pid=>{ t.pj = pid; store(K.tasks,tasks); renderTasks(); });
+      };
+      // فتح تفاصيل المهمة
+      el.querySelector('.tdetailbtn').onclick = (ev)=>{
+        ev.stopPropagation();
+        openTaskDetail(t);
       };
       el.querySelector('.tcheck').onclick = ()=>{
         t.done = !t.done; store(K.tasks,tasks);
@@ -3195,7 +3277,20 @@ function renderGoals(){
         const twrap = document.createElement('div');
         twrap.className = 'projtasks';
         twrap.innerHTML = `<div class="projtaskshead">📋 ${arNum(doneN)}/${arNum(linked.length)} مهام</div>` +
-          linked.map(t=>`<div class="projtask ${t.done?'done':''}"><span class="pt-check">${t.done?'✓':'○'}</span>${t.t}</div>`).join('');
+          linked.map(t=>`<div class="projtask ${t.done?'done':''}" data-tid="${t.id}"><span class="pt-check">${t.done?'✓':'○'}</span>${t.t}</div>`).join('');
+        twrap.querySelectorAll('.projtask').forEach(pt=>{
+          pt.style.cursor = 'pointer';
+          pt.onclick = ()=>{
+            const tid = pt.dataset.tid;
+            const task = tasks.find(x=>String(x.id) === tid);
+            if(task){
+              task.done = !task.done;
+              store(K.tasks, tasks);
+              if(navigator.vibrate) navigator.vibrate(10);
+              renderGoals();
+            }
+          };
+        });
         pwrap.appendChild(twrap);
       }
     });
