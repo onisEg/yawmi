@@ -51,10 +51,10 @@ html,body{margin:0; padding:0}
 body{
   background:var(--bg); color:var(--text);
   font-family:var(--app-font,'IBM Plex Sans Arabic'),system-ui,sans-serif;
-  font-size:var(--base-size,15px); line-height:1.7;
+  font-size:var(--base-size,13px); line-height:1.7;
   padding-bottom:calc(100px + env(safe-area-inset-bottom));
 }
-:root{--app-font:'IBM Plex Sans Arabic'; --base-size:15px}
+:root{--app-font:'IBM Plex Sans Arabic'; --base-size:13px}
 .amiri{font-family:'Amiri',serif}
 header.top{
   display:flex; align-items:center; justify-content:space-between;
@@ -294,6 +294,9 @@ main{padding:0 16px; max-width:560px; margin:0 auto}
 .fontsizerow{display:flex; gap:8px}
 .fsbtn{flex:1; background:var(--card2); border:1.5px solid var(--line); border-radius:999px; padding:10px 6px; font-family:inherit; font-size:13px; color:var(--text); cursor:pointer; transition:all .15s}
 .fsbtn.on{border-color:var(--gold); background:var(--gold-soft); color:var(--gold)}
+.namedisplay{display:flex; align-items:center; justify-content:space-between; gap:8px; background:var(--card2); border:1.5px solid var(--line); border-radius:999px; padding:12px 18px}
+.namedisplay #nameGreet{font-size:15px; font-weight:600; color:var(--gold)}
+.namedisplay #editNameBtn{background:none; border:none; cursor:pointer; font-size:16px; padding:2px 6px}
 #tdTime, #taskDetailSheet input[type=time]{width:100%; background:var(--card2); border:1.5px solid var(--line); border-radius:12px; padding:12px 14px; font-family:inherit; font-size:15px; color:var(--text); outline:none; text-align:center; letter-spacing:1px}
 #tdTime:focus{border-color:var(--gold)}
 input[type=time]::-webkit-calendar-picker-indicator, input[type=date]::-webkit-calendar-picker-indicator{filter:opacity(.5)}
@@ -669,10 +672,10 @@ nav.bottom button.on{color:var(--gold)}
 
 <header class="top">
   <div class="headleft">
-    <button class="iconbtn hidden" id="backBtn" aria-label="رجوع"><span data-icon="arrow_right"></span></button>
     <span class="brand">يومي</span>
   </div>
   <div>
+    <button class="iconbtn hidden" id="backBtn" aria-label="رجوع"><span data-icon="arrow_right"></span></button>
     <button class="iconbtn" id="themeBtn" aria-label="تبديل الوضع"><span data-icon="moon"></span></button>
     <button class="iconbtn" id="gearBtn" aria-label="الإعدادات"><span data-icon="settings"></span></button>
   </div>
@@ -956,6 +959,10 @@ nav.bottom button.on{color:var(--gold)}
   <div class="settingsinner">
     <h2>الإعدادات</h2>
     <label for="setName">اسمك</label>
+    <div id="nameDisplay" class="namedisplay hidden">
+      <span id="nameGreet"></span>
+      <button type="button" id="editNameBtn" aria-label="عدّل الاسم">✏️</button>
+    </div>
     <input type="text" id="setName" placeholder="عشان نحييك باسمك" style="width:100%" autocomplete="off">
 
     <label for="setFont">خط التطبيق</label>
@@ -970,10 +977,10 @@ nav.bottom button.on{color:var(--gold)}
 
     <label>حجم الخط</label>
     <div class="fontsizerow">
+      <button type="button" class="fsbtn" data-size="12">صغير جداً</button>
       <button type="button" class="fsbtn" data-size="13">صغير</button>
       <button type="button" class="fsbtn" data-size="15">عادي</button>
       <button type="button" class="fsbtn" data-size="17">كبير</button>
-      <button type="button" class="fsbtn" data-size="19">أكبر</button>
     </div>
     <label for="setHabits">العادات (كل عادة في سطر)</label>
     <textarea id="setHabits"></textarea>
@@ -1026,7 +1033,6 @@ nav.bottom button.on{color:var(--gold)}
     </div>
     <div id="acctLoggedIn" class="hidden">
       <div class="btnrow">
-        <button class="btn ghost" id="syncNowBtn">مزامنة دلوقتي ⇅</button>
         <button class="btn ghost" id="signOutBtn">تسجيل خروج</button>
       </div>
       <div class="btnrow" style="margin-top:8px">
@@ -3658,16 +3664,26 @@ function updateNavCurr(){
 }
 function applyFontSettings(){
   const font = settings.font || 'IBM Plex Sans Arabic';
-  const size = settings.fontSize || 15;
+  const size = settings.fontSize || 13;
   document.documentElement.style.setProperty('--app-font', `'${font}'`);
   document.documentElement.style.setProperty('--base-size', size + 'px');
 }
 function populateSettings(){
   $('#setName').value = settings.name || '';
+  // لو فيه اسم، نعرض "أهلاً فلان" مع قلم؛ ولا نعرض خانة الكتابة
+  const nm = (settings.name || '').trim();
+  if(nm){
+    $('#nameGreet').textContent = `أهلاً ${nm} 🤍`;
+    $('#nameDisplay').classList.remove('hidden');
+    $('#setName').classList.add('hidden');
+  } else {
+    $('#nameDisplay').classList.add('hidden');
+    $('#setName').classList.remove('hidden');
+  }
   refreshAuthUI();
   $('#setFont').value = settings.font || 'IBM Plex Sans Arabic';
   document.querySelectorAll('.fsbtn').forEach(b=>{
-    b.classList.toggle('on', parseInt(b.dataset.size,10) === (settings.fontSize || 15));
+    b.classList.toggle('on', parseInt(b.dataset.size,10) === (settings.fontSize || 13));
   });
   $('#setHabits').value = settings.habits.join('\n');
   $('#setBadHabits').value = (settings.badHabits || []).join('\n');
@@ -3687,6 +3703,11 @@ function fillCitiesFor(country, selectedCity){
   const co = COUNTRIES.find(c=>c.n===country) || COUNTRIES[0];
   $('#setCity').innerHTML = co.cities.map(ct=>`<option ${ct.n===selectedCity?'selected':''}>${ct.n}</option>`).join('');
 }
+$('#editNameBtn').onclick = ()=>{
+  $('#nameDisplay').classList.add('hidden');
+  $('#setName').classList.remove('hidden');
+  $('#setName').focus();
+};
 $('#setFont').addEventListener('change', ()=>{
   settings.font = $('#setFont').value;
   store(K.set, settings);
@@ -3977,10 +3998,6 @@ $('#googleBtn').onclick = async ()=>{
   const res = await authGoogle();
   if(res.error) showAuthError(res.error);
   // جوجل هيعمل redirect، فمفيش حاجة تانية هنا
-};
-$('#syncNowBtn').onclick = async ()=>{
-  await syncFull(false);
-  refreshAuthUI();
 };
 $('#changePassBtn').onclick = ()=>{
   $('#newPass').value=''; $('#newPass2').value='';
