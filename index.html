@@ -254,7 +254,7 @@ main{padding:0 16px; max-width:560px; margin:0 auto}
 .otype{display:inline-block; font-size:11px; background:var(--gold-soft); color:var(--gold); border-radius:6px; padding:1px 7px; margin-left:6px}
 .otypeedit{cursor:pointer}
 .prayeralert{margin-top:12px; padding:10px 12px; border-radius:10px; font-size:13px; line-height:1.6; background:var(--gold-soft); color:var(--gold); text-align:center}
-#prayerQuote{font-size:13px; color:var(--gold); margin-top:6px; line-height:1.7; opacity:.9; display:flex; align-items:center; gap:6px}
+#prayerQuote{font-size:13px; color:var(--gold); margin-top:6px; line-height:1.7; opacity:.9; display:flex; align-items:center; gap:6px; transition:opacity .18s ease}
 #prayerQuote .pqicon{font-style:normal; font-size:15px; flex-shrink:0}
 #prayerQuoteRow{display:flex; align-items:center; gap:8px}
 #prayerQuoteRow #prayerQuote{flex:1; margin-top:6px}
@@ -1976,7 +1976,30 @@ function openOblTypePicker(current, onPick){
 const iso = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 const todayISO = () => iso(new Date());
 let viewDate = todayISO();
-let prayerQuoteOverride = -1; // -1 = يتبع الساعة، غير كده = اختيار المستخدم يدوي
+let prayerQuoteOverride = -1; // -1 = يتبع التبديل التلقائي، غير كده = اختيار المستخدم يدوي
+let prayerQuoteIdx = 0;
+let prayerQuoteTimer = null;
+function setPrayerQuote(idx){
+  prayerQuoteIdx = ((idx % PRAYER_QUOTES.length) + PRAYER_QUOTES.length) % PRAYER_QUOTES.length;
+  const q = PRAYER_QUOTES[prayerQuoteIdx];
+  const el = $('#prayerQuote');
+  if(!el) return;
+  el.style.opacity = '0';
+  setTimeout(()=>{
+    el.innerHTML = `<span class="pqicon">${q.i}</span> <span class="pqtxt">${q.t}</span>`;
+    el.style.opacity = '';
+  }, 180);
+}
+function startPrayerQuoteRotation(){
+  if(prayerQuoteTimer) clearInterval(prayerQuoteTimer);
+  prayerQuoteTimer = setInterval(()=>{
+    // بس لو تبويب اليوم ظاهر
+    const todayTab = $('#tab-today');
+    if(!todayTab || !todayTab.classList.contains('active')) return;
+    prayerQuoteOverride = -1; // نرجّع للتبديل التلقائي
+    setPrayerQuote(prayerQuoteIdx + 1);
+  }, 8000);
+}
 let expMonthOffset = 0;
 
 function getDay(dISO){
@@ -2422,11 +2445,11 @@ function renderToday(){
   // prayer streak (كل الخمسة)
   const pn = streak(k=>{ const r = days[k]; return !!(r && r.p && r.p.reduce((a,b)=>a+(b?1:0),0) === 5); }, viewDate);
   $('#prayH3').innerHTML = icon('beads') + 'الصلاة';
-  // جملة ملهمة/تحفيزية بتتغير كل ساعة، مع أيقونة وزرار تغيير
+  // جملة ملهمة/تحفيزية بتتبدّل تلقائي، مع أيقونة وزرار تغيير
   const hourIdx = Math.floor(Date.now() / (3600*1000)) % PRAYER_QUOTES.length;
   const idx = (prayerQuoteOverride >= 0 ? prayerQuoteOverride : hourIdx) % PRAYER_QUOTES.length;
-  const q = PRAYER_QUOTES[idx];
-  $('#prayerQuote').innerHTML = `<span class="pqicon">${q.i}</span> <span class="pqtxt">${q.t}</span>`;
+  setPrayerQuote(idx);
+  startPrayerQuoteRotation();
 
   // في يوم زي ده
   const mmdd = viewDate.slice(5);
@@ -2604,10 +2627,9 @@ $('#prevDayBtn').onclick = ()=> shiftDay(-1);
 $('#nextDayBtn').onclick = ()=> shiftDay(1);
 $('#backToday').onclick = ()=>{ viewDate = todayISO(); renderToday(); };
 $('#prayerQuoteBtn').onclick = ()=>{
-  const cur = prayerQuoteOverride >= 0 ? prayerQuoteOverride : Math.floor(Date.now() / (3600*1000)) % PRAYER_QUOTES.length;
-  prayerQuoteOverride = (cur + 1) % PRAYER_QUOTES.length;
-  const q = PRAYER_QUOTES[prayerQuoteOverride];
-  $('#prayerQuote').innerHTML = `<span class="pqicon">${q.i}</span> <span class="pqtxt">${q.t}</span>`;
+  prayerQuoteOverride = (prayerQuoteIdx + 1) % PRAYER_QUOTES.length;
+  setPrayerQuote(prayerQuoteOverride);
+  startPrayerQuoteRotation(); // نصفّر المؤقّت عشان مايبدّلش بسرعة بعد الضغط
   if(navigator.vibrate) navigator.vibrate(10);
 };
 $('#prayDetailsBtn').onclick = ()=>{
