@@ -292,6 +292,7 @@ main{padding:0 16px; max-width:560px; margin:0 auto}
 .axisbtn{flex:1; background:var(--card2); border:1.5px solid var(--line); border-radius:14px; padding:11px 8px; font-family:inherit; font-size:13px; color:var(--text); cursor:pointer; transition:all .15s}
 .axisbtn.on{border-color:var(--gold); background:var(--gold-soft); color:var(--gold)}
 .headleft{display:flex; align-items:center; gap:8px}
+.headicons{display:flex; align-items:center; gap:2px}
 .fontsizerow{display:flex; gap:8px}
 .fsbtn{flex:1; background:var(--card2); border:1.5px solid var(--line); border-radius:999px; padding:10px 6px; font-family:inherit; font-size:13px; color:var(--text); cursor:pointer; transition:all .15s}
 .fsbtn.on{border-color:var(--gold); background:var(--gold-soft); color:var(--gold)}
@@ -705,10 +706,10 @@ nav.bottom button.on{color:var(--gold)}
   <div class="headleft">
     <span class="brand">يومي</span>
   </div>
-  <div>
-    <button class="iconbtn hidden" id="backBtn" aria-label="رجوع"><span data-icon="arrow_right"></span></button>
+  <div class="headicons">
     <button class="iconbtn" id="themeBtn" aria-label="تبديل الوضع"><span data-icon="moon"></span></button>
     <button class="iconbtn notifbtn" id="notifBtn" aria-label="الإشعارات"><span data-icon="bell"></span><span class="notifdot hidden" id="notifDot"></span></button>
+    <button class="iconbtn hidden" id="backBtn" aria-label="رجوع"><span data-icon="arrow_right"></span></button>
   </div>
 </header>
 
@@ -1013,10 +1014,10 @@ nav.bottom button.on{color:var(--gold)}
 
     <label>حجم الخط</label>
     <div class="fontsizerow">
-      <button type="button" class="fsbtn" data-size="11">صغير جداً</button>
-      <button type="button" class="fsbtn" data-size="12">صغير</button>
-      <button type="button" class="fsbtn" data-size="14">عادي</button>
-      <button type="button" class="fsbtn" data-size="16">كبير</button>
+      <button type="button" class="fsbtn" data-size="12">صغير جداً</button>
+      <button type="button" class="fsbtn" data-size="14">صغير</button>
+      <button type="button" class="fsbtn" data-size="17">عادي</button>
+      <button type="button" class="fsbtn" data-size="20">كبير</button>
     </div>
     <label for="setHabits">العادات (كل عادة في سطر)</label>
     <textarea id="setHabits"></textarea>
@@ -4293,40 +4294,51 @@ function renderBanners(){
   const snooze = localStorage.getItem('yawmi_snooze');
   const daysSince = last ? Math.floor((Date.now() - new Date(last+'T12:00:00').getTime()) / 86400000) : null;
   if(!isLoggedIn() && Object.keys(days).length >= 3 && (!last || daysSince >= 7) && snooze !== todayISO()){
+    const msg = last ? `آخر نسخة احتياطية من ${daysSince} يوم` : 'لسه معملتش نسخة احتياطية من بياناتك';
+    addNotif('💾', 'نسخة احتياطية', msg + ' — صدّر بياناتك عشان متضيعش');
     const b = document.createElement('div');
     b.className = 'banner';
-    b.innerHTML = `<span style="flex:1">${last ? `آخر نسخة احتياطية من ${daysSince} يوم` : 'لسه معملتش نسخة احتياطية من بياناتك'} ⚠</span><button class="bbtn">صدّر دلوقتي</button><button class="bx" aria-label="إخفاء">✕</button>`;
+    b.innerHTML = `<span style="flex:1">${msg} ⚠</span><button class="bbtn">صدّر دلوقتي</button><button class="bx" aria-label="إخفاء">✕</button>`;
     b.querySelector('.bbtn').onclick = ()=>{ doExport(); renderBanners(); };
     b.querySelector('.bx').onclick = ()=>{ localStorage.setItem('yawmi_snooze', todayISO()); renderBanners(); };
     wrap.appendChild(b);
   }
   // بانر المناسبة الدينية القادمة
   const occ = upcomingOccasion();
-  if(occ && localStorage.getItem('yawmi_occ_snooze') !== todayISO()){
-    const b = document.createElement('div');
-    b.className = 'banner occbanner';
-    b.innerHTML = `<span style="flex:1">${occ.msg}</span><span class="occlink">شوف الأعمال ›</span><button class="bx" aria-label="إخفاء">✕</button>`;
-    b.style.cursor = 'pointer';
-    b.onclick = (e)=>{
-      if(e.target.closest('.bx')){ localStorage.setItem('yawmi_occ_snooze', todayISO()); renderBanners(); return; }
-      // ننزل لكارت الأعمال المستحبة في صفحة اليوم
-      const card = $('#deedsCard');
-      if(card){ document.querySelector('nav.bottom button[data-tab=today]').click(); setTimeout(()=>card.scrollIntoView({behavior:'smooth', block:'center'}), 100); }
-    };
-    wrap.appendChild(b);
+  if(occ){
+    addNotif(occ.special ? '🕌' : '🌿', occ.special ? 'مناسبة دينية' : 'الأعمال المستحبة', occ.msg);
+    if(localStorage.getItem('yawmi_occ_snooze') !== todayISO()){
+      const b = document.createElement('div');
+      b.className = 'banner occbanner';
+      b.innerHTML = `<span style="flex:1">${occ.msg}</span><span class="occlink">شوف الأعمال ›</span><button class="bx" aria-label="إخفاء">✕</button>`;
+      b.style.cursor = 'pointer';
+      b.onclick = (e)=>{
+        if(e.target.closest('.bx')){ localStorage.setItem('yawmi_occ_snooze', todayISO()); renderBanners(); return; }
+        const card = $('#deedsCard');
+        if(card){ document.querySelector('nav.bottom button[data-tab=today]').click(); setTimeout(()=>card.scrollIntoView({behavior:'smooth', block:'center'}), 100); }
+      };
+      wrap.appendChild(b);
+    }
   }
   // تذكير المراجعة يوم الجمعة
   const wk = weekKeyOf();
   const r = revs[wk];
   const hasReview = r && ((r.answers && Object.values(r.answers).some(v=>v && v.trim())) || r.q1 || r.q2 || r.q3);
   if(new Date().getDay() === 5 && !hasReview){
-    const b = document.createElement('div');
-    b.className = 'banner';
-    b.style.cursor = 'pointer';
-    b.innerHTML = '<span style="flex:1">النهارده الجمعة — وقت المراجعة الأسبوعية ✍</span><span>‹</span>';
-    b.onclick = ()=> document.querySelector('nav.bottom button[data-tab=dash]').click();
-    wrap.appendChild(b);
+    addNotif('✍️', 'المراجعة الأسبوعية', 'النهارده الجمعة — وقت المراجعة الأسبوعية، خُد دقيقتين تراجع أسبوعك');
+    if(localStorage.getItem('yawmi_review_snooze') !== todayISO()){
+      const b = document.createElement('div');
+      b.className = 'banner';
+      b.style.cursor = 'pointer';
+      b.innerHTML = '<span style="flex:1">النهارده الجمعة — وقت المراجعة الأسبوعية ✍</span><span>‹</span><button class="bx" aria-label="إخفاء">✕</button>';
+      b.onclick = (e)=>{
+        if(e.target.closest('.bx')){ localStorage.setItem('yawmi_review_snooze', todayISO()); renderBanners(); return; }
+        document.querySelector('nav.bottom button[data-tab=dash]').click();
+      };
+      wrap.appendChild(b);
+    }
   }
+  updateNotifDot();
 }
 
 /* ================= weekly review ================= */
