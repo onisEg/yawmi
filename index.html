@@ -330,12 +330,13 @@ main{padding:0 16px; max-width:560px; margin:0 auto}
 .notiftitle{font-size:14px; font-weight:600; margin-bottom:2px}
 .notifbody{font-size:12px; color:var(--muted); line-height:1.6}
 .notiftime{font-size:10px; color:var(--faint); margin-top:4px}
-.installnotif{background:linear-gradient(135deg, var(--gold-soft), var(--card2)); border-color:var(--gold); cursor:pointer; position:relative}
-.storebadges{display:flex; gap:8px; margin-top:8px; flex-wrap:wrap}
-.storebadge{display:inline-flex; align-items:center; gap:5px; background:var(--card); border:1px solid var(--line); border-radius:8px; padding:4px 10px; font-size:11px; color:var(--text)}
-.storebadge .storeic{font-size:12px; color:var(--gold)}
-.installnotifbtn{margin-top:10px; background:var(--gold); color:#1a150a; border:none; border-radius:999px; padding:8px 20px; font-family:inherit; font-size:13px; font-weight:700; cursor:pointer}
+.installnotif{background:linear-gradient(135deg, var(--gold-soft), var(--card2)); border-color:var(--gold); cursor:pointer; position:relative; align-items:center}
+.installnotif .notiftitle{margin-bottom:8px}
+.installnotifbtn{background:var(--gold); color:#1a150a; border:none; border-radius:999px; padding:8px 20px; font-family:inherit; font-size:13px; font-weight:700; cursor:pointer}
 .notifhide{position:absolute; top:10px; left:10px; background:none; border:none; color:var(--muted); font-size:14px; cursor:pointer; padding:2px 6px}
+.installbanner{align-items:center; gap:8px}
+.installbanner .ibicon{font-size:18px; flex-shrink:0}
+.installbanner .ibinstall{background:var(--gold); color:#1a150a; border:none; border-radius:999px; padding:6px 16px; font-family:inherit; font-size:12px; font-weight:700; cursor:pointer; white-space:nowrap; flex-shrink:0}
 #tdTime, #taskDetailSheet input[type=time]{width:100%; background:var(--card2); border:1.5px solid var(--line); border-radius:12px; padding:12px 14px; font-family:inherit; font-size:15px; color:var(--text); outline:none; text-align:center; letter-spacing:1px}
 #tdTime:focus{border-color:var(--gold)}
 input[type=time]::-webkit-calendar-picker-indicator, input[type=date]::-webkit-calendar-picker-indicator{filter:opacity(.5)}
@@ -4289,12 +4290,7 @@ function renderNotifs(){
     inst.innerHTML = `
       <span class="notificon">📲</span>
       <div class="notifinfo">
-        <div class="notiftitle">Install App — ثبّت يومي</div>
-        <div class="notifbody">افتح يومي زي أي تطبيق من شاشتك الرئيسية، وشغّال أوفلاين</div>
-        <div class="storebadges">
-          <span class="storebadge"><span class="storeic">▶</span> Google Play</span>
-          <span class="storebadge"><span class="storeic"></span> App Store</span>
-        </div>
+        <div class="notiftitle">ثبّت يومي على موبايلك</div>
         <button class="installnotifbtn">Install App</button>
       </div>
       <button class="notifhide" aria-label="إخفاء">✕</button>`;
@@ -4342,6 +4338,17 @@ function checkOccasionNotifs(){
 function renderBanners(){
   const wrap = $('#banners');
   wrap.innerHTML = '';
+  // بانر التثبيت فوق (لو التطبيق مش متثبّت والمستخدم مقفلوش)
+  if(!isStandalone() && !localStorage.getItem('yawmi_install_banner_hide')){
+    const ib = document.createElement('div');
+    ib.className = 'banner installbanner';
+    ib.innerHTML = `<span class="ibicon">📲</span><span style="flex:1">ثبّت يومي على موبايلك</span><button class="ibinstall">Install App</button><button class="bx" aria-label="إخفاء">✕</button>`;
+    ib.querySelector('.ibinstall').onclick = (e)=>{ e.stopPropagation(); doInstall(); };
+    ib.querySelector('.bx').onclick = (e)=>{ e.stopPropagation(); localStorage.setItem('yawmi_install_banner_hide','1'); renderBanners(); };
+    ib.onclick = ()=> doInstall();
+    ib.style.cursor = 'pointer';
+    wrap.appendChild(ib);
+  }
   // تذكير النسخة الاحتياطية — منظهروش لو مسجّل دخول (عنده باك أب سحابي)
   const last = localStorage.getItem('yawmi_lastexp');
   const snooze = localStorage.getItem('yawmi_snooze');
