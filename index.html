@@ -51,10 +51,10 @@ html,body{margin:0; padding:0}
 body{
   background:var(--bg); color:var(--text);
   font-family:var(--app-font,'IBM Plex Sans Arabic'),system-ui,sans-serif;
-  font-size:var(--base-size,13px); line-height:1.7;
+  font-size:var(--base-size,12px); line-height:1.7;
   padding-bottom:calc(100px + env(safe-area-inset-bottom));
 }
-:root{--app-font:'IBM Plex Sans Arabic'; --base-size:13px}
+:root{--app-font:'IBM Plex Sans Arabic'; --base-size:12px}
 .amiri{font-family:'Amiri',serif}
 header.top{
   display:flex; align-items:center; justify-content:space-between;
@@ -308,6 +308,19 @@ main{padding:0 16px; max-width:560px; margin:0 auto}
 .deedicon{font-size:15px}
 .deeddesc{font-size:12px; color:var(--muted); line-height:1.6}
 .occbanner .occlink{color:var(--gold); font-weight:600; white-space:nowrap; margin-right:8px}
+.notifbtn{position:relative}
+.notifdot{position:absolute; top:4px; right:6px; width:8px; height:8px; border-radius:50%; background:var(--red); border:1.5px solid var(--bg)}
+#notifOv{position:fixed; inset:0; background:rgba(0,0,0,.6); display:flex; align-items:flex-end; justify-content:center; z-index:62; opacity:0; visibility:hidden; transition:opacity .25s, visibility .25s}
+#notifOv.show{opacity:1; visibility:visible}
+#notifSheet{background:var(--card); border-radius:24px 24px 0 0; width:100%; max-width:560px; padding:20px 20px calc(24px + env(safe-area-inset-bottom)); max-height:80vh; overflow-y:auto; transform:translateY(100%); transition:transform .3s cubic-bezier(.32,.72,0,1)}
+#notifOv.show #notifSheet{transform:translateY(0)}
+.notifitem{display:flex; align-items:flex-start; gap:12px; padding:12px; background:var(--card2); border:1px solid var(--line); border-radius:16px; margin-bottom:8px}
+.notifitem.unread{border-color:var(--gold); background:var(--gold-soft)}
+.notificon{font-size:20px; flex-shrink:0}
+.notifinfo{flex:1; min-width:0}
+.notiftitle{font-size:14px; font-weight:600; margin-bottom:2px}
+.notifbody{font-size:12px; color:var(--muted); line-height:1.6}
+.notiftime{font-size:10px; color:var(--faint); margin-top:4px}
 #tdTime, #taskDetailSheet input[type=time]{width:100%; background:var(--card2); border:1.5px solid var(--line); border-radius:12px; padding:12px 14px; font-family:inherit; font-size:15px; color:var(--text); outline:none; text-align:center; letter-spacing:1px}
 #tdTime:focus{border-color:var(--gold)}
 input[type=time]::-webkit-calendar-picker-indicator, input[type=date]::-webkit-calendar-picker-indicator{filter:opacity(.5)}
@@ -688,7 +701,7 @@ nav.bottom button.on{color:var(--gold)}
   <div>
     <button class="iconbtn hidden" id="backBtn" aria-label="رجوع"><span data-icon="arrow_right"></span></button>
     <button class="iconbtn" id="themeBtn" aria-label="تبديل الوضع"><span data-icon="moon"></span></button>
-    <button class="iconbtn" id="gearBtn" aria-label="الإعدادات"><span data-icon="settings"></span></button>
+    <button class="iconbtn notifbtn" id="notifBtn" aria-label="الإشعارات"><span data-icon="bell"></span><span class="notifdot hidden" id="notifDot"></span></button>
   </div>
 </header>
 
@@ -993,10 +1006,10 @@ nav.bottom button.on{color:var(--gold)}
 
     <label>حجم الخط</label>
     <div class="fontsizerow">
-      <button type="button" class="fsbtn" data-size="12">صغير جداً</button>
-      <button type="button" class="fsbtn" data-size="13">صغير</button>
-      <button type="button" class="fsbtn" data-size="15">عادي</button>
-      <button type="button" class="fsbtn" data-size="17">كبير</button>
+      <button type="button" class="fsbtn" data-size="11">صغير جداً</button>
+      <button type="button" class="fsbtn" data-size="12">صغير</button>
+      <button type="button" class="fsbtn" data-size="14">عادي</button>
+      <button type="button" class="fsbtn" data-size="16">كبير</button>
     </div>
     <label for="setHabits">العادات (كل عادة في سطر)</label>
     <textarea id="setHabits"></textarea>
@@ -1252,11 +1265,22 @@ nav.bottom button.on{color:var(--gold)}
   <button id="installDismiss" aria-label="إغلاق">✕</button>
 </div>
 
+<div id="notifOv">
+  <div id="notifSheet">
+    <div class="bhdhead">
+      <h2>🔔 الإشعارات</h2>
+      <button class="iconbtn" id="notifClose" aria-label="إغلاق">✕</button>
+    </div>
+    <div id="notifList"></div>
+    <button class="btn ghost" id="notifClearAll" style="width:100%; margin-top:12px">امسح الكل</button>
+  </div>
+</div>
+
 <div id="toast">تم الحفظ ✓</div>
 
 <script>
 /* ================= state ================= */
-const K = {days:'yawmi_days', tasks:'yawmi_tasks', exp:'yawmi_exp', obl:'yawmi_obl', rev:'yawmi_rev', goals:'yawmi_goals', bh:'yawmi_bhdata', set:'yawmi_settings'};
+const K = {days:'yawmi_days', tasks:'yawmi_tasks', exp:'yawmi_exp', obl:'yawmi_obl', rev:'yawmi_rev', goals:'yawmi_goals', bh:'yawmi_bhdata', set:'yawmi_settings', notifs:'yawmi_notifs'};
 
 // أسئلة المراجعة الأسبوعية الافتراضية — واقعية وتستاهل إجابة
 const DEFAULT_REV_Q = [
@@ -1938,6 +1962,7 @@ const ICONS = {
   x: '<path d="M18 6 6 18M6 6l12 12"/>',
   moon: '<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>',
   arrow_right: '<path d="M9 18l6-6-6-6"/>',
+  bell: '<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>',
   droplet: '<path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z"/>',
   bed: '<path d="M2 4v16M2 8h18a2 2 0 0 1 2 2v10M2 17h20M6 8v9"/><circle cx="7" cy="10" r="1.5"/>',
   book: '<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>',
@@ -3683,7 +3708,7 @@ function updateNavCurr(){
 }
 function applyFontSettings(){
   const font = settings.font || 'IBM Plex Sans Arabic';
-  const size = settings.fontSize || 13;
+  const size = settings.fontSize || 12;
   document.documentElement.style.setProperty('--app-font', `'${font}'`);
   document.documentElement.style.setProperty('--base-size', size + 'px');
 }
@@ -3702,7 +3727,7 @@ function populateSettings(){
   refreshAuthUI();
   $('#setFont').value = settings.font || 'IBM Plex Sans Arabic';
   document.querySelectorAll('.fsbtn').forEach(b=>{
-    b.classList.toggle('on', parseInt(b.dataset.size,10) === (settings.fontSize || 13));
+    b.classList.toggle('on', parseInt(b.dataset.size,10) === (settings.fontSize || 12));
   });
   $('#setHabits').value = settings.habits.join('\n');
   $('#setBadHabits').value = (settings.badHabits || []).join('\n');
@@ -3717,7 +3742,7 @@ function populateSettings(){
   $('#removePin').classList.toggle('hidden', !settings.pinH);
 }
 // زرار الترس فوق يروح لتبويب الإعدادات
-$('#gearBtn').onclick = ()=> document.querySelector('nav.bottom button[data-tab=settings]').click();
+// (زرار الترس اتشال، الإعدادات بقت تبويب تحت + جرس الإشعارات فوق)
 function fillCitiesFor(country, selectedCity){
   const co = COUNTRIES.find(c=>c.n===country) || COUNTRIES[0];
   $('#setCity').innerHTML = co.cities.map(ct=>`<option ${ct.n===selectedCity?'selected':''}>${ct.n}</option>`).join('');
@@ -4039,6 +4064,7 @@ $('#changePassSubmit').onclick = async ()=>{
   if(res.error){ err.textContent = res.error; err.classList.remove('hidden'); return; }
   $('#changePassOv').classList.remove('show');
   toast('اتغيّر الباسورد ✓');
+  addNotif('🔒', 'تم تغيير الباسورد', 'اتغيّر باسورد حسابك بنجاح. لو مش انت، غيّره فوراً.');
 };
 $('#signOutBtn').onclick = async ()=>{
   if(!confirm('تسجّل خروج؟ بياناتك المحلية هتفضل على الجهاز، والباك أب هيقف لحد ما تسجّل دخول تاني.')) return;
@@ -4141,19 +4167,22 @@ function deedsForDay(date){
 function upcomingOccasion(){
   const today = new Date();
   const wd = today.getDay();
-  // بكرة الجمعة؟
-  if(wd === 4) return {msg:'بكرة الجمعة — استعد لها، وأكثِر من الصلاة على النبي ﷺ', tab:'today'};
   const h = hijriOf(today);
+  const WEEKDAYS = ['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
+  const dayName = WEEKDAYS[wd];
+  // المناسبات الخاصة (رسالة مميزة)
+  if(wd === 4) return {msg:'بكرة الجمعة — الأعمال المستحبة في هذا اليوم', special:true};
   if(h){
-    // قرب رمضان (شعبان أواخره)
-    if(h.m === 8 && h.d >= 20) return {msg:'رمضان على الأبواب 🌙 — استعد بالتوبة والنية الصالحة', tab:'today'};
-    // قرب عرفة
-    if(h.m === 12 && h.d >= 1 && h.d <= 8) return {msg:'عشر ذي الحجة — أفضل أيام الدنيا، اغتنمها ✨', tab:'today'};
-    if(h.m === 12 && h.d === 8) return {msg:'بكرة يوم عرفة 🏔️ — جهّز نيّتك للصيام والدعاء', tab:'today'};
-    // قرب عاشوراء
-    if(h.m === 1 && h.d >= 1 && h.d <= 8) return {msg:'عاشوراء قرّب — استعد لصيام يوم يُكفّر السنة الماضية', tab:'today'};
-    // أيام بيض بكرة
-    if([12,13,14].includes(h.d)) return {msg:'الأيام البيض قرّبت 🤍 — صيامها من السنن الجميلة', tab:'today'};
+    if(h.m === 8 && h.d >= 20) return {msg:'رمضان على الأبواب 🌙 — استعد بالتوبة والنية الصالحة', special:true};
+    if(h.m === 12 && h.d === 8) return {msg:'بكرة يوم عرفة 🏔️ — جهّز نيّتك للصيام والدعاء', special:true};
+    if(h.m === 12 && h.d >= 1 && h.d <= 9) return {msg:'عشر ذي الحجة — أفضل أيام الدنيا، اغتنمها ✨', special:true};
+    if(h.m === 1 && h.d >= 1 && h.d <= 8) return {msg:'عاشوراء قرّب — استعد لصيام يوم يُكفّر السنة الماضية', special:true};
+    if(h.m === 9) return {msg:'رمضان كريم 🌙 — الأعمال المستحبة في هذا الشهر', special:true};
+  }
+  // لو فيه أعمال مستحبة النهارده، نظهر بانر عادي بيوجّه للكارت
+  const deeds = deedsForDay(today);
+  if(deeds.length){
+    return {msg:`النهارده ${dayName} — الأعمال المستحبة في هذا اليوم`, special:false};
   }
   return null;
 }
@@ -4191,6 +4220,64 @@ function renderDeeds(){
   });
 }
 
+// ===== نظام الإشعارات =====
+function loadNotifs(){ try{ return JSON.parse(localStorage.getItem(K.notifs)) || []; }catch(e){ return []; } }
+function saveNotifs(arr){ localStorage.setItem(K.notifs, JSON.stringify(arr.slice(0, 50))); }
+function addNotif(icon, title, body){
+  const arr = loadNotifs();
+  // نتجنب التكرار: نفس العنوان في نفس اليوم
+  const todayKey = todayISO();
+  if(arr.some(n => n.title === title && n.dayKey === todayKey)) return;
+  arr.unshift({id:Date.now(), icon, title, body, ts:Date.now(), dayKey:todayKey, read:false});
+  saveNotifs(arr);
+  updateNotifDot();
+}
+function updateNotifDot(){
+  const arr = loadNotifs();
+  const hasUnread = arr.some(n => !n.read);
+  const dot = $('#notifDot');
+  if(dot) dot.classList.toggle('hidden', !hasUnread);
+}
+function renderNotifs(){
+  const list = $('#notifList');
+  if(!list) return;
+  const arr = loadNotifs();
+  if(!arr.length){
+    list.innerHTML = '<div class="empty-big"><span class="ico">🔔</span><div class="ttl">مفيش إشعارات</div><div class="desc">هنا هتلاقي المناسبات والأحداث المهمة</div></div>';
+    return;
+  }
+  list.innerHTML = '';
+  arr.forEach(n=>{
+    const el = document.createElement('div');
+    el.className = 'notifitem' + (n.read ? '' : ' unread');
+    const when = new Date(n.ts).toLocaleString('ar-EG', {hour:'2-digit', minute:'2-digit', day:'numeric', month:'short'});
+    el.innerHTML = `
+      <span class="notificon">${n.icon}</span>
+      <div class="notifinfo">
+        <div class="notiftitle">${n.title}</div>
+        <div class="notifbody">${n.body}</div>
+        <div class="notiftime">${when}</div>
+      </div>`;
+    list.appendChild(el);
+  });
+}
+function openNotifs(){
+  $('#notifOv').classList.add('show');
+  renderNotifs();
+  // نعلّم الكل كمقروء
+  const arr = loadNotifs();
+  arr.forEach(n=> n.read = true);
+  saveNotifs(arr);
+  setTimeout(updateNotifDot, 500);
+}
+// نولّد إشعارات المناسبات الدينية تلقائي
+function checkOccasionNotifs(){
+  const occ = upcomingOccasion();
+  if(occ && occ.special){
+    addNotif('🕌', 'مناسبة دينية', occ.msg);
+  }
+}
+
 function renderBanners(){
   const wrap = $('#banners');
   wrap.innerHTML = '';
@@ -4211,9 +4298,10 @@ function renderBanners(){
   if(occ && localStorage.getItem('yawmi_occ_snooze') !== todayISO()){
     const b = document.createElement('div');
     b.className = 'banner occbanner';
-    b.innerHTML = `<span style="flex:1">${occ.msg}</span><span class="occlink">شوف الأعمال ›</span>`;
+    b.innerHTML = `<span style="flex:1">${occ.msg}</span><span class="occlink">شوف الأعمال ›</span><button class="bx" aria-label="إخفاء">✕</button>`;
     b.style.cursor = 'pointer';
     b.onclick = (e)=>{
+      if(e.target.closest('.bx')){ localStorage.setItem('yawmi_occ_snooze', todayISO()); renderBanners(); return; }
       // ننزل لكارت الأعمال المستحبة في صفحة اليوم
       const card = $('#deedsCard');
       if(card){ document.querySelector('nav.bottom button[data-tab=today]').click(); setTimeout(()=>card.scrollIntoView({behavior:'smooth', block:'center'}), 100); }
@@ -4425,6 +4513,14 @@ function applyTheme(t){
   $('#themeBtn').textContent = t === 'light' ? '☾' : '☀';
   localStorage.setItem('yawmi_theme', t);
 }
+$('#notifBtn').onclick = openNotifs;
+$('#notifClose').onclick = ()=> $('#notifOv').classList.remove('show');
+$('#notifOv').onclick = e=>{ if(e.target.id==='notifOv') $('#notifOv').classList.remove('show'); };
+$('#notifClearAll').onclick = ()=>{
+  saveNotifs([]);
+  renderNotifs();
+  updateNotifDot();
+};
 $('#themeBtn').onclick = ()=>{
   const cur = document.documentElement.getAttribute('data-theme');
   applyTheme(cur === 'light' ? 'dark' : 'light');
@@ -4435,6 +4531,8 @@ applyTheme(localStorage.getItem('yawmi_theme') || 'light');
 applyFontSettings();
 renderIcons();
 updateNavCurr();
+checkOccasionNotifs();
+updateNotifDot();
 renderToday();
 renderGreeting();
 
