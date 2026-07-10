@@ -120,6 +120,13 @@ main{padding:0 16px; max-width:560px; margin:0 auto}
 #installBanner .installsub{font-size:11px; color:var(--muted); line-height:1.5}
 #installBanner #installBtn{background:var(--gold); color:#1a150a; border:none; border-radius:10px; padding:8px 16px; font-family:inherit; font-size:13px; font-weight:700; cursor:pointer; flex-shrink:0}
 #installBanner #installDismiss{background:none; border:none; color:var(--muted); font-size:16px; cursor:pointer; padding:4px; flex-shrink:0}
+#installGuideOv{position:fixed; inset:0; background:rgba(0,0,0,.6); display:flex; align-items:flex-end; justify-content:center; z-index:63; opacity:0; visibility:hidden; transition:opacity .25s, visibility .25s}
+#installGuideOv.show{opacity:1; visibility:visible}
+#installGuideSheet{background:var(--card); border-radius:24px 24px 0 0; width:100%; max-width:560px; padding:20px 20px calc(24px + env(safe-area-inset-bottom)); max-height:85vh; overflow-y:auto; transform:translateY(100%); transition:transform .3s cubic-bezier(.32,.72,0,1)}
+#installGuideOv.show #installGuideSheet{transform:translateY(0)}
+.installsteps{margin:0; padding-right:20px; display:flex; flex-direction:column; gap:14px}
+.installsteps li{font-size:14px; line-height:1.8; color:var(--text)}
+.installsteps li b{color:var(--gold)}
 
 /* ---------- prayer beads ---------- */
 .beads{display:flex; justify-content:space-between; position:relative; padding:6px 4px}
@@ -1019,6 +1026,9 @@ nav.bottom button.on{color:var(--gold)}
       <button type="button" class="fsbtn" data-size="17">عادي</button>
       <button type="button" class="fsbtn" data-size="20">كبير</button>
     </div>
+
+    <label style="margin-top:20px; padding-top:16px; border-top:1px solid var(--line)">التطبيق</label>
+    <button class="btn ghost" id="installAppBtn" style="width:100%">📲 ثبّت يومي على موبايلك</button>
     <label for="setHabits">العادات (كل عادة في سطر)</label>
     <textarea id="setHabits"></textarea>
     <label for="setBadHabits">عادات تحت السيطرة 🚫 (كل واحدة في سطر — بتتعد بعدّاد)</label>
@@ -1271,6 +1281,16 @@ nav.bottom button.on{color:var(--gold)}
   </div>
   <button id="installBtn">تثبيت</button>
   <button id="installDismiss" aria-label="إغلاق">✕</button>
+</div>
+
+<div id="installGuideOv">
+  <div id="installGuideSheet">
+    <div class="bhdhead">
+      <h2>📲 تثبيت يومي</h2>
+      <button class="iconbtn" id="installGuideClose" aria-label="إغلاق">✕</button>
+    </div>
+    <div id="installGuideBody"></div>
+  </div>
 </div>
 
 <div id="notifOv">
@@ -3722,6 +3742,9 @@ function applyFontSettings(){
 }
 function populateSettings(){
   $('#setName').value = settings.name || '';
+  // زرار التثبيت — نخفيه لو التطبيق متثبّت بالفعل
+  const instBtn = $('#installAppBtn');
+  if(instBtn) instBtn.classList.toggle('hidden', isStandalone());
   // لو فيه اسم، نعرض "أهلاً فلان" مع قلم؛ ولا نعرض خانة الكتابة
   const nm = (settings.name || '').trim();
   if(nm){
@@ -4608,24 +4631,81 @@ let deferredInstallPrompt = null;
 window.addEventListener('beforeinstallprompt', (e)=>{
   e.preventDefault();
   deferredInstallPrompt = e;
-  // منظهرش البانر لو المستخدم رفض قبل كده، أو التطبيق متثبّت
   if(localStorage.getItem('yawmi_install_dismissed')) return;
   if(window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) return;
   setTimeout(()=>{ $('#installBanner').classList.remove('hidden'); }, 3000);
 });
-$('#installBtn').onclick = async ()=>{
-  if(!deferredInstallPrompt) return;
-  deferredInstallPrompt.prompt();
-  const { outcome } = await deferredInstallPrompt.userChoice;
-  deferredInstallPrompt = null;
-  $('#installBanner').classList.add('hidden');
-  if(outcome === 'accepted') toast('اتثبّت التطبيق ✓');
-};
+$('#installBtn').onclick = ()=> doInstall();
 $('#installDismiss').onclick = ()=>{
   $('#installBanner').classList.add('hidden');
   localStorage.setItem('yawmi_install_dismissed', '1');
 };
-window.addEventListener('appinstalled', ()=>{ $('#installBanner').classList.add('hidden'); });
+window.addEventListener('appinstalled', ()=>{ $('#installBanner').classList.add('hidden'); toast('اتثبّت التطبيق ✓'); });
+
+// هل التطبيق متثبّت بالفعل؟
+function isStandalone(){
+  return (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone === true;
+}
+// كشف نوع الجهاز
+function detectPlatform(){
+  const ua = navigator.userAgent || '';
+  if(/iPad|iPhone|iPod/.test(ua) && !window.MSStream) return 'ios';
+  if(/Android/.test(ua)) return 'android';
+  return 'desktop';
+}
+async function doInstall(){
+  // لو فيه prompt جاهز (كروم/أندرويد)، نستخدمه
+  if(deferredInstallPrompt){
+    deferredInstallPrompt.prompt();
+    const { outcome } = await deferredInstallPrompt.userChoice;
+    deferredInstallPrompt = null;
+    $('#installBanner').classList.add('hidden');
+    if(outcome === 'accepted') toast('اتثبّت التطبيق ✓');
+    return;
+  }
+  // مفيش prompt → نعرض تعليمات حسب الجهاز
+  showInstallGuide();
+}
+function showInstallGuide(){
+  if(isStandalone()){
+    $('#installGuideBody').innerHTML = '<div style="text-align:center; padding:20px 0"><div style="font-size:40px; margin-bottom:10px">✅</div><p style="color:var(--muted)">التطبيق متثبّت عندك بالفعل!</p></div>';
+    $('#installGuideOv').classList.add('show');
+    return;
+  }
+  const plat = detectPlatform();
+  let html = '';
+  if(plat === 'ios'){
+    html = `
+      <p style="color:var(--muted); font-size:14px; margin:0 0 16px; line-height:1.8">على آيفون/آيباد، من متصفح Safari:</p>
+      <ol class="installsteps">
+        <li>دوس على زرار <b>المشاركة</b> <span style="font-size:18px">􀈂</span> (المربع اللي فيه سهم لفوق) تحت</li>
+        <li>انزل تحت واختار <b>«إضافة إلى الشاشة الرئيسية»</b> <span style="font-size:16px">➕</span></li>
+        <li>دوس <b>«إضافة»</b> فوق على اليمين</li>
+      </ol>
+      <p style="color:var(--faint); font-size:12px; margin-top:14px">ملحوظة: لازم تفتح من Safari مش من تطبيق تاني.</p>`;
+  } else if(plat === 'android'){
+    html = `
+      <p style="color:var(--muted); font-size:14px; margin:0 0 16px; line-height:1.8">على أندرويد، من متصفح Chrome:</p>
+      <ol class="installsteps">
+        <li>دوس على <b>النقط الثلاثة</b> ⋮ فوق على اليمين</li>
+        <li>اختار <b>«تثبيت التطبيق»</b> أو <b>«إضافة إلى الشاشة الرئيسية»</b></li>
+        <li>دوس <b>«تثبيت»</b></li>
+      </ol>`;
+  } else {
+    html = `
+      <p style="color:var(--muted); font-size:14px; margin:0 0 16px; line-height:1.8">على الكمبيوتر، من متصفح Chrome أو Edge:</p>
+      <ol class="installsteps">
+        <li>دوّر على أيقونة <b>التثبيت</b> ⊕ في شريط العنوان فوق (جنب المفضلة)</li>
+        <li>أو من قائمة المتصفح اختار <b>«تثبيت يومي»</b></li>
+        <li>دوس <b>«تثبيت»</b></li>
+      </ol>`;
+  }
+  $('#installGuideBody').innerHTML = html;
+  $('#installGuideOv').classList.add('show');
+}
+$('#installAppBtn').onclick = ()=> doInstall();
+$('#installGuideClose').onclick = ()=> $('#installGuideOv').classList.remove('show');
+$('#installGuideOv').onclick = e=>{ if(e.target.id==='installGuideOv') $('#installGuideOv').classList.remove('show'); };
 
 if('serviceWorker' in navigator && (location.protocol==='https:' || location.hostname==='localhost')){
   navigator.serviceWorker.register('sw.js');
