@@ -312,6 +312,34 @@ main{padding:0 16px; max-width:560px; margin:0 auto}
 .namedisplay #nameGreet{font-size:15px; font-weight:600; color:var(--gold)}
 .namedisplay #editNameBtn{background:none; border:none; cursor:pointer; font-size:16px; padding:2px 6px}
 .deedscard h3{margin:0 0 12px}
+/* ===== challenges ===== */
+.chalhead{display:flex; align-items:center; justify-content:space-between; margin-bottom:12px}
+.chalhead h3{margin:0}
+.chaladd{background:var(--gold-soft); color:var(--gold); border:none; border-radius:999px; padding:6px 14px; font-family:inherit; font-size:12px; font-weight:600; cursor:pointer}
+.chalempty{font-size:13px; color:var(--muted); text-align:center; padding:14px 0; line-height:1.7}
+.chalitem{display:flex; align-items:center; gap:12px; padding:12px; background:linear-gradient(135deg, var(--card2), var(--card)); border:1px solid var(--line); border-radius:16px; margin-bottom:8px}
+.chalitem.done{border-color:var(--gold); background:var(--gold-soft)}
+.chalicon{font-size:24px; flex-shrink:0}
+.chalinfo{flex:1; min-width:0}
+.chaltitle{font-size:14px; font-weight:600; margin-bottom:6px}
+.chalbar{height:7px; background:var(--line); border-radius:999px; overflow:hidden}
+.chalbarfill{height:100%; background:linear-gradient(90deg, var(--gold), var(--teal)); border-radius:999px; transition:width .5s ease}
+.chalmeta{font-size:11px; color:var(--muted); margin-top:5px}
+.chalactions{display:flex; align-items:center; gap:4px; flex-shrink:0}
+.chalcheck{width:30px; height:30px; border-radius:50%; border:1.5px solid var(--teal); background:none; color:var(--teal); font-size:15px; cursor:pointer; display:flex; align-items:center; justify-content:center}
+.chalcheck.on{background:var(--teal); color:#fff}
+.chaldel{background:none; border:none; color:var(--faint); font-size:14px; cursor:pointer; padding:4px 6px}
+#challengeOv{position:fixed; inset:0; background:rgba(0,0,0,.6); display:flex; align-items:flex-end; justify-content:center; z-index:63; opacity:0; visibility:hidden; transition:opacity .25s, visibility .25s}
+#challengeOv.show{opacity:1; visibility:visible}
+#challengeSheet{background:var(--card); border-radius:24px 24px 0 0; width:100%; max-width:560px; padding:20px 20px calc(24px + env(safe-area-inset-bottom)); max-height:85vh; overflow-y:auto; transform:translateY(100%); transition:transform .3s cubic-bezier(.32,.72,0,1)}
+#challengeOv.show #challengeSheet{transform:translateY(0)}
+.chaltpl{display:flex; align-items:center; gap:12px; padding:12px; background:var(--card2); border:1px solid var(--line); border-radius:16px; margin-bottom:8px}
+.chaltplicon{font-size:22px; flex-shrink:0}
+.chaltplinfo{flex:1; min-width:0}
+.chaltpltitle{font-size:14px; font-weight:600; margin-bottom:2px}
+.chaltpldesc{font-size:11px; color:var(--muted); line-height:1.5}
+.chaltpladd{background:var(--gold); color:#1a150a; border:none; border-radius:999px; padding:8px 16px; font-family:inherit; font-size:12px; font-weight:700; cursor:pointer; flex-shrink:0}
+.chaltpladd:disabled{background:var(--card); color:var(--muted); cursor:default}
 .deeditem{display:flex; align-items:flex-start; gap:12px; padding:12px; background:var(--card2); border:1px solid var(--line); border-radius:16px; margin-bottom:8px; transition:all .15s}
 .deeditem.done{opacity:.6}
 .deeditem.done .deednm{text-decoration:line-through}
@@ -822,6 +850,14 @@ nav.bottom button.on{color:var(--gold)}
       <div id="deedsList"></div>
     </div>
 
+    <div class="card" id="challengesCard">
+      <div class="chalhead">
+        <h3 class="h3ic"><span>🏆</span> التحديات</h3>
+        <button class="chaladd" id="openChallenges">+ تحدي</button>
+      </div>
+      <div id="challengesList"></div>
+    </div>
+
     <div class="card collapsecard" id="moodCard">
       <button class="collapsehead" id="moodHead">
         <span class="ct"><span data-icon="smile"></span>حالتي النفسية اليوم</span>
@@ -1295,6 +1331,16 @@ nav.bottom button.on{color:var(--gold)}
   <button id="installDismiss" aria-label="إغلاق">✕</button>
 </div>
 
+<div id="challengeOv">
+  <div id="challengeSheet">
+    <div class="bhdhead">
+      <h2>🏆 تحدي جديد</h2>
+      <button class="iconbtn" id="challengeClose" aria-label="إغلاق">✕</button>
+    </div>
+    <div id="challengeSheetBody"></div>
+  </div>
+</div>
+
 <div id="installGuideOv">
   <div id="installGuideSheet">
     <div class="bhdhead">
@@ -1320,7 +1366,7 @@ nav.bottom button.on{color:var(--gold)}
 
 <script>
 /* ================= state ================= */
-const K = {days:'yawmi_days', tasks:'yawmi_tasks', exp:'yawmi_exp', obl:'yawmi_obl', rev:'yawmi_rev', goals:'yawmi_goals', bh:'yawmi_bhdata', set:'yawmi_settings', notifs:'yawmi_notifs'};
+const K = {days:'yawmi_days', tasks:'yawmi_tasks', exp:'yawmi_exp', obl:'yawmi_obl', rev:'yawmi_rev', goals:'yawmi_goals', bh:'yawmi_bhdata', set:'yawmi_settings', notifs:'yawmi_notifs', challenges:'yawmi_challenges'};
 
 // أسئلة المراجعة الأسبوعية الافتراضية — واقعية وتستاهل إجابة
 const DEFAULT_REV_Q = [
@@ -1383,6 +1429,7 @@ function collectAllData(){
     days: load(K.days,{}), tasks: load(K.tasks,[]), exps: load(K.exp,[]),
     obls: load(K.obl,[]), revs: load(K.rev,{}), goals: load(K.goals,[]),
     bhData: load(K.bh,{}), settings: load(K.set,{}),
+    challenges: load(K.challenges,[]),
     _syncedAt: Date.now()
   };
 }
@@ -1394,6 +1441,7 @@ function applyAllData(d){
   if(d.revs) store(K.rev, d.revs);
   if(d.goals) store(K.goals, d.goals);
   if(d.bhData) store(K.bh, d.bhData);
+  if(d.challenges) store(K.challenges, d.challenges);
   if(d.settings) store(K.set, Object.assign(load(K.set,{}), d.settings));
 }
 
@@ -1453,6 +1501,19 @@ function mergeByKey(localObj, remoteObj, scoreFn){
   return out;
 }
 // دمج قوائم بالـ id (المهام/المصاريف/الالتزامات): اتحاد بدون تكرار
+// دمج التحديات: اتحاد بالـ id، مع دمج سجل التعليم اليدوي (union) والأولوية للمحلي في الباقي
+function mergeChallenges(localArr, remoteArr){
+  const map = new Map();
+  (remoteArr || []).forEach(x=> map.set(x.id, x));
+  (localArr || []).forEach(x=>{
+    const ex = map.get(x.id);
+    if(!ex){ map.set(x.id, x); return; }
+    // دمج سجل التعليم اليدوي من الجهازين
+    const manualLog = Object.assign({}, ex.manualLog, x.manualLog);
+    map.set(x.id, Object.assign({}, ex, x, {manualLog, celebrated: x.celebrated || ex.celebrated}));
+  });
+  return [...map.values()];
+}
 function mergeById(localArr, remoteArr){
   const map = new Map();
   (remoteArr || []).forEach(x=> map.set(x.id, x));
@@ -1549,6 +1610,7 @@ function mergeData(local, remote){
     revs: mergeRevs(local.revs, remote.revs),
     goals: mergeGoals(local.goals, remote.goals),
     bhData: Object.assign({}, remote.bhData, local.bhData),
+    challenges: mergeChallenges(local.challenges, remote.challenges),
     settings: mergeSettings(local.settings, remote.settings),
     _syncedAt: Date.now()
   };
@@ -2577,6 +2639,7 @@ function renderToday(){
 
   renderBanners();
   renderDeeds();
+  renderChallenges();
 }
 
 function streak(test, anchor){
@@ -4322,6 +4385,184 @@ function upcomingOccasion(){
 }
 
 // كارت الأعمال المستحبة
+// ===== نظام التحديات =====
+function loadChallenges(){ try{ return JSON.parse(localStorage.getItem(K.challenges)) || []; }catch(e){ return []; } }
+function saveChallenges(arr){ localStorage.setItem(K.challenges, JSON.stringify(arr)); if(typeof syncSoon==='function') syncSoon(); }
+
+// التحديات الجاهزة
+function challengeTemplates(){
+  const habits = (settings.habits || []).map(h=>({
+    id:'habit_'+h, title:`عادة "${h}" ${'{n}'} يوم`, icon:'✅', type:'auto', source:'habit:'+h, target:7, desc:'حافظ على العادة دي كل يوم'
+  }));
+  const badHabits = (settings.badHabits || []).map(h=>({
+    id:'nobad_'+h, title:`بعيد عن "${h}" ${'{n}'} يوم`, icon:'🚭', type:'auto', source:'nobad:'+h, target:21, desc:'كل يوم من غير الوقوع فيها'
+  }));
+  return [
+    {id:'fajr_masjid', title:'الفجر في المسجد {n} يوم', icon:'🕌', type:'auto', source:'fajr_masjid', target:7, desc:'صلّي الفجر في المسجد أيام متتالية'},
+    {id:'all_prayers', title:'الصلوات الخمس {n} يوم', icon:'🕋', type:'auto', source:'all_prayers', target:7, desc:'صلّي الخمس فروض كل يوم'},
+    {id:'jamaa', title:'الصلاة جماعة {n} يوم', icon:'👥', type:'auto', source:'jamaa', target:7, desc:'صلّي الفروض جماعة (أو في المسجد)'},
+    {id:'azkar', title:'أذكار الصباح والمساء {n} يوم', icon:'📿', type:'auto', source:'azkar', target:7, desc:'داوم على أذكارك كل يوم'},
+    {id:'tasks_done', title:'خلّص كل مهامك {n} يوم', icon:'✅', type:'auto', source:'tasks_done', target:7, desc:'خلّص كل مهام اليوم كل يوم'},
+    ...habits, ...badHabits,
+    {id:'quran', title:'وردك من القرآن {n} يوم', icon:'📖', type:'manual', target:30, desc:'اقرأ وردك اليومي وعلّم عليه'},
+    {id:'custom', title:'تحدي من عندك', icon:'⭐', type:'manual', target:21, desc:'اعمل تحدي بأي هدف انت عايزه', custom:true},
+  ];
+}
+
+// هل تحقق شرط التحدي في يوم معين؟
+function challengeMetOnDay(ch, dISO){
+  const rec = days[dISO];
+  if(ch.type === 'manual'){
+    return !!(ch.manualLog && ch.manualLog[dISO]);
+  }
+  if(!rec) return false;
+  const src = ch.source || '';
+  if(src === 'fajr_masjid'){ return rec.p && (rec.p[0] === 4 || rec.p[0] === 2); }
+  if(src === 'all_prayers'){ return rec.p && rec.p.every(x=> x && x !== 3); }
+  if(src === 'jamaa'){ return rec.p && rec.p.every(x=> x === 2 || x === 4); }
+  if(src === 'azkar'){ return rec.z && Object.values(rec.z).some(Boolean); }
+  if(src === 'tasks_done'){
+    const dayTasks = tasks.filter(t=>!t.del && t.due === dISO);
+    return dayTasks.length > 0 && dayTasks.every(t=>t.done);
+  }
+  if(src.startsWith('habit:')){ const h = src.slice(6); return rec.h && rec.h[h]; }
+  if(src.startsWith('nobad:')){ const h = src.slice(6); return !(rec.bh && rec.bh[h]); }
+  return false;
+}
+
+// حساب عدد الأيام المتتالية المحققة من بداية التحدي لغاية النهارده
+function challengeProgress(ch){
+  const start = new Date(ch.startDate + 'T12:00:00');
+  const today = new Date(todayISO() + 'T12:00:00');
+  let streak = 0, broken = false;
+  const d = new Date(start);
+  while(d <= today){
+    const k = iso(d);
+    if(challengeMetOnDay(ch, k)){
+      streak++;
+    } else {
+      // لو اليوم ده هو النهارده ولسه ماحققش، مش كسر (لسه بدري)
+      if(iso(d) === todayISO()){ /* لسه اليوم شغّال */ }
+      else { broken = true; streak = 0; }
+    }
+    d.setDate(d.getDate() + 1);
+  }
+  return { streak: Math.min(streak, ch.target), broken, done: streak >= ch.target };
+}
+
+function renderChallenges(){
+  const list = $('#challengesList');
+  if(!list) return;
+  const chs = loadChallenges();
+  if(!chs.length){
+    list.innerHTML = '<div class="chalempty">مفيش تحديات لسه — ابدأ تحدي واكسب عادة حلوة 🔥</div>';
+    return;
+  }
+  list.innerHTML = '';
+  chs.forEach(ch=>{
+    const prog = challengeProgress(ch);
+    const pct = Math.min(prog.streak / ch.target * 100, 100);
+    const el = document.createElement('div');
+    el.className = 'chalitem' + (prog.done ? ' done' : '');
+    const title = ch.title.replace('{n}', arNum(ch.target));
+    el.innerHTML = `
+      <div class="chalicon">${ch.icon}</div>
+      <div class="chalinfo">
+        <div class="chaltitle">${title}</div>
+        <div class="chalbar"><div class="chalbarfill" style="width:${pct}%"></div></div>
+        <div class="chalmeta">${prog.done ? '🎉 اكتمل!' : `🔥 ${arNum(prog.streak)} من ${arNum(ch.target)} يوم`}</div>
+      </div>
+      <div class="chalactions">
+        ${ch.type === 'manual' && !prog.done ? `<button class="chalcheck ${(ch.manualLog&&ch.manualLog[todayISO()])?'on':''}" aria-label="علّم النهارده">${(ch.manualLog&&ch.manualLog[todayISO()])?'✓':'○'}</button>` : ''}
+        <button class="chaldel" aria-label="حذف">✕</button>
+      </div>`;
+    if(ch.type === 'manual' && !prog.done){
+      el.querySelector('.chalcheck').onclick = ()=>{
+        ch.manualLog = ch.manualLog || {};
+        ch.manualLog[todayISO()] = !ch.manualLog[todayISO()];
+        saveChallenges(chs);
+        if(navigator.vibrate) navigator.vibrate(10);
+        const p2 = challengeProgress(ch);
+        if(p2.done){ celebrate('كمّلت التحدي! 🎉🔥'); addNotif('🏆','تحدي مكتمل', title + ' — مبروك كمّلته!'); }
+        renderChallenges();
+      };
+    }
+    el.querySelector('.chaldel').onclick = ()=>{
+      const idx = chs.indexOf(ch);
+      chs.splice(idx, 1);
+      saveChallenges(chs);
+      renderChallenges();
+      undoToast('اتشال التحدي', ()=>{ chs.splice(idx, 0, ch); saveChallenges(chs); renderChallenges(); });
+    };
+    // احتفال أول ما يكمّل (للتلقائي)
+    if(prog.done && !ch.celebrated){
+      ch.celebrated = true; saveChallenges(chs);
+      setTimeout(()=>{ celebrate('كمّلت التحدي! 🎉🔥'); addNotif('🏆','تحدي مكتمل', title + ' — مبروك كمّلته!'); }, 400);
+    }
+    list.appendChild(el);
+  });
+}
+
+function openChallengeSheet(){
+  const body = $('#challengeSheetBody');
+  const templates = challengeTemplates();
+  const active = loadChallenges();
+  const activeIds = active.map(c=>c.baseId || c.id);
+  let html = '<div class="chaltemplates">';
+  templates.forEach(tpl=>{
+    const added = activeIds.includes(tpl.id);
+    html += `
+      <div class="chaltpl" data-id="${tpl.id}">
+        <span class="chaltplicon">${tpl.icon}</span>
+        <div class="chaltplinfo">
+          <div class="chaltpltitle">${tpl.title.replace('{n}', arNum(tpl.target))}</div>
+          <div class="chaltpldesc">${tpl.desc}</div>
+        </div>
+        <button class="chaltpladd" ${added?'disabled':''}>${added?'مضاف ✓':'ابدأ'}</button>
+      </div>`;
+  });
+  html += '</div>';
+  body.innerHTML = html;
+  body.querySelectorAll('.chaltpl').forEach(row=>{
+    const id = row.dataset.id;
+    const tpl = templates.find(t=>t.id === id);
+    row.querySelector('.chaltpladd').onclick = ()=>{
+      if(tpl.custom){ createCustomChallenge(); return; }
+      startChallenge(tpl);
+    };
+  });
+}
+
+function startChallenge(tpl, overrides){
+  const chs = loadChallenges();
+  const ch = Object.assign({}, tpl, {
+    baseId: tpl.id,
+    id: 'ch_' + Date.now(),
+    startDate: todayISO(),
+    manualLog: {},
+    celebrated: false
+  }, overrides || {});
+  chs.push(ch);
+  saveChallenges(chs);
+  $('#challengeOv').classList.remove('show');
+  renderChallenges();
+  toast('بدأ التحدي! 🔥');
+  addNotif('🏆', 'تحدي جديد', ch.title.replace('{n}', arNum(ch.target)) + ' — يلا نكمّله!');
+}
+
+function createCustomChallenge(){
+  const title = prompt('اسم التحدي؟ (مثلاً: امشي ٣٠ دقيقة)');
+  if(!title || !title.trim()) return;
+  const targetStr = prompt('كام يوم؟ (رقم)', '21');
+  const target = parseInt(targetStr, 10);
+  if(!target || target < 1) { alert('لازم رقم صحيح'); return; }
+  startChallenge({
+    id: 'custom_' + Date.now(),
+    title: title.trim() + ' {n} يوم',
+    icon: '⭐', type: 'manual', target, desc: 'تحدي شخصي'
+  }, { baseId: null });
+}
+
 function renderDeeds(){
   const card = $('#deedsCard');
   const list = $('#deedsList');
@@ -4689,6 +4930,9 @@ function applyTheme(t){
   localStorage.setItem('yawmi_theme', t);
 }
 $('#notifBtn').onclick = openNotifs;
+$('#openChallenges').onclick = ()=>{ openChallengeSheet(); $('#challengeOv').classList.add('show'); };
+$('#challengeClose').onclick = ()=> $('#challengeOv').classList.remove('show');
+$('#challengeOv').onclick = e=>{ if(e.target.id==='challengeOv') $('#challengeOv').classList.remove('show'); };
 $('#notifClose').onclick = ()=> $('#notifOv').classList.remove('show');
 $('#notifOv').onclick = e=>{ if(e.target.id==='notifOv') $('#notifOv').classList.remove('show'); };
 $('#notifClearAll').onclick = ()=>{
