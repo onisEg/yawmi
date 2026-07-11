@@ -777,6 +777,10 @@ nav.bottom button.on{color:var(--gold)}
 .histmore{text-align:center; padding:12px 0 2px; color:var(--gold); font-size:13px; cursor:pointer}
 /* splash screen */
 #splash{position:fixed; inset:0; z-index:100; background:var(--bg); display:flex; align-items:center; justify-content:center; opacity:1; transition:opacity .5s ease; pointer-events:none}
+#syncStrip{position:sticky; top:0; z-index:40; display:flex; align-items:center; justify-content:center; gap:8px; background:var(--gold-soft); color:var(--gold); font-size:12px; font-weight:600; padding:8px 12px; text-align:center}
+.minispin{display:inline-block; width:13px; height:13px; border:2px solid var(--gold); border-top-color:transparent; border-radius:50%; animation:minispin .7s linear infinite; vertical-align:middle}
+@keyframes minispin{to{transform:rotate(360deg)}}
+.authloading{display:inline-flex; align-items:center; gap:8px}
 #splash.hide{opacity:0}
 .splashinner{text-align:center; animation:splashfade .6s ease}
 .splashlogo{font-size:56px; margin-bottom:12px}
@@ -801,6 +805,8 @@ nav.bottom button.on{color:var(--gold)}
     <button class="iconbtn hidden" id="backBtn" aria-label="رجوع"><span data-icon="arrow_right"></span></button>
   </div>
 </header>
+
+<div id="syncStrip" class="hidden"><span class="minispin"></span> <span id="syncStripTxt">بنجيب بياناتك من حسابك…</span></div>
 
 <main>
   <!-- ============ اليوم ============ -->
@@ -1476,6 +1482,7 @@ const DATA_TABLE = 'yawmi_data';
 let sb = null;            // عميل Supabase
 let sbLoadFailed = false; // فشل تحميل مكتبة Supabase من كل المصادر
 let currentUser = null;   // المستخدم المسجّل دخوله (أو null)
+let authResolved = false; // هل حسمنا حالة تسجيل الدخول (بعد ما Supabase يجيب الجلسة)؟
 function initSupabase(){
   if(sb || !window._createSupabaseClient) return;
   sb = window._createSupabaseClient(SUPABASE_URL, SUPABASE_KEY, {
@@ -1483,9 +1490,12 @@ function initSupabase(){
   });
   sb.auth.onAuthStateChange((event, session)=>{
     currentUser = session ? session.user : null;
+    // نحفظ علامة إن فيه جلسة متوقّعة عشان الـ UI يعرف بسرعة بعد الريفريش
+    if(currentUser) localStorage.setItem('yawmi_had_session', '1');
+    else if(event === 'SIGNED_OUT') localStorage.removeItem('yawmi_had_session');
+    authResolved = true;
     refreshAuthUI();
     if(event === 'PASSWORD_RECOVERY'){
-      // المستخدم جه من لينك إعادة التعيين → نفتحله شاشة تغيير الباسورد
       setTimeout(()=>{
         $('#newPass').value=''; $('#newPass2').value='';
         $('#changePassError').classList.add('hidden');
@@ -1498,7 +1508,15 @@ function initSupabase(){
       syncFull(true); // أول ما يسجّل دخول، نزامن
     }
   });
+  // نجيب الجلسة فوراً بدل ما نستنى الحدث
+  sb.auth.getSession().then(({data})=>{
+    if(data && data.session){ currentUser = data.session.user; localStorage.setItem('yawmi_had_session','1'); }
+    authResolved = true;
+    refreshAuthUI();
+  }).catch(()=>{ authResolved = true; refreshAuthUI(); });
 }
+// هل فيه جلسة متوقّعة (من ريفريش سابق)؟ عشان نعرض مؤشر تحميل بدل "مش مسجّل"
+function sessionExpected(){ return localStorage.getItem('yawmi_had_session') === '1'; }
 function isLoggedIn(){ return !!currentUser; }
 
 // كل بيانات التطبيق في كائن واحد
@@ -1725,9 +1743,16 @@ function localSafetyBackup(){
     localStorage.setItem('yawmi_premerge_backup', JSON.stringify({at:Date.now(), data:snap}));
   }catch(e){}
 }
+function setSyncStrip(show, txt){
+  const el = $('#syncStrip');
+  if(!el) return;
+  if(txt) $('#syncStripTxt').textContent = txt;
+  el.classList.toggle('hidden', !show);
+}
 async function syncFull(silent){
   if(syncing || !isLoggedIn()) return;
   syncing = true;
+  setSyncStrip(true, 'بنجيب بياناتك من حسابك…');
   if(!silent) toast('بيزامن...');
   const res = await syncPull();
   const local = collectAllData();
@@ -1735,6 +1760,7 @@ async function syncFull(silent){
   if(res.status === 'error' || res.status === 'offline'){
     // فشل السحب → منعملش أي رفع (عشان منمسحش بيانات السحابة بالغلط)
     syncing = false;
+    setSyncStrip(false);
     if(!silent) toast('المزامنة فشلت: ' + (lastSyncError || 'النت') + ' — بياناتك سليمة');
     return;
   }
@@ -1749,6 +1775,7 @@ async function syncFull(silent){
     if(ok) syncDirty = false;
     syncReady = true;
     syncing = false;
+    setSyncStrip(false);
     if(!silent) toast(ok ? 'اتزامن ✓ (دمجنا كل بياناتك)' : ('اتدمج محلياً، بس الرفع فشل: ' + lastSyncError));
     return;
   }
@@ -1757,6 +1784,7 @@ async function syncFull(silent){
   const ok = await syncPush();
   if(ok){ localStorage.setItem('yawmi_syncedat', String(Date.now())); syncDirty = false; syncReady = true; }
   syncing = false;
+  setSyncStrip(false);
   if(!silent) toast(ok ? 'اتزامن ✓' : ('المزامنة فشلت: ' + (lastSyncError || 'جرّب تاني')));
 }
 function syncSoon(){
@@ -4237,6 +4265,14 @@ function refreshAuthUI(){
   const st = $('#acctStatus');
   const outEl = $('#acctLoggedOut'), inEl = $('#acctLoggedIn');
   if(!st) return;
+  // لسه بنحسم حالة الدخول وفيه جلسة متوقّعة → نعرض مؤشر تحميل بدل "مش مسجّل"
+  if(!loggedIn && !authResolved && sessionExpected()){
+    st.innerHTML = '<span class="authloading"><span class="minispin"></span> بنجيب بياناتك من حسابك…</span>';
+    st.style.color = 'var(--muted)';
+    if(outEl) outEl.classList.add('hidden');
+    if(inEl) inEl.classList.add('hidden');
+    return;
+  }
   if(loggedIn){
     const at = parseInt(localStorage.getItem('yawmi_syncedat')||'0',10);
     const email = currentUser.email || 'حسابك';
@@ -4291,12 +4327,35 @@ $('#authForgot').onclick = async ()=>{
   $('#authError').style.color = 'var(--teal)';
   $('#authError').textContent = 'بعتنالك إيميل فيه لينك تغيّر منه الباسورد — افتحه واتبع الخطوات';
 };
+// بننتظر Supabase يجهز (مع مهلة)، بدل ما نطلع رسالة "جرّب كمان شوية" على طول
+function waitForSupabase(maxMs){
+  return new Promise(resolve=>{
+    if(sb) return resolve(true);
+    initSupabase();
+    if(sb) return resolve(true);
+    const start = Date.now();
+    const t = setInterval(()=>{
+      if(sb){ clearInterval(t); resolve(true); }
+      else if(sbLoadFailed || Date.now()-start > (maxMs||15000)){ clearInterval(t); resolve(!!sb); }
+      else { initSupabase(); }
+    }, 500);
+  });
+}
 $('#authSubmit').onclick = async ()=>{
   const email = $('#authEmail').value.trim();
   const pass = $('#authPass').value;
   if(!email || !pass){ showAuthError('اكتب الإيميل والباسورد'); return; }
   $('#authSubmit').disabled = true;
-  $('#authSubmit').textContent = 'ثانية...';
+  $('#authSubmit').innerHTML = '<span class="minispin" style="border-color:#1a150a; border-top-color:transparent"></span>';
+  $('#authError').classList.add('hidden');
+  // ننتظر Supabase يجهز الأول (بيدور من مصدرين + إعادة محاولة)
+  const ready = await waitForSupabase(15000);
+  if(!ready){
+    $('#authSubmit').disabled = false;
+    applyAuthMode();
+    showAuthError('مشكلة في الاتصال بالسيرفر — اتأكد من النت وجرّب تاني');
+    return;
+  }
   const res = authMode==='signup' ? await authSignUp(email, pass) : await authSignIn(email, pass);
   $('#authSubmit').disabled = false;
   applyAuthMode();
@@ -5163,6 +5222,18 @@ $('#onboardName').addEventListener('keydown', e=>{ if(e.key==='Enter') $('#onboa
 markActive();
 // مزامنة صامتة عند الفتح ولما يرجع النت
 // تهيئة Supabase (لو الـ SDK جاهز، وإلا نستنى الحدث)
+// لو فيه جلسة متوقّعة من ريفريش سابق، نعرض مؤشر التحميل فوراً
+if(sessionExpected()){
+  setSyncStrip(true, 'بنجيب بياناتك من حسابك…');
+  // احتياطي: لو مفيش داتا وصلت خلال ١٢ ثانية، نبلّغ المستخدم من غير ما نخفي المؤشر بالكامل
+  setTimeout(()=>{
+    if(sessionExpected() && !syncReady){
+      setSyncStrip(true, 'الاتصال بطيء… بنحاول نجيب بياناتك، استنى شوية');
+    }
+  }, 12000);
+  // بعد ٣٠ ثانية لو لسه مفيش، نخفي المؤشر عشان مايفضلش للأبد
+  setTimeout(()=>{ if(!syncReady) setSyncStrip(false); }, 30000);
+}
 if(window._createSupabaseClient) initSupabase();
 else window.addEventListener('supabase-ready', initSupabase);
 // لو فشل تحميل Supabase من كل المصادر
