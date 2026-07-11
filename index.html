@@ -781,6 +781,12 @@ nav.bottom button.on{color:var(--gold)}
 .minispin{display:inline-block; width:13px; height:13px; border:2px solid var(--gold); border-top-color:transparent; border-radius:50%; animation:minispin .7s linear infinite; vertical-align:middle}
 @keyframes minispin{to{transform:rotate(360deg)}}
 .authloading{display:inline-flex; align-items:center; gap:8px}
+#dataLoadingOverlay{position:fixed; inset:0; z-index:55; background:var(--bg); display:flex; align-items:center; justify-content:center; transition:opacity .35s ease}
+#dataLoadingOverlay.fade{opacity:0}
+#dataLoadingOverlay .dlo-inner{display:flex; flex-direction:column; align-items:center; gap:14px; text-align:center; padding:24px}
+#dataLoadingOverlay .dlo-spin{width:44px; height:44px; border:3px solid var(--gold-soft); border-top-color:var(--gold); border-radius:50%; animation:minispin .8s linear infinite}
+#dataLoadingOverlay .dlo-title{font-size:17px; font-weight:700; color:var(--text)}
+#dataLoadingOverlay .dlo-sub{font-size:13px; color:var(--muted)}
 #splash.hide{opacity:0}
 .splashinner{text-align:center; animation:splashfade .6s ease}
 .splashlogo{font-size:56px; margin-bottom:12px}
@@ -807,6 +813,14 @@ nav.bottom button.on{color:var(--gold)}
 </header>
 
 <div id="syncStrip" class="hidden"><span class="minispin"></span> <span id="syncStripTxt">بنجيب بياناتك من حسابك…</span></div>
+
+<div id="dataLoadingOverlay" class="hidden">
+  <div class="dlo-inner">
+    <div class="dlo-spin"></div>
+    <div class="dlo-title">بنجيب بياناتك…</div>
+    <div class="dlo-sub">ثانية واحدة وبياناتك تظهر 🤍</div>
+  </div>
+</div>
 
 <main>
   <!-- ============ اليوم ============ -->
@@ -1511,6 +1525,7 @@ function initSupabase(){
   // نجيب الجلسة فوراً بدل ما نستنى الحدث
   sb.auth.getSession().then(({data})=>{
     if(data && data.session){ currentUser = data.session.user; localStorage.setItem('yawmi_had_session','1'); }
+    else { localStorage.removeItem('yawmi_had_session'); hideDataLoading(); setSyncStrip(false); }
     authResolved = true;
     refreshAuthUI();
   }).catch(()=>{ authResolved = true; refreshAuthUI(); });
@@ -1749,6 +1764,20 @@ function setSyncStrip(show, txt){
   if(txt) $('#syncStripTxt').textContent = txt;
   el.classList.toggle('hidden', !show);
 }
+// شاشة تحميل كاملة فوق المحتوى — تظهر أول ما نفتح ولسه بنجيب البيانات من الحساب
+let dataLoadingShown = false;
+function showDataLoading(){
+  const ov = $('#dataLoadingOverlay');
+  if(ov){ ov.classList.remove('hidden'); dataLoadingShown = true; }
+}
+function hideDataLoading(){
+  const ov = $('#dataLoadingOverlay');
+  if(ov && dataLoadingShown){
+    ov.classList.add('fade');
+    setTimeout(()=>{ ov.classList.add('hidden'); ov.classList.remove('fade'); }, 350);
+    dataLoadingShown = false;
+  }
+}
 async function syncFull(silent){
   if(syncing || !isLoggedIn()) return;
   syncing = true;
@@ -1760,7 +1789,7 @@ async function syncFull(silent){
   if(res.status === 'error' || res.status === 'offline'){
     // فشل السحب → منعملش أي رفع (عشان منمسحش بيانات السحابة بالغلط)
     syncing = false;
-    setSyncStrip(false);
+    setSyncStrip(false); hideDataLoading();
     if(!silent) toast('المزامنة فشلت: ' + (lastSyncError || 'النت') + ' — بياناتك سليمة');
     return;
   }
@@ -1775,7 +1804,7 @@ async function syncFull(silent){
     if(ok) syncDirty = false;
     syncReady = true;
     syncing = false;
-    setSyncStrip(false);
+    setSyncStrip(false); hideDataLoading();
     if(!silent) toast(ok ? 'اتزامن ✓ (دمجنا كل بياناتك)' : ('اتدمج محلياً، بس الرفع فشل: ' + lastSyncError));
     return;
   }
@@ -1784,7 +1813,7 @@ async function syncFull(silent){
   const ok = await syncPush();
   if(ok){ localStorage.setItem('yawmi_syncedat', String(Date.now())); syncDirty = false; syncReady = true; }
   syncing = false;
-  setSyncStrip(false);
+  setSyncStrip(false); hideDataLoading();
   if(!silent) toast(ok ? 'اتزامن ✓' : ('المزامنة فشلت: ' + (lastSyncError || 'جرّب تاني')));
 }
 function syncSoon(){
@@ -5225,13 +5254,16 @@ markActive();
 // لو فيه جلسة متوقّعة من ريفريش سابق، نعرض مؤشر التحميل فوراً
 if(sessionExpected()){
   setSyncStrip(true, 'بنجيب بياناتك من حسابك…');
+  showDataLoading();
   // احتياطي: لو مفيش داتا وصلت خلال ١٢ ثانية، نبلّغ المستخدم من غير ما نخفي المؤشر بالكامل
   setTimeout(()=>{
     if(sessionExpected() && !syncReady){
       setSyncStrip(true, 'الاتصال بطيء… بنحاول نجيب بياناتك، استنى شوية');
     }
   }, 12000);
-  // بعد ٣٠ ثانية لو لسه مفيش، نخفي المؤشر عشان مايفضلش للأبد
+  // بعد ١٥ ثانية لو لسه مفيش، نخفي شاشة التحميل عشان مايفضلش مستني للأبد (بياناته المحلية تظهر)
+  setTimeout(()=>{ hideDataLoading(); }, 15000);
+  // بعد ٣٠ ثانية لو لسه مفيش مزامنة، نخفي الشريط
   setTimeout(()=>{ if(!syncReady) setSyncStrip(false); }, 30000);
 }
 if(window._createSupabaseClient) initSupabase();
