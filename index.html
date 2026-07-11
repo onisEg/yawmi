@@ -5301,11 +5301,9 @@ if(sessionExpected()){
   setSyncStrip(true, 'بنجيب بياناتك من حسابك…');
   showDataLoading();
   // حلقة إعادة رسم: طول ما شاشة التحميل ظاهرة، نعيد رسم الصفحة كل نص ثانية
-  // عشان أول ما البيانات توصل وتتحفظ محلياً، الواجهة تتحدّث فوراً
   let _renderTicks = 0;
   const _renderLoop = setInterval(()=>{
     _renderTicks++;
-    // لو المزامنة خلصت، نرسم آخر مرة ونخفي التحميل ونوقف
     if(syncReady){
       reloadState();
       try{ renderCurrentTab(); }catch(e){}
@@ -5314,17 +5312,18 @@ if(sessionExpected()){
       clearInterval(_renderLoop);
       return;
     }
-    // إعادة رسم دورية عشان أي داتا نزلت تظهر
     try{ reloadState(); renderCurrentTab(); }catch(e){}
-    // بعد ٢٤ محاولة (١٢ ثانية) نغيّر الرسالة
     if(_renderTicks === 24){ setSyncStrip(true, 'الاتصال بطيء… استنى شوية 🤍'); }
-    // بعد ٤٠ محاولة (٢٠ ثانية) نخفي التحميل ونعرض اللي عندنا محلياً
     if(_renderTicks >= 40){
       hideDataLoading();
       setSyncStrip(false);
       clearInterval(_renderLoop);
     }
   }, 500);
+} else {
+  // حتى من غير حساب: نعيد رسم الصفحة مرتين بعد التحميل عشان أي داتا محلية اتأخرت تظهر
+  setTimeout(()=>{ try{ reloadState(); renderCurrentTab(); }catch(e){} }, 300);
+  setTimeout(()=>{ try{ reloadState(); renderCurrentTab(); }catch(e){} }, 1000);
 }
 if(window._createSupabaseClient) initSupabase();
 else window.addEventListener('supabase-ready', initSupabase);
