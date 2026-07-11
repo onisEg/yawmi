@@ -364,6 +364,7 @@ main{padding:0 16px; max-width:560px; margin:0 auto}
 .reminfo small{font-size:11px; color:var(--muted)}
 .remctrl{display:flex; align-items:center; gap:8px; flex-shrink:0}
 .remctrl input[type=time]{width:auto; padding:6px 8px; font-size:13px; border-radius:10px}
+.remselect{padding:6px 8px; font-size:12px; border-radius:10px; border:1px solid var(--line); background:var(--card2); color:var(--text); font-family:inherit}
 .switch{position:relative; display:inline-block; width:44px; height:26px; flex-shrink:0}
 .switch input{opacity:0; width:0; height:0}
 .switch .slider{position:absolute; cursor:pointer; inset:0; background:var(--line); border-radius:999px; transition:.2s}
@@ -1144,6 +1145,10 @@ nav.bottom button.on{color:var(--gold)}
     <div id="remindersBox">
       <button class="btn ghost" id="enableNotifBtn" style="width:100%; margin-bottom:12px">فعّل التذكيرات</button>
       <div id="reminderOptions" class="hidden">
+        <div class="remrow">
+          <div class="reminfo"><span>🕌 تذكير الصلاة</span><small>عند وقت كل صلاة</small></div>
+          <div class="remctrl"><select id="remPrayerBefore" class="remselect"><option value="0">في وقتها</option><option value="5">قبلها ٥ د</option><option value="10">قبلها ١٠ د</option><option value="15">قبلها ١٥ د</option></select><label class="switch"><input type="checkbox" id="remPrayer"><span class="slider"></span></label></div>
+        </div>
         <div class="remrow">
           <div class="reminfo"><span>📿 تذكير الأذكار والورد</span><small>يوصّلك تذكير يومي</small></div>
           <div class="remctrl"><input type="time" id="remAzkarTime" value="18:00"><label class="switch"><input type="checkbox" id="remAzkar"><span class="slider"></span></label></div>
@@ -5403,20 +5408,49 @@ function checkDueReminders(){
       fired.fast = true;
     }
   }
+  // تذكير الصلاة (عند وقت كل صلاة أو قبلها بدقايق)
+  if(r.prayer){
+    const times = getTodayPrayerTimes(); // [fajr, dhuhr, asr, maghrib, isha] بالدقايق من نص الليل، أو null
+    if(times){
+      const nowMin = now.getHours()*60 + now.getMinutes();
+      const before = parseInt(r.prayerBefore || '0', 10);
+      const names = ['الفجر','الظهر','العصر','المغرب','العشاء'];
+      times.forEach((t, i)=>{
+        const target = t - before;
+        if(nowMin === target && !fired['prayer_'+i]){
+          const msg = before > 0 ? `فاضل ${arNum(before)} دقيقة على ${names[i]} 🕌` : `دخل وقت ${names[i]} 🕌 — حافظ على صلاتك`;
+          showLocalNotif('🕌 ' + names[i], msg);
+          addNotif('🕌', 'تذكير الصلاة', msg);
+          fired['prayer_'+i] = true;
+        }
+      });
+    }
+  }
   localStorage.setItem(firedKey, JSON.stringify(fired));
 }
 
+// نجيب مواقيت النهارده من الكاش (نفس المفتاح اللي بيستخدمه التطبيق)
+function getTodayPrayerTimes(){
+  try{
+    const c = cityCoords();
+    const key = c.n + '|' + todayISO();
+    const cache = JSON.parse(localStorage.getItem('yawmi_ptimes') || '{}');
+    return cache[key] || null;
+  }catch(e){ return null; }
+}
 function populateReminders(){
   const r = loadReminders();
   const enabled = notifSupported() && Notification.permission === 'granted';
   $('#enableNotifBtn').classList.toggle('hidden', enabled);
   $('#reminderOptions').classList.toggle('hidden', !enabled);
+  if($('#remPrayer')){ $('#remPrayer').checked = !!r.prayer; $('#remPrayerBefore').value = r.prayerBefore || '0'; }
   if($('#remAzkar')){ $('#remAzkar').checked = !!r.azkar; $('#remAzkarTime').value = r.azkarTime || '18:00'; }
   if($('#remReview')){ $('#remReview').checked = !!r.review; $('#remReviewTime').value = r.reviewTime || '20:00'; }
   if($('#remFast')){ $('#remFast').checked = !!r.fast; $('#remFastTime').value = r.fastTime || '21:00'; }
 }
 function saveReminderSettings(){
   const r = {
+    prayer: $('#remPrayer').checked, prayerBefore: $('#remPrayerBefore').value,
     azkar: $('#remAzkar').checked, azkarTime: $('#remAzkarTime').value,
     review: $('#remReview').checked, reviewTime: $('#remReviewTime').value,
     fast: $('#remFast').checked, fastTime: $('#remFastTime').value,
@@ -5432,7 +5466,7 @@ if($('#enableNotifBtn')){
     else { alert('لازم تسمح بالإشعارات من المتصفح عشان التذكيرات تشتغل'); }
   };
 }
-['remAzkar','remReview','remFast','remAzkarTime','remReviewTime','remFastTime'].forEach(id=>{
+['remPrayer','remPrayerBefore','remAzkar','remReview','remFast','remAzkarTime','remReviewTime','remFastTime'].forEach(id=>{
   const el = $('#'+id);
   if(el) el.addEventListener('change', saveReminderSettings);
 });
