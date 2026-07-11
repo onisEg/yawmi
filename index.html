@@ -1581,6 +1581,13 @@ function applyAllData(d){
   if(d.bhData) store(K.bh, d.bhData);
   if(d.challenges) store(K.challenges, d.challenges);
   if(d.settings) store(K.set, Object.assign(load(K.set,{}), d.settings));
+  // أول ما نطبّق بيانات المزامنة، نعيد تحميل الحالة ونرسم فوراً + نخفي شاشة التحميل
+  try{
+    if(typeof reloadState === 'function') reloadState();
+    if(typeof renderCurrentTab === 'function') renderCurrentTab();
+    if(typeof hideDataLoading === 'function') hideDataLoading();
+    if(typeof setSyncStrip === 'function') setSyncStrip(false);
+  }catch(e){ console.warn('applyAllData render', e); }
 }
 
 // ====== الدمج الآمن: بيدمج بيانات الجهاز مع السحابة من غير ما يمسح حاجة ======
