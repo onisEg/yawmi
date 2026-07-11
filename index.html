@@ -1524,11 +1524,20 @@ function initSupabase(){
   });
   // نجيب الجلسة فوراً بدل ما نستنى الحدث
   sb.auth.getSession().then(({data})=>{
-    if(data && data.session){ currentUser = data.session.user; localStorage.setItem('yawmi_had_session','1'); }
-    else { localStorage.removeItem('yawmi_had_session'); hideDataLoading(); setSyncStrip(false); }
-    authResolved = true;
-    refreshAuthUI();
-  }).catch(()=>{ authResolved = true; refreshAuthUI(); });
+    if(data && data.session){
+      currentUser = data.session.user;
+      localStorage.setItem('yawmi_had_session','1');
+      authResolved = true;
+      refreshAuthUI();
+      // نزامن فوراً عشان البيانات تظهر من غير ما المستخدم يعمل حاجة
+      syncFull(true);
+    } else {
+      localStorage.removeItem('yawmi_had_session');
+      hideDataLoading(); setSyncStrip(false);
+      authResolved = true;
+      refreshAuthUI();
+    }
+  }).catch(()=>{ authResolved = true; hideDataLoading(); refreshAuthUI(); });
 }
 // هل فيه جلسة متوقّعة (من ريفريش سابق)؟ عشان نعرض مؤشر تحميل بدل "مش مسجّل"
 function sessionExpected(){ return localStorage.getItem('yawmi_had_session') === '1'; }
@@ -1800,6 +1809,7 @@ async function syncFull(silent){
     applyAllData(merged);
     localStorage.setItem('yawmi_syncedat', String(Date.now()));
     reloadState();
+    renderCurrentTab();
     const ok = await syncPush();
     if(ok) syncDirty = false;
     syncReady = true;
@@ -1946,6 +1956,21 @@ settings.dhikrList = settings.dhikrList || DEFAULT_DHIKR.slice();
 settings.oblTypes = settings.oblTypes || ['التزام','دين','اشتراك'];
 
 // إعادة تحميل كل الحالة من التخزين المحلي (بعد سحب مزامنة)
+// إعادة رسم التبويب الظاهر حالياً (بيتنده بعد المزامنة عشان البيانات تظهر فوراً)
+function renderCurrentTab(){
+  try{
+    updateNavCurr();
+    renderToday();
+    const active = document.querySelector('nav.bottom button.on');
+    if(active){
+      const tab = active.dataset.tab;
+      if(tab==='tasks') renderTasks();
+      else if(tab==='goals') renderGoals();
+      else if(tab==='exp') renderExp();
+      else if(tab==='dash') renderDash();
+    }
+  }catch(e){ console.warn('renderCurrentTab', e); }
+}
 function reloadState(){
   days = load(K.days, {});
   tasks = load(K.tasks, []);
