@@ -1364,6 +1364,21 @@ nav.bottom button.on{color:var(--gold)}
     <div class="splashsig">صنعه أنس بحب — ادعيله ربنا يصلح حاله 🤍</div>
   </div>
 </div>
+<script>
+  // ضمان إخفاء شاشة الترحيب مهما حصل أي خطأ في باقي الكود
+  (function(){
+    function hideSplash(){
+      var s = document.getElementById('splash');
+      if(!s) return;
+      s.classList.add('hide');
+      setTimeout(function(){ if(s) s.style.display = 'none'; }, 600);
+    }
+    // احتياطي: بعد ٣.٥ ثانية نخفيها بالقوة حتى لو حصل خطأ
+    setTimeout(hideSplash, 3500);
+    // وكمان عند اكتمال تحميل الصفحة
+    window.addEventListener('load', function(){ setTimeout(hideSplash, 2000); });
+  })();
+</script>
 
 <div id="installBanner" class="hidden">
   <span data-icon="download" class="installicon"></span>
@@ -4532,7 +4547,18 @@ function challengeProgress(ch){
 function renderChallenges(){
   const list = $('#challengesList');
   if(!list) return;
-  const chs = loadChallenges();
+  let chs = loadChallenges();
+  // تنظيف أي تحديات ناقصة أو قديمة الشكل عشان ماتكسرش التطبيق
+  let cleaned = false;
+  chs = chs.filter(ch=> ch && typeof ch === 'object' && ch.id).map(ch=>{
+    if(typeof ch.title !== 'string'){ ch.title = (ch.desc || 'تحدي') + ' {n} يوم'; cleaned = true; }
+    if(!ch.icon){ ch.icon = '🏆'; cleaned = true; }
+    if(!ch.target || ch.target < 1){ ch.target = 7; cleaned = true; }
+    if(!ch.startDate){ ch.startDate = todayISO(); cleaned = true; }
+    if(!ch.type){ ch.type = ch.source ? 'auto' : 'manual'; cleaned = true; }
+    return ch;
+  });
+  if(cleaned) saveChallenges(chs);
   if(!chs.length){
     list.innerHTML = '<div class="chalempty">مفيش تحديات لسه — ابدأ تحدي واكسب عادة حلوة 🔥</div>';
     return;
@@ -4543,7 +4569,7 @@ function renderChallenges(){
     const pct = Math.min(prog.streak / ch.target * 100, 100);
     const el = document.createElement('div');
     el.className = 'chalitem' + (prog.done ? ' done' : '');
-    const title = ch.title.replace('{n}', arNum(ch.target));
+    const title = (ch.title || 'تحدي {n} يوم').replace('{n}', arNum(ch.target));
     el.innerHTML = `
       <div class="chalicon">${ch.icon}</div>
       <div class="chalinfo">
@@ -4664,7 +4690,7 @@ function startChallenge(tpl, overrides){
   $('#challengeOv').classList.remove('show');
   renderChallenges();
   toast('بدأ التحدي! 🔥');
-  addNotif('🏆', 'تحدي جديد', ch.title.replace('{n}', arNum(ch.target)) + ' — يلا نكمّله!');
+  addNotif('🏆', 'تحدي جديد', (ch.title || 'تحدي {n} يوم').replace('{n}', arNum(ch.target)) + ' — يلا نكمّله!');
 }
 
 function createCustomChallenge(){
