@@ -1519,7 +1519,7 @@ function initSupabase(){
       return;
     }
     if(currentUser && (event === 'SIGNED_IN' || event === 'INITIAL_SESSION')){
-      syncFull(true); // أول ما يسجّل دخول، نزامن
+      syncFull(true).then(()=>{ try{ renderCurrentTab(); }catch(e){} });
     }
   });
   // نجيب الجلسة فوراً بدل ما نستنى الحدث
@@ -1781,6 +1781,8 @@ function showDataLoading(){
 }
 function hideDataLoading(){
   const ov = $('#dataLoadingOverlay');
+  // نتأكد إن الصفحة اترسمت بأحدث بيانات قبل ما نخفي شاشة التحميل
+  try{ if(typeof renderCurrentTab === 'function') renderCurrentTab(); }catch(e){}
   if(ov && dataLoadingShown){
     ov.classList.add('fade');
     setTimeout(()=>{ ov.classList.add('hidden'); ov.classList.remove('fade'); }, 350);
