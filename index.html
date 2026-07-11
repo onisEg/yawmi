@@ -1545,7 +1545,20 @@ function initSupabase(){
   }).catch(()=>{ authResolved = true; hideDataLoading(); refreshAuthUI(); });
 }
 // هل فيه جلسة متوقّعة (من ريفريش سابق)؟ عشان نعرض مؤشر تحميل بدل "مش مسجّل"
-function sessionExpected(){ return localStorage.getItem('yawmi_had_session') === '1'; }
+function sessionExpected(){
+  // نتأكد من وجود جلسة فعلية عن طريق مفتاح Supabase نفسه (أوثق من علامة يدوية)
+  if(localStorage.getItem('yawmi_had_session') === '1') return true;
+  try{
+    const ref = SUPABASE_URL.replace('https://','').split('.')[0];
+    if(localStorage.getItem('sb-' + ref + '-auth-token')) return true;
+    // fallback: أي مفتاح Supabase auth
+    for(let i=0;i<localStorage.length;i++){
+      const k = localStorage.key(i);
+      if(k && k.startsWith('sb-') && k.endsWith('-auth-token')) return true;
+    }
+  }catch(e){}
+  return false;
+}
 function isLoggedIn(){ return !!currentUser; }
 
 // كل بيانات التطبيق في كائن واحد
@@ -5287,16 +5300,31 @@ markActive();
 if(sessionExpected()){
   setSyncStrip(true, 'بنجيب بياناتك من حسابك…');
   showDataLoading();
-  // احتياطي: لو مفيش داتا وصلت خلال ١٢ ثانية، نبلّغ المستخدم من غير ما نخفي المؤشر بالكامل
-  setTimeout(()=>{
-    if(sessionExpected() && !syncReady){
-      setSyncStrip(true, 'الاتصال بطيء… بنحاول نجيب بياناتك، استنى شوية');
+  // حلقة إعادة رسم: طول ما شاشة التحميل ظاهرة، نعيد رسم الصفحة كل نص ثانية
+  // عشان أول ما البيانات توصل وتتحفظ محلياً، الواجهة تتحدّث فوراً
+  let _renderTicks = 0;
+  const _renderLoop = setInterval(()=>{
+    _renderTicks++;
+    // لو المزامنة خلصت، نرسم آخر مرة ونخفي التحميل ونوقف
+    if(syncReady){
+      reloadState();
+      try{ renderCurrentTab(); }catch(e){}
+      hideDataLoading();
+      setSyncStrip(false);
+      clearInterval(_renderLoop);
+      return;
     }
-  }, 12000);
-  // بعد ١٥ ثانية لو لسه مفيش، نخفي شاشة التحميل عشان مايفضلش مستني للأبد (بياناته المحلية تظهر)
-  setTimeout(()=>{ hideDataLoading(); }, 15000);
-  // بعد ٣٠ ثانية لو لسه مفيش مزامنة، نخفي الشريط
-  setTimeout(()=>{ if(!syncReady) setSyncStrip(false); }, 30000);
+    // إعادة رسم دورية عشان أي داتا نزلت تظهر
+    try{ reloadState(); renderCurrentTab(); }catch(e){}
+    // بعد ٢٤ محاولة (١٢ ثانية) نغيّر الرسالة
+    if(_renderTicks === 24){ setSyncStrip(true, 'الاتصال بطيء… استنى شوية 🤍'); }
+    // بعد ٤٠ محاولة (٢٠ ثانية) نخفي التحميل ونعرض اللي عندنا محلياً
+    if(_renderTicks >= 40){
+      hideDataLoading();
+      setSyncStrip(false);
+      clearInterval(_renderLoop);
+    }
+  }, 500);
 }
 if(window._createSupabaseClient) initSupabase();
 else window.addEventListener('supabase-ready', initSupabase);
