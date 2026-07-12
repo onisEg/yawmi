@@ -24,7 +24,8 @@
 <link rel="icon" href="icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=IBM+Plex+Sans+Arabic:wght@400;500;700&family=Cairo:wght@400;500;700&family=Tajawal:wght@400;500;700&family=Almarai:wght@400;700&family=Readex+Pro:wght@400;500;700&display=swap" rel="stylesheet">
+<!-- نحمّل الخط الافتراضي بس عشان سرعة الفتح — باقي الخطوط بتتحمّل لما تختارها -->
+<link id="baseFont" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;700&display=swap" rel="stylesheet">
 <script type="module">
   // نحمّل Supabase مع مصدر احتياطي لو الأول فشل
   async function loadSupabase(){
@@ -4790,9 +4791,28 @@ function updateNavCurr(){
   el.style.fontWeight = '700';
   el.style.lineHeight = '1.4';
 }
+// تحميل الخطوط عند الطلب بس (بدل ما نحمّل ٦ خطوط في كل فتحة)
+const FONT_URLS = {
+  'IBM Plex Sans Arabic': 'IBM+Plex+Sans+Arabic:wght@400;500;700',
+  'Cairo': 'Cairo:wght@400;500;700',
+  'Tajawal': 'Tajawal:wght@400;500;700',
+  'Almarai': 'Almarai:wght@400;700',
+  'Readex Pro': 'Readex+Pro:wght@400;500;700',
+  'Amiri': 'Amiri:wght@400;700',
+};
+const loadedFonts = new Set(['IBM Plex Sans Arabic']); // الافتراضي محمّل من الأول
+function ensureFontLoaded(font){
+  if(!font || loadedFonts.has(font) || !FONT_URLS[font]) return;
+  const link = document.createElement('link');
+  link.rel = 'stylesheet';
+  link.href = `https://fonts.googleapis.com/css2?family=${FONT_URLS[font]}&display=swap`;
+  document.head.appendChild(link);
+  loadedFonts.add(font);
+}
 function applyFontSettings(){
   const font = settings.font || 'IBM Plex Sans Arabic';
   const size = settings.fontSize || 12;
+  ensureFontLoaded(font);
   document.documentElement.style.setProperty('--app-font', `'${font}'`);
   document.documentElement.style.setProperty('--base-size', size + 'px');
 }
