@@ -4284,14 +4284,28 @@ function renderDash(){
 
   // month stats
   const mk = monthKey(0);
-  const daysLogged = Object.keys(days).filter(k=>k.startsWith(mk) && (days[k].j || days[k].p.some(x=>x) || Object.values(days[k].h||{}).some(x=>x))).length;
+  const daysLogged = Object.keys(days).filter(k=>k.startsWith(mk) && (days[k].j || (days[k].p && days[k].p.some(x=>x)) || Object.values(days[k].h||{}).some(x=>x))).length;
   const mExp = exps.filter(e=>e.d.startsWith(mk)).reduce((a,e)=>a+e.a,0);
   let prDone=0, prTotal=0;
   Object.keys(days).filter(k=>k.startsWith(mk)).forEach(k=>{
-    prDone += days[k].p.reduce((a,b)=>a+(b?1:0),0); prTotal += 5;
+    const p = days[k] && days[k].p;
+    prDone += Array.isArray(p) ? p.reduce((a,b)=>a+(b?1:0),0) : 0;
+    prTotal += 5;
   });
-  const lateOblSum = obls.filter(o=>o.due && o.due < t0).reduce((s,o)=>s+o.a,0);
-  const allOblSum = obls.reduce((s,o)=>s+o.a,0);
+  const lateOblSum = obls.filter(o=>{
+    if(o.del || !o.due || o.due >= t0) return false;
+    const kind = (typeof oblKind === 'function') ? oblKind(o) : 'once';
+    if(kind === 'recurring' && typeof oblPaidThisMonth === 'function' && oblPaidThisMonth(o)) return false;
+    if(kind === 'installment' && typeof oblRemaining === 'function' && oblRemaining(o) <= 0) return false;
+    return true;
+  }).reduce((s,o)=> s + ((typeof oblRemaining === 'function') ? oblRemaining(o) : o.a), 0);
+  const allOblSum = obls.filter(o=>{
+    if(o.del) return false;
+    const kind = (typeof oblKind === 'function') ? oblKind(o) : 'once';
+    if(kind === 'recurring' && typeof oblPaidThisMonth === 'function' && oblPaidThisMonth(o)) return false;
+    if(kind === 'installment' && typeof oblRemaining === 'function' && oblRemaining(o) <= 0) return false;
+    return true;
+  }).reduce((s,o)=> s + ((typeof oblRemaining === 'function') ? oblRemaining(o) : o.a), 0);
   $('#monthStats').innerHTML = `
     <div class="stat"><div class="num">${arNum(daysLogged)}</div><div class="lbl">يوم مسجّل الشهر ده</div></div>
     <div class="stat"><div class="num">${arMoney(mExp)}</div><div class="lbl">مصاريف الشهر (${settings.currency})</div></div>
@@ -4701,6 +4715,19 @@ function doExportCSV(){
   rows.push('المهام');
   rows.push(['المهمة','الميعاد','خلصت'].map(csvCell).join(','));
   tasks.filter(t=>!t.del).forEach(t=> rows.push([t.t, t.due||'', t.done?'نعم':'لا'].map(csvCell).join(',')));
+
+  // الالتزامات والديون
+  const activeObls = obls.filter(o=>!o.del);
+  if(activeObls.length){
+    rows.push('');
+    rows.push('الالتزامات والديون');
+    rows.push(['الاسم','النوع','المبلغ','المتبقّي','الاستحقاق','التكرار'].map(csvCell).join(','));
+    activeObls.forEach(o=>{
+      const kind = oblKind(o);
+      const kindLbl = kind==='recurring' ? (o.recType==='quarterly'?'كل ٣ شهور':'شهري') : (kind==='installment'?'أقساط':'مرة واحدة');
+      rows.push([o.t, o.type||'', o.a, oblRemaining(o), o.due||'', kindLbl].map(csvCell).join(','));
+    });
+  }
 
   // BOM عشان Excel يقرا العربي صح
   const csv = '\uFEFF' + rows.join('\r\n');
