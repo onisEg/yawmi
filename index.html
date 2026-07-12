@@ -599,7 +599,8 @@ input[type=number]{color-scheme:dark light}
 .obltypecard.on .otcamt{color:var(--gold)}
 .paidhead{cursor:pointer; color:var(--teal); margin-top:14px}
 .oitem.opaid{opacity:.65; border-color:var(--teal)}
-.opaidtag{background:var(--teal); color:#fff; border-radius:999px; padding:5px 12px; font-size:11px; font-weight:700; white-space:nowrap; flex-shrink:0}
+.opaidtag{background:var(--teal); color:#fff; border:none; border-radius:999px; padding:5px 12px; font-size:11px; font-weight:700; white-space:nowrap; flex-shrink:0; cursor:pointer; font-family:inherit; transition:all .15s}
+.opaidtag:active{background:var(--red); transform:scale(.96)}
 .oinst{font-size:11px; color:var(--muted)}
 .instbar{height:5px; background:var(--line); border-radius:999px; overflow:hidden; margin-top:6px}
 .instfill{height:100%; background:linear-gradient(90deg, var(--teal), var(--gold)); border-radius:999px; transition:width .4s}
@@ -3647,12 +3648,11 @@ $('#nextMonthBtn').onclick = ()=>{ if(expMonthOffset<0){ expMonthOffset++; rende
 
 /* ================= obligations ================= */
 function addMonthISO(dISO, step){
-  step = step || 1;
+  step = (step === undefined || step === null) ? 1 : step;
   const [y,m,d] = dISO.split('-').map(Number);
-  // نضيف step شهور
-  const total = (m - 1) + step;
+  const total = (m - 1) + step;          // شهر مفهرس من صفر
   const ny = y + Math.floor(total / 12);
-  const nm = (total % 12) + 1;
+  const nm = ((total % 12) + 12) % 12 + 1; // نضمن نتيجة موجبة حتى مع القيم السالبة
   const last = new Date(ny, nm, 0).getDate();
   return `${ny}-${String(nm).padStart(2,'0')}-${String(Math.min(d,last)).padStart(2,'0')}`;
 }
@@ -3918,7 +3918,7 @@ function buildOblItem(o, t0, isPaid){
       <div class="sub">${typeTag}${amtHTML} ${o.due && !isPaid ? '· ' + dueLabel(o.due) : ''} ${recLabel ? '· <span class="orec">'+recLabel+'</span>' : ''}</div>
       ${kind === 'installment' ? `<div class="instbar"><div class="instfill" style="width:${o.total ? Math.min((o.paid||0)/o.total*100,100) : 0}%"></div></div>` : ''}
     </div>
-    ${isPaid ? '<span class="opaidtag">✓ اتدفع</span>' : '<button class="opay">اتدفع</button>'}
+    ${isPaid ? '<button class="opaidtag ounpay" aria-label="إلغاء الدفع">✓ اتدفع</button>' : '<button class="opay">اتدفع</button>'}
     <button class="odetailbtn" aria-label="تفاصيل">⋯</button>
     <button class="delbtn" aria-label="حذف">${icon("trash",16)}</button>`;
   el.querySelector('.tname').textContent = o.t;
@@ -3937,10 +3937,10 @@ function buildOblItem(o, t0, isPaid){
       const expEntry = {id:Date.now(), a:payAmt, c:'التزامات', n:o.t, d:todayISO()};
       exps.unshift(expEntry);
       store(K.exp, exps);
-      // نحفظ الحالة للتراجع
+      // نحفظ سجل الدفعة عشان نقدر نلغيها بعدين (toggle)
       const snap = { paidMonths: o.paidMonths ? Object.assign({}, o.paidMonths) : undefined, paid: o.paid, due: o.due, del: o.del };
+      o._lastPay = { expId: expEntry.id, amt: payAmt, prevDue: o.due, prevPaid: o.paid, mk: monthKey(0) };
       if(kind === 'recurring'){
-        // نعلّم الشهر الحالي كمدفوع (يختفي من "عليك" ويرجع الشهر الجاي تلقائي)
         o.paidMonths = o.paidMonths || {};
         o.paidMonths[monthKey(0)] = true;
         const step = o.recType === 'quarterly' ? 3 : 1;
@@ -3960,10 +3960,16 @@ function buildOblItem(o, t0, isPaid){
         if(snap.paidMonths !== undefined) o.paidMonths = snap.paidMonths; else delete o.paidMonths;
         o.paid = snap.paid; o.due = snap.due;
         if(snap.del) o.del = snap.del; else { o.del = false; delete o.delAt; }
+        delete o._lastPay;
         store(K.obl, obls);
         renderExp();
       });
     };
+  }
+  // إلغاء الدفع (toggle) — نرجّع الالتزام ونشيل المصروف
+  const unpayBtn = el.querySelector('.ounpay');
+  if(unpayBtn){
+    unpayBtn.onclick = ()=> undoOblPayment(o);
   }
   el.querySelector('.delbtn').onclick = ()=>{
     o.del = true; o.delAt = Date.now();
@@ -3972,6 +3978,40 @@ function buildOblItem(o, t0, isPaid){
     undoToast('اتنقل لسلة المحذوفات', ()=>{ o.del = false; delete o.delAt; store(K.obl,obls); renderObls(); });
   };
   return el;
+}
+// إلغاء دفعة الالتزام — يرجّعه لـ "لسه عليك" ويشيل المصروف المرتبط
+function undoOblPayment(o){
+  const kind = oblKind(o);
+  const rec = o._lastPay;
+  const mk = monthKey(0);
+  // نشيل المصروف المرتبط بالدفعة (لو موجود)
+  if(rec && rec.expId){
+    exps = exps.filter(e=> e.id !== rec.expId);
+  } else {
+    // مفيش سجل (دفعة قديمة) — نحاول نلاقي المصروف بالاسم والشهر
+    const idx = exps.findIndex(e=> e.c === 'التزامات' && e.n === o.t && (e.d||'').startsWith(mk));
+    if(idx > -1) exps.splice(idx, 1);
+  }
+  store(K.exp, exps);
+  // نرجّع حالة الالتزام
+  if(kind === 'recurring'){
+    if(o.paidMonths) delete o.paidMonths[mk];
+    // نرجّع تاريخ الاستحقاق للشهر ده
+    if(rec && rec.prevDue) o.due = rec.prevDue;
+    else if(o.due){ const step = o.recType === 'quarterly' ? 3 : 1; o.due = addMonthISO(o.due, -step); }
+  } else if(kind === 'installment'){
+    const amt = rec ? rec.amt : (o.installment || o.a);
+    o.paid = Math.max((o.paid || 0) - amt, 0);
+    if(rec && rec.prevDue) o.due = rec.prevDue;
+    else if(o.due) o.due = addMonthISO(o.due, -1);
+  } else {
+    o.del = false; delete o.delAt;
+  }
+  delete o._lastPay;
+  store(K.obl, obls);
+  expMonthOffset = 0;
+  renderExp();
+  toast('اتلغى الدفع ↩');
 }
 // سلة محذوفات الالتزامات
 function renderOblTrash(list){
