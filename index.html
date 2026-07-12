@@ -511,6 +511,16 @@ input[type=number]{color-scheme:dark light}
 .quicktab{flex:1; background:var(--card2); border:1.5px solid var(--line); border-radius:999px; padding:10px; font-family:inherit; font-size:13px; font-weight:600; color:var(--muted); cursor:pointer; transition:all .15s}
 .quicktab.on{border-color:var(--gold); background:var(--gold-soft); color:var(--gold)}
 #quickTaskBox input, #quickExpBox input, #quickExpBox select{width:100%; margin-bottom:10px}
+/* ===== أقسام الإعدادات ===== */
+.setsection{background:var(--card); border:1px solid var(--line); border-radius:18px; margin-bottom:12px; overflow:hidden; box-shadow:0 2px 10px rgba(0,0,0,.03)}
+.setsechead{display:flex; align-items:center; gap:12px; width:100%; background:none; border:none; padding:16px; cursor:pointer; font-family:inherit; text-align:right}
+.setsechead .ssic{font-size:19px; flex-shrink:0}
+.setsechead .sstitle{flex:1; font-size:14px; font-weight:700; color:var(--text)}
+.setsechead .sschev{color:var(--muted); font-size:18px; transform:rotate(90deg); transition:transform .25s}
+.setsechead.open .sschev{transform:rotate(-90deg)}
+.setsechead.open{border-bottom:1px solid var(--line)}
+.setsecbody{padding:4px 16px 16px}
+.setsecbody label:first-child{margin-top:8px}
 .addrow input[type=text]{flex:1}
 .datebtn{position:relative; width:48px; height:48px; flex-shrink:0; background:var(--card2); border:1.5px solid var(--line); border-radius:50%; cursor:pointer; display:flex; align-items:center; justify-content:center; color:var(--muted); padding:0; transition:border-color .15s, color .15s}
 .datebtn:active{border-color:var(--gold)}
@@ -1211,117 +1221,156 @@ nav.bottom button.on{color:var(--gold)}
 <section id="tab-settings" class="tab">
   <div class="settingsinner">
     <h2>الإعدادات</h2>
-    <label for="setName">اسمك</label>
-    <div id="nameDisplay" class="namedisplay hidden">
-      <span id="nameGreet"></span>
-      <button type="button" id="editNameBtn" aria-label="عدّل الاسم">✏️</button>
-    </div>
-    <input type="text" id="setName" placeholder="عشان نحييك باسمك" style="width:100%" autocomplete="off">
 
-    <label for="setFont">خط التطبيق</label>
-    <select id="setFont">
-      <option value="IBM Plex Sans Arabic">IBM Plex — افتراضي</option>
-      <option value="Cairo">Cairo — كايرو</option>
-      <option value="Tajawal">Tajawal — تجوّل</option>
-      <option value="Almarai">Almarai — المراعي</option>
-      <option value="Readex Pro">Readex Pro — ريدكس</option>
-      <option value="Amiri">Amiri — أميري (كلاسيكي)</option>
-    </select>
-
-    <label>حجم الخط</label>
-    <div class="fontsizerow">
-      <button type="button" class="fsbtn" data-size="12">صغير جداً</button>
-      <button type="button" class="fsbtn" data-size="14">صغير</button>
-      <button type="button" class="fsbtn" data-size="17">عادي</button>
-      <button type="button" class="fsbtn" data-size="20">كبير</button>
-    </div>
-
-    <label style="margin-top:20px; padding-top:16px; border-top:1px solid var(--line)">التطبيق</label>
-    <button class="btn ghost" id="installAppBtn" style="width:100%">📲 ثبّت يومي على موبايلك</button>
-    <button class="btn ghost" id="replayTourBtn" style="width:100%; margin-top:8px">🔄 اعرض جولة التعريف تاني</button>
-
-    <label style="margin-top:20px; padding-top:16px; border-top:1px solid var(--line)">🔔 التذكيرات</label>
-    <div id="remindersBox">
-      <button class="btn ghost" id="enableNotifBtn" style="width:100%; margin-bottom:12px">فعّل التذكيرات</button>
-      <div id="reminderOptions" class="hidden">
-        <div class="remrow">
-          <div class="reminfo"><span>🕌 تذكير الصلاة</span><small>عند وقت كل صلاة</small></div>
-          <div class="remctrl"><select id="remPrayerBefore" class="remselect"><option value="0">في وقتها</option><option value="5">قبلها ٥ د</option><option value="10">قبلها ١٠ د</option><option value="15">قبلها ١٥ د</option></select><label class="switch"><input type="checkbox" id="remPrayer"><span class="slider"></span></label></div>
+    <!-- ===== حسابك والمظهر ===== -->
+    <div class="setsection">
+      <button class="setsechead open" data-sec="look"><span class="ssic">🎨</span><span class="sstitle">اسمك ومظهر التطبيق</span><span class="sschev">›</span></button>
+      <div class="setsecbody" id="sec-look">
+        <label for="setName">اسمك</label>
+        <div id="nameDisplay" class="namedisplay hidden">
+          <span id="nameGreet"></span>
+          <button type="button" id="editNameBtn" aria-label="عدّل الاسم">✏️</button>
         </div>
-        <div class="remrow">
-          <div class="reminfo"><span>📿 تذكير الأذكار والورد</span><small>يوصّلك تذكير يومي</small></div>
-          <div class="remctrl"><input type="time" id="remAzkarTime" value="18:00"><label class="switch"><input type="checkbox" id="remAzkar"><span class="slider"></span></label></div>
-        </div>
-        <div class="remrow">
-          <div class="reminfo"><span>✍️ المراجعة الأسبوعية</span><small>كل جمعة</small></div>
-          <div class="remctrl"><input type="time" id="remReviewTime" value="20:00"><label class="switch"><input type="checkbox" id="remReview"><span class="slider"></span></label></div>
-        </div>
-        <div class="remrow">
-          <div class="reminfo"><span>🌙 تذكير الصيام</span><small>ليلة الاثنين/الخميس والمناسبات</small></div>
-          <div class="remctrl"><input type="time" id="remFastTime" value="21:00"><label class="switch"><input type="checkbox" id="remFast"><span class="slider"></span></label></div>
-        </div>
-        <button class="btn ghost" id="testNotifBtn" style="width:100%; margin-top:6px; font-size:13px">جرّب إشعار دلوقتي</button>
-      </div>
-    </div>
-    <label for="setHabits">العادات (كل عادة في سطر)</label>
-    <textarea id="setHabits"></textarea>
-    <label for="setBadHabits">عادات تحت السيطرة 🚫 (كل واحدة في سطر — بتتعد بعدّاد)</label>
-    <textarea id="setBadHabits"></textarea>
-    <label for="setCountry">بلدك ومدينتك (لمواقيت الصلاة)</label>
-    <div style="display:flex; gap:8px">
-      <select id="setCountry" style="flex:1"></select>
-      <select id="setCity" style="flex:1"></select>
-    </div>
-    <label for="setCats">تصنيفات المصاريف (كل تصنيف في سطر — تقدر تحدد ميزانية كده: أكل: 2000)</label>
-    <textarea id="setCats"></textarea>
-    <label for="setIncome">الدخل الشهري (اختياري — عشان تشوف فاضلك كام)</label>
-    <input type="number" id="setIncome" inputmode="decimal" placeholder="—" style="width:150px">
-    <label for="setCurr">العملة</label>
-    <input type="text" id="setCurr" style="width:110px" autocomplete="off">
-    <label for="setPin">رقم سري لقفل التطبيق (من ٤ لـ ٦ أرقام)</label>
-    <div id="pinStatus" style="font-size:13px; color:var(--muted); margin-bottom:8px"></div>
-    <div style="display:flex; gap:8px; align-items:center">
-      <input type="password" id="setPin" inputmode="numeric" maxlength="6" placeholder="••••" style="width:150px; text-align:center; letter-spacing:6px; font-size:18px">
-      <button class="btn ghost hidden" id="removePin" style="flex:0; padding:10px 16px; font-size:13px; white-space:nowrap">إلغاء القفل</button>
-    </div>
-    <label for="setLockMins">يقفل تلقائي بعد</label>
-    <select id="setLockMins" style="width:180px">
-      <option value="0">فوراً</option>
-      <option value="1">دقيقة</option>
-      <option value="2">دقيقتين</option>
-      <option value="5">٥ دقائق</option>
-      <option value="10">١٠ دقائق</option>
-      <option value="30">نص ساعة</option>
-    </select>
-    <label style="margin-top:8px">تصدير بياناتك</label>
-    <div class="btnrow">
-      <button class="btn ghost" id="exportBtn">📊 Excel</button>
-      <button class="btn ghost" id="exportPdfBtn">📄 PDF</button>
-    </div>
-    <div class="btnrow" style="margin-top:8px">
-      <button class="btn ghost" id="exportJsonBtn">💾 نسخة للاسترجاع</button>
-    </div>
-    <div style="font-size:12px; color:var(--faint); margin-top:2px">Excel و PDF لعرض بياناتك · نسخة الاسترجاع لو حبيت ترجّعها للتطبيق تاني</div>
-    <div class="btnrow" style="margin-top:8px">
-      <button class="btn ghost" id="importBtn">استيراد نسخة استرجاع</button>
-    </div>
-    <input type="file" id="importFile" accept=".json" class="hidden">
+        <input type="text" id="setName" placeholder="عشان نحييك باسمك" style="width:100%" autocomplete="off">
 
-    <label style="margin-top:20px; padding-top:16px; border-top:1px solid var(--line)">حفظ احتياطي ومزامنة ☁️</label>
-    <div id="acctStatus" style="font-size:13px; color:var(--muted); margin-bottom:10px"></div>
-    <div class="btnrow" id="acctLoggedOut">
-      <button class="btn primary" id="openAuthBtn">تسجيل دخول أو تسجيل جديد</button>
-    </div>
-    <div id="acctLoggedIn" class="hidden">
-      <div class="btnrow">
-        <button class="btn ghost" id="signOutBtn">تسجيل خروج</button>
-      </div>
-      <div class="btnrow" style="margin-top:8px">
-        <button class="btn ghost" id="changePassBtn">🔒 غيّر الباسورد</button>
+        <label for="setFont">خط التطبيق</label>
+        <select id="setFont">
+          <option value="IBM Plex Sans Arabic">IBM Plex — افتراضي</option>
+          <option value="Cairo">Cairo — كايرو</option>
+          <option value="Tajawal">Tajawal — تجوّل</option>
+          <option value="Almarai">Almarai — المراعي</option>
+          <option value="Readex Pro">Readex Pro — ريدكس</option>
+          <option value="Amiri">Amiri — أميري (كلاسيكي)</option>
+        </select>
+
+        <label>حجم الخط</label>
+        <div class="fontsizerow">
+          <button type="button" class="fsbtn" data-size="12">صغير جداً</button>
+          <button type="button" class="fsbtn" data-size="14">صغير</button>
+          <button type="button" class="fsbtn" data-size="17">عادي</button>
+          <button type="button" class="fsbtn" data-size="20">كبير</button>
+        </div>
       </div>
     </div>
 
-    <div class="btnrow">
+    <!-- ===== التطبيق والتذكيرات ===== -->
+    <div class="setsection">
+      <button class="setsechead" data-sec="app"><span class="ssic">🔔</span><span class="sstitle">التطبيق والتذكيرات</span><span class="sschev">›</span></button>
+      <div class="setsecbody hidden" id="sec-app">
+        <button class="btn ghost" id="installAppBtn" style="width:100%">📲 ثبّت يومي على موبايلك</button>
+        <button class="btn ghost" id="replayTourBtn" style="width:100%; margin-top:8px">🔄 اعرض جولة التعريف تاني</button>
+
+        <label style="margin-top:18px">🔔 التذكيرات</label>
+        <div id="remindersBox">
+          <button class="btn ghost" id="enableNotifBtn" style="width:100%; margin-bottom:12px">فعّل التذكيرات</button>
+          <div id="reminderOptions" class="hidden">
+            <div class="remrow">
+              <div class="reminfo"><span>🕌 تذكير الصلاة</span><small>عند وقت كل صلاة</small></div>
+              <div class="remctrl"><select id="remPrayerBefore" class="remselect"><option value="0">في وقتها</option><option value="5">قبلها ٥ د</option><option value="10">قبلها ١٠ د</option><option value="15">قبلها ١٥ د</option></select><label class="switch"><input type="checkbox" id="remPrayer"><span class="slider"></span></label></div>
+            </div>
+            <div class="remrow">
+              <div class="reminfo"><span>📿 تذكير الأذكار والورد</span><small>يوصّلك تذكير يومي</small></div>
+              <div class="remctrl"><input type="time" id="remAzkarTime" value="18:00"><label class="switch"><input type="checkbox" id="remAzkar"><span class="slider"></span></label></div>
+            </div>
+            <div class="remrow">
+              <div class="reminfo"><span>✍️ المراجعة الأسبوعية</span><small>كل جمعة</small></div>
+              <div class="remctrl"><input type="time" id="remReviewTime" value="20:00"><label class="switch"><input type="checkbox" id="remReview"><span class="slider"></span></label></div>
+            </div>
+            <div class="remrow">
+              <div class="reminfo"><span>🌙 تذكير الصيام</span><small>ليلة الاثنين/الخميس والمناسبات</small></div>
+              <div class="remctrl"><input type="time" id="remFastTime" value="21:00"><label class="switch"><input type="checkbox" id="remFast"><span class="slider"></span></label></div>
+            </div>
+            <button class="btn ghost" id="testNotifBtn" style="width:100%; margin-top:6px; font-size:13px">جرّب إشعار دلوقتي</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== العادات والأذكار ===== -->
+    <div class="setsection">
+      <button class="setsechead" data-sec="habits"><span class="ssic">✅</span><span class="sstitle">العادات والعبادات</span><span class="sschev">›</span></button>
+      <div class="setsecbody hidden" id="sec-habits">
+        <label for="setHabits">العادات (كل عادة في سطر)</label>
+        <textarea id="setHabits"></textarea>
+        <label for="setBadHabits">عادات تحت السيطرة 🚫 (كل واحدة في سطر — بتتعد بعدّاد)</label>
+        <textarea id="setBadHabits"></textarea>
+        <label for="setCountry">بلدك ومدينتك (لمواقيت الصلاة)</label>
+        <div style="display:flex; gap:8px">
+          <select id="setCountry" style="flex:1"></select>
+          <select id="setCity" style="flex:1"></select>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== المصاريف ===== -->
+    <div class="setsection">
+      <button class="setsechead" data-sec="money"><span class="ssic">﷼</span><span class="sstitle">المصاريف والدخل</span><span class="sschev">›</span></button>
+      <div class="setsecbody hidden" id="sec-money">
+        <label for="setCats">تصنيفات المصاريف (كل تصنيف في سطر — تقدر تحدد ميزانية كده: أكل: 2000)</label>
+        <textarea id="setCats"></textarea>
+        <label for="setIncome">الدخل الشهري (اختياري — عشان تشوف فاضلك كام)</label>
+        <input type="number" id="setIncome" inputmode="decimal" placeholder="—" style="width:150px">
+        <label for="setCurr">العملة</label>
+        <input type="text" id="setCurr" style="width:110px" autocomplete="off">
+      </div>
+    </div>
+
+    <!-- ===== الخصوصية والقفل ===== -->
+    <div class="setsection">
+      <button class="setsechead" data-sec="lock"><span class="ssic">🔒</span><span class="sstitle">الخصوصية والقفل</span><span class="sschev">›</span></button>
+      <div class="setsecbody hidden" id="sec-lock">
+        <label for="setPin">رقم سري لقفل التطبيق (من ٤ لـ ٦ أرقام)</label>
+        <div id="pinStatus" style="font-size:13px; color:var(--muted); margin-bottom:8px"></div>
+        <div style="display:flex; gap:8px; align-items:center">
+          <input type="password" id="setPin" inputmode="numeric" maxlength="6" placeholder="••••" style="width:150px; text-align:center; letter-spacing:6px; font-size:18px">
+          <button class="btn ghost hidden" id="removePin" style="flex:0; padding:10px 16px; font-size:13px; white-space:nowrap">إلغاء القفل</button>
+        </div>
+        <label for="setLockMins">يقفل تلقائي بعد</label>
+        <select id="setLockMins" style="width:180px">
+          <option value="0">فوراً</option>
+          <option value="1">دقيقة</option>
+          <option value="2">دقيقتين</option>
+          <option value="5">٥ دقائق</option>
+          <option value="10">١٠ دقائق</option>
+          <option value="30">نص ساعة</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- ===== النسخ الاحتياطي والحساب ===== -->
+    <div class="setsection">
+      <button class="setsechead" data-sec="backup"><span class="ssic">☁️</span><span class="sstitle">النسخ الاحتياطي والحساب</span><span class="sschev">›</span></button>
+      <div class="setsecbody hidden" id="sec-backup">
+        <div id="acctStatus" style="font-size:13px; color:var(--muted); margin-bottom:10px"></div>
+        <div class="btnrow" id="acctLoggedOut">
+          <button class="btn primary" id="openAuthBtn">تسجيل دخول أو تسجيل جديد</button>
+        </div>
+        <div id="acctLoggedIn" class="hidden">
+          <div class="btnrow">
+            <button class="btn ghost" id="signOutBtn">تسجيل خروج</button>
+          </div>
+          <div class="btnrow" style="margin-top:8px">
+            <button class="btn ghost" id="changePassBtn">🔒 غيّر الباسورد</button>
+          </div>
+        </div>
+
+        <label style="margin-top:18px">تصدير بياناتك</label>
+        <div class="btnrow">
+          <button class="btn ghost" id="exportBtn">📊 Excel</button>
+          <button class="btn ghost" id="exportPdfBtn">📄 PDF</button>
+        </div>
+        <div class="btnrow" style="margin-top:8px">
+          <button class="btn ghost" id="exportJsonBtn">💾 نسخة للاسترجاع</button>
+        </div>
+        <div style="font-size:12px; color:var(--faint); margin-top:2px">Excel و PDF لعرض بياناتك · نسخة الاسترجاع لو حبيت ترجّعها للتطبيق تاني</div>
+        <div class="btnrow" style="margin-top:8px">
+          <button class="btn ghost" id="importBtn">استيراد نسخة استرجاع</button>
+        </div>
+        <input type="file" id="importFile" accept=".json" class="hidden">
+      </div>
+    </div>
+
+    <div class="btnrow" style="margin-top:16px">
       <button class="btn primary" id="saveSettings" style="width:100%">حفظ الإعدادات</button>
     </div>
   </div>
@@ -3850,6 +3899,17 @@ $('#addExpBtn').onclick = ()=>{
 };
 $('#prevMonthBtn').onclick = ()=>{ expMonthOffset--; renderExp(); };
 $('#nextMonthBtn').onclick = ()=>{ if(expMonthOffset<0){ expMonthOffset++; renderExp(); } };
+
+/* ====== أقسام الإعدادات القابلة للطي ====== */
+document.querySelectorAll('.setsechead').forEach(head=>{
+  head.onclick = ()=>{
+    const body = head.nextElementSibling;
+    if(!body) return;
+    const isOpen = !body.classList.contains('hidden');
+    body.classList.toggle('hidden', isOpen);
+    head.classList.toggle('open', !isOpen);
+  };
+});
 
 /* ====== زر الإضافة السريعة (FAB) ====== */
 function openQuickAdd(){
