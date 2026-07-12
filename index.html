@@ -823,6 +823,18 @@ nav.bottom button.on{color:var(--gold)}
 .splashsig{font-size:13px; color:var(--muted); line-height:1.7; max-width:260px; margin:0 auto}
 @keyframes splashfade{from{opacity:0; transform:translateY(10px)} to{opacity:1; transform:translateY(0)}}
 /* onboarding */
+#dlgOv{position:fixed; inset:0; z-index:120; background:rgba(0,0,0,.62); display:flex; align-items:center; justify-content:center; padding:24px; opacity:0; visibility:hidden; transition:opacity .2s, visibility .2s}
+#dlgOv.show{opacity:1; visibility:visible}
+#dlgBox{background:var(--card); border:1px solid var(--line); border-radius:24px; padding:26px 22px 20px; width:100%; max-width:380px; text-align:center; box-shadow:0 20px 50px rgba(0,0,0,.3); transform:scale(.92) translateY(10px); transition:transform .25s cubic-bezier(.34,1.4,.64,1)}
+#dlgOv.show #dlgBox{transform:scale(1) translateY(0)}
+#dlgIcon{font-size:38px; margin-bottom:10px; line-height:1}
+#dlgTitle{margin:0 0 8px; font-size:17px; color:var(--text); font-weight:700}
+#dlgMsg{margin:0 0 18px; font-size:14px; color:var(--muted); line-height:1.7}
+#dlgInput{width:100%; text-align:center; font-size:15px; margin-bottom:14px}
+#dlgErr{display:none; color:var(--red); font-size:12px; margin-bottom:10px}
+#dlgBtns{display:flex; gap:10px}
+#dlgBtns .btn{flex:1; padding:12px}
+#dlgOk.danger{background:var(--red); color:#fff; border-color:var(--red)}
 #onboardOverlay{position:fixed; inset:0; z-index:99; background:rgba(0,0,0,.6); display:none; align-items:center; justify-content:center; padding:20px}
 #onboardOverlay.show{display:flex}
 #onboardBox{background:var(--card); border-radius:20px; padding:32px 24px; max-width:360px; width:100%; text-align:center}
@@ -1499,6 +1511,20 @@ nav.bottom button.on{color:var(--gold)}
     </div>
     <div id="notifList"></div>
     <button class="btn ghost" id="notifClearAll" style="width:100%; margin-top:12px">امسح الكل</button>
+  </div>
+</div>
+
+<div id="dlgOv">
+  <div id="dlgBox">
+    <div id="dlgIcon"></div>
+    <h3 id="dlgTitle"></h3>
+    <p id="dlgMsg"></p>
+    <input type="text" id="dlgInput" autocomplete="off">
+    <div id="dlgErr"></div>
+    <div id="dlgBtns">
+      <button class="btn ghost" id="dlgCancel">إلغاء</button>
+      <button class="btn primary" id="dlgOk">تمام</button>
+    </div>
   </div>
 </div>
 
@@ -2405,10 +2431,10 @@ function openOblTypePicker(current, onPick){
     <button class="ppopt${t===current?' cur':''}" data-c="${t}"><span class="ppdot" style="background:var(--gold)"></span>${t}</button>`).join('')
     + '<button class="ppopt" data-c="__new__"><span class="ppdot" style="background:var(--faint)"></span>➕ نوع جديد...</button>';
   box.querySelectorAll('.ppopt').forEach(opt=>{
-    opt.onclick = ()=>{
+    opt.onclick = async ()=>{
       if(opt.dataset.c === '__new__'){
-        const n = prompt('اسم النوع الجديد:');
         ov.classList.remove('show');
+        const n = await askText('نوع جديد', {icon:'🏷️', placeholder:'مثلاً: قسط، اشتراك، إيجار'});
         if(n && n.trim()){
           if(!settings.oblTypes.includes(n.trim())){ settings.oblTypes.push(n.trim()); store(K.set,settings); }
           onPick(n.trim());
@@ -2462,6 +2488,88 @@ function getDay(dISO){
 function saveDays(){ store(K.days, days); toast(); }
 
 let toastTimer;
+/* ============ نوافذ مخصصة بستايل يومي (بدل prompt/confirm/alert) ============ */
+let _dlgResolve = null;
+function _dlgClose(val){
+  $('#dlgOv').classList.remove('show');
+  const r = _dlgResolve; _dlgResolve = null;
+  if(r) r(val);
+}
+function _dlgOpen({icon, title, msg, input, placeholder, value, okText, cancelText, danger, type}){
+  return new Promise(resolve=>{
+    _dlgResolve = resolve;
+    $('#dlgIcon').textContent = icon || '';
+    $('#dlgIcon').style.display = icon ? 'block' : 'none';
+    $('#dlgTitle').textContent = title || '';
+    $('#dlgTitle').style.display = title ? 'block' : 'none';
+    $('#dlgMsg').textContent = msg || '';
+    $('#dlgMsg').style.display = msg ? 'block' : 'none';
+    const inp = $('#dlgInput');
+    inp.style.display = input ? 'block' : 'none';
+    inp.type = type || 'text';
+    inp.value = value != null ? value : '';
+    inp.placeholder = placeholder || '';
+    $('#dlgErr').style.display = 'none';
+    $('#dlgOk').textContent = okText || 'تمام';
+    $('#dlgOk').classList.toggle('danger', !!danger);
+    $('#dlgCancel').textContent = cancelText || 'إلغاء';
+    $('#dlgCancel').style.display = cancelText === null ? 'none' : 'block';
+    $('#dlgOv').classList.add('show');
+    if(input) setTimeout(()=>{ inp.focus(); inp.select(); }, 120);
+  });
+}
+// نافذة تأكيد (بدل confirm)
+function askConfirm(msg, opts){
+  opts = opts || {};
+  return _dlgOpen({
+    icon: opts.icon || (opts.danger ? '⚠️' : '❓'),
+    title: opts.title || 'تأكيد',
+    msg,
+    okText: opts.okText || (opts.danger ? 'امسح' : 'أيوة'),
+    cancelText: opts.cancelText || 'إلغاء',
+    danger: opts.danger
+  }).then(v=> v === true);
+}
+// نافذة إدخال نص (بدل prompt)
+function askText(title, opts){
+  opts = opts || {};
+  return _dlgOpen({
+    icon: opts.icon,
+    title,
+    msg: opts.msg,
+    input: true,
+    placeholder: opts.placeholder,
+    value: opts.value,
+    type: opts.type,
+    okText: opts.okText || 'حفظ'
+  });
+}
+// نافذة رسالة (بدل alert)
+function showAlert(msg, opts){
+  opts = opts || {};
+  return _dlgOpen({
+    icon: opts.icon || 'ℹ️',
+    title: opts.title || '',
+    msg,
+    okText: opts.okText || 'تمام',
+    cancelText: null
+  });
+}
+// wiring
+$('#dlgOk').onclick = ()=>{
+  const inp = $('#dlgInput');
+  if(inp.style.display !== 'none'){
+    const v = inp.value.trim();
+    if(!v){ $('#dlgErr').textContent = 'اكتب حاجة الأول'; $('#dlgErr').style.display = 'block'; return; }
+    _dlgClose(v);
+  } else {
+    _dlgClose(true);
+  }
+};
+$('#dlgCancel').onclick = ()=> _dlgClose(null);
+$('#dlgOv').onclick = e=>{ if(e.target.id === 'dlgOv') _dlgClose(null); };
+$('#dlgInput').addEventListener('keydown', e=>{ if(e.key === 'Enter') $('#dlgOk').click(); });
+
 function toast(msg){
   const t = $('#toast');
   t.classList.remove('withundo');
@@ -2578,11 +2686,11 @@ function openChipAdd(container, addBtn, listArr, field, kindLabel){
   inp.onkeydown = e=>{ if(e.key==='Enter') inp.blur(); if(e.key==='Escape'){ inp.value=''; inp.blur(); } };
   inp.onblur = ()=> done(true);
 }
-function confirmDeleteChip(name, listArr, field){
+async function confirmDeleteChip(name, listArr, field){
   if(navigator.vibrate) navigator.vibrate(30);
   const idx = listArr.indexOf(name);
   if(idx < 0) return;
-  if(!confirm(`تمسح "${name}"؟`)) return;
+  if(!await askConfirm(`تمسح "${name}"؟`, {danger:true, title:'تأكيد المسح'})) return;
   listArr.splice(idx, 1);
   store(K.set, settings);
   renderToday();
@@ -2803,9 +2911,9 @@ function renderToday(){
     card.querySelector('.bhnm').textContent = name;
     // click card (not the button) opens detail
     card.onclick = (e)=>{ if(!e.target.closest('.bhrelapse')) openBHDetail(name); };
-    card.querySelector('.bhrelapse').onclick = (e)=>{
+    card.querySelector('.bhrelapse').onclick = async (e)=>{
       e.stopPropagation();
-      if(!confirm(`تسجّل انتكاسة في "${name}"؟ العدّاد هيبدأ من جديد.`)) return;
+      if(!await askConfirm(`تسجّل انتكاسة في "${name}"؟ العدّاد هيبدأ من جديد.`, {icon:'🔄', title:'انتكاسة', okText:'أيوة، سجّل'})) return;
       const dd = getBH(name);
       dd.relapses.push(Date.now());
       dd.last = Date.now();
@@ -2983,8 +3091,8 @@ function openBHDetail(name){
       </div>`;
     }).join('');
     hist.querySelectorAll('.bhhundo').forEach(btn=>{
-      btn.onclick = ()=>{
-        if(!confirm('تمسح الانتكاسة دي؟ العدّاد هيترجع لآخر انتكاسة قبلها.')) return;
+      btn.onclick = async ()=>{
+        if(!await askConfirm('تمسح الانتكاسة دي؟ العدّاد هيترجع لآخر انتكاسة قبلها.', {danger:true, title:'مسح انتكاسة'})) return;
         const ts = parseInt(btn.dataset.ts, 10);
         d.relapses = d.relapses.filter(x=>x!==ts);
         d.last = d.relapses.length ? Math.max(...d.relapses) : d.start;
@@ -3432,8 +3540,8 @@ function renderTrash(list){
   emptyBtn.className = 'btn ghost';
   emptyBtn.style.cssText = 'width:100%; margin-bottom:10px; font-size:13px; color:var(--red)';
   emptyBtn.textContent = 'فضّي السلة كلها (مسح نهائي)';
-  emptyBtn.onclick = ()=>{
-    if(!confirm('هتمسح كل المهام في السلة نهائياً؟ مش هتقدر ترجعها.')) return;
+  emptyBtn.onclick = async ()=>{
+    if(!await askConfirm('هتمسح كل المهام في السلة نهائياً؟ مش هتقدر ترجعها.', {danger:true, title:'تفضية السلة', okText:'امسح الكل'})) return;
     tasks.forEach(t=>{ if(t.del && !t.perm){ t.t=''; t.perm=true; t.delAt=Date.now(); } });
     store(K.tasks,tasks); renderTasks();
     toast('اتفضّت السلة ✓');
@@ -3450,8 +3558,8 @@ function renderTrash(list){
     el.querySelector('.trestore').onclick = ()=>{
       t.del = false; delete t.delAt; store(K.tasks,tasks); renderTasks(); toast('رجعت المهمة ✓');
     };
-    el.querySelector('.tperm').onclick = ()=>{
-      if(!confirm('تمسح المهمة دي نهائياً؟')) return;
+    el.querySelector('.tperm').onclick = async ()=>{
+      if(!await askConfirm('تمسح المهمة دي نهائياً؟', {danger:true, title:'مسح نهائي'})) return;
       // نسيبها كـ tombstone خفيف (id + del) عشان الحذف ينتشر لكل الأجهزة، وتتشال تلقائي بعد ٣٠ يوم
       t.t = ''; t.del = true; t.perm = true; t.delAt = Date.now();
       store(K.tasks,tasks); renderTasks();
@@ -3621,9 +3729,9 @@ function renderExp(){
     list.appendChild(el);
   });
 }
-$('#expCat').addEventListener('change', ()=>{
+$('#expCat').addEventListener('change', async ()=>{
   if($('#expCat').value === '__new__'){
-    const name = prompt('اسم التصنيف الجديد:');
+    const name = await askText('تصنيف جديد', {icon:'🏷️', placeholder:'مثلاً: أكل، مواصلات، صحة'});
     if(name && name.trim() && !settings.cats.includes(name.trim())){
       settings.cats.push(name.trim());
       store(K.set, settings);
@@ -4029,8 +4137,8 @@ function renderOblTrash(list){
   emptyBtn.className = 'btn ghost';
   emptyBtn.style.cssText = 'width:100%; margin-bottom:10px; font-size:13px; color:var(--red)';
   emptyBtn.textContent = 'فضّي السلة كلها (مسح نهائي)';
-  emptyBtn.onclick = ()=>{
-    if(!confirm('هتمسح كل الالتزامات في السلة نهائياً؟')) return;
+  emptyBtn.onclick = async ()=>{
+    if(!await askConfirm('هتمسح كل الالتزامات في السلة نهائياً؟', {danger:true, title:'تفضية السلة', okText:'امسح الكل'})) return;
     obls.forEach(o=>{ if(o.del && !o.perm){ o.t=''; o.perm=true; o.delAt=Date.now(); } });
     store(K.obl,obls); renderObls();
     toast('اتفضّت السلة ✓');
@@ -4047,8 +4155,8 @@ function renderOblTrash(list){
     el.querySelector('.trestore').onclick = ()=>{
       o.del = false; delete o.delAt; store(K.obl,obls); renderObls(); toast('رجع الالتزام ✓');
     };
-    el.querySelector('.tperm').onclick = ()=>{
-      if(!confirm('تمسح الالتزام ده نهائياً؟')) return;
+    el.querySelector('.tperm').onclick = async ()=>{
+      if(!await askConfirm('تمسح الالتزام ده نهائياً؟', {danger:true, title:'مسح نهائي'})) return;
       o.t=''; o.del=true; o.perm=true; o.delAt=Date.now();
       store(K.obl,obls); renderObls();
       toast('اتمسح نهائياً');
@@ -4057,9 +4165,9 @@ function renderOblTrash(list){
   });
   list.appendChild(body);
 }
-$('#oblType').addEventListener('change', ()=>{
+$('#oblType').addEventListener('change', async ()=>{
   if($('#oblType').value === '__new__'){
-    const name = prompt('اسم النوع الجديد:');
+    const name = await askText('نوع جديد', {icon:'🏷️', placeholder:'مثلاً: قسط، اشتراك، إيجار'});
     if(name && name.trim() && !settings.oblTypes.includes(name.trim())){
       settings.oblTypes.push(name.trim());
       store(K.set, settings);
@@ -4357,8 +4465,8 @@ function renderReviewQuestions(wk){
     });
     const delBtn = wrapEl.querySelector('.revqdel');
     if(delBtn){
-      delBtn.onclick = ()=>{
-        if(!confirm('تمسح السؤال ده؟')) return;
+      delBtn.onclick = async ()=>{
+        if(!await askConfirm('تمسح السؤال ده؟', {danger:true, title:'مسح سؤال'})) return;
         revs[wk].custom = (revs[wk].custom||[]).filter(c=>c.id !== q.id);
         if(revs[wk].answers) delete revs[wk].answers[q.id];
         store(K.rev, revs);
@@ -4550,8 +4658,8 @@ $('#setCountry').addEventListener('change', ()=>{
   const curr = COUNTRY_CURRENCY[co.n];
   if(curr) $('#setCurr').value = curr;
 });
-$('#removePin').onclick = ()=>{
-  if(!confirm('تلغي قفل التطبيق؟')) return;
+$('#removePin').onclick = async ()=>{
+  if(!await askConfirm('تلغي قفل التطبيق؟', {icon:'🔓', title:'إلغاء القفل'})) return;
   delete settings.pinH; delete settings.pinLen;
   store(K.set, settings);
   $('#setPin').value = '';
@@ -4566,9 +4674,9 @@ $('#prayerPicker').onclick = e=>{ if(e.target.id==='prayerPicker') $('#prayerPic
 function closeBHDetail(){ $('#bhOverlay').classList.remove('show'); if(bhdTimerInt) clearInterval(bhdTimerInt); }
 $('#bhdClose').onclick = closeBHDetail;
 $('#bhOverlay').onclick = e=>{ if(e.target.id==='bhOverlay') closeBHDetail(); };
-$('#bhdRelapse').onclick = ()=>{
+$('#bhdRelapse').onclick = async ()=>{
   const name = $('#bhdTitle').textContent;
-  if(!confirm(`تسجّل انتكاسة في "${name}"؟ العدّاد هيبدأ من جديد.`)) return;
+  if(!await askConfirm(`تسجّل انتكاسة في "${name}"؟ العدّاد هيبدأ من جديد.`, {icon:'🔄', title:'انتكاسة', okText:'أيوة، سجّل'})) return;
   const d = getBH(name);
   d.relapses.push(Date.now());
   d.last = Date.now();
@@ -4595,7 +4703,7 @@ $('#saveSettings').onclick = async ()=>{
   settings.currency = $('#setCurr').value.trim() || 'ج.م';
   const newPin = $('#setPin').value.replace(/\D/g,'');
   if(newPin.length >= 4){ settings.pinH = fallbackHash(newPin); settings.pinLen = newPin.length; }
-  else if(newPin.length > 0){ alert('الرقم السري لازم يكون ٤ أرقام على الأقل'); return; }
+  else if(newPin.length > 0){ showAlert('الرقم السري لازم يكون ٤ أرقام على الأقل', {icon:'🔒'}); return; }
   settings.lockMins = parseInt($('#setLockMins').value, 10);
   store(K.set, settings);
   updateNavCurr();
@@ -4888,7 +4996,7 @@ $('#changePassSubmit').onclick = async ()=>{
   addNotif('🔒', 'تم تغيير الباسورد', 'اتغيّر باسورد حسابك بنجاح. لو مش انت، غيّره فوراً.');
 };
 $('#signOutBtn').onclick = async ()=>{
-  if(!confirm('تسجّل خروج؟ بياناتك المحلية هتفضل على الجهاز، والباك أب هيقف لحد ما تسجّل دخول تاني.')) return;
+  if(!await askConfirm('بياناتك المحلية هتفضل على الجهاز، والباك أب هيقف لحد ما تسجّل دخول تاني.', {icon:'👋', title:'تسجيل خروج', okText:'خروج'})) return;
   await authSignOut();
   toast('سجّلت خروج');
 };
@@ -4897,18 +5005,18 @@ $('#importFile').onchange = e=>{
   const f = e.target.files[0];
   if(!f) return;
   const r = new FileReader();
-  r.onload = ()=>{
+  r.onload = async ()=>{
     try{
       const data = JSON.parse(r.result);
       if(!data.days && !data.tasks) throw 0;
-      if(!confirm('الاستيراد هيستبدل البيانات الحالية. متأكد؟')) return;
+      if(!await askConfirm('الاستيراد هيستبدل البيانات الحالية. متأكد؟', {danger:true, title:'استيراد نسخة', okText:'استورد'})) return;
       days = data.days||{}; tasks = data.tasks||[]; exps = data.exps||[]; obls = data.obls||[]; revs = data.revs||{}; goals = data.goals||[]; bhData = data.bhData||{};
       settings = Object.assign(settings, data.settings||{});
       settings.budgets = settings.budgets || {};
       store(K.days,days); store(K.tasks,tasks); store(K.exp,exps); store(K.obl,obls); store(K.rev,revs); store(K.goals,goals); store(K.bh,bhData); store(K.set,settings);
       document.querySelector('nav.bottom button[data-tab=today]').click();
       renderToday(); toast('اتسترجعت البيانات ✓');
-    }catch(err){ alert('الملف ده مش نسخة احتياطية صالحة'); }
+    }catch(err){ showAlert('الملف ده مش نسخة احتياطية صالحة', {icon:'⚠️'}); }
   };
   r.readAsText(f);
   e.target.value = '';
@@ -5227,11 +5335,11 @@ function askChallengeDays(tpl, row){
     </div>`;
   info.appendChild(pick);
   pick.querySelectorAll('.chaldaybtn').forEach(db=>{
-    db.onclick = (e)=>{
+    db.onclick = async (e)=>{
       e.stopPropagation();
       let days = db.dataset.d;
       if(days === 'other'){
-        const v = prompt('كام يوم؟', '14');
+        const v = await askText('التحدي كام يوم؟', {icon:'🏆', type:'number', value:'14', placeholder:'عدد الأيام'});
         days = parseInt(v, 10);
         if(!days || days < 1){ return; }
       } else { days = parseInt(days, 10); }
@@ -5257,12 +5365,25 @@ function startChallenge(tpl, overrides){
   addNotif('🏆', 'تحدي جديد', (ch.title || 'تحدي {n} يوم').replace('{n}', arNum(ch.target)) + ' — يلا نكمّله!');
 }
 
-function createCustomChallenge(){
-  const title = prompt('اسم التحدي؟ (مثلاً: امشي ٣٠ دقيقة)');
+async function createCustomChallenge(){
+  const title = await askText('تحدي من عندك', {
+    icon: '⭐',
+    msg: 'اكتب اسم التحدي',
+    placeholder: 'مثلاً: امشي ٣٠ دقيقة',
+    okText: 'التالي'
+  });
   if(!title || !title.trim()) return;
-  const targetStr = prompt('كام يوم؟ (رقم)', '21');
+  const targetStr = await askText('التحدي كام يوم؟', {
+    icon: '📅',
+    msg: `"${title.trim()}"`,
+    type: 'number',
+    value: '21',
+    placeholder: 'عدد الأيام',
+    okText: 'ابدأ التحدي'
+  });
+  if(!targetStr) return;
   const target = parseInt(targetStr, 10);
-  if(!target || target < 1) { alert('لازم رقم صحيح'); return; }
+  if(!target || target < 1){ showAlert('اكتب رقم صحيح أكبر من صفر', {icon:'⚠️'}); return; }
   startChallenge({
     id: 'custom_' + Date.now(),
     title: title.trim() + ' {n} يوم',
@@ -5447,8 +5568,8 @@ function renderBanners(){
 
 /* ================= weekly review ================= */
 $('#reviewHead').onclick = ()=> toggleCollapse('review');
-$('#addRevQBtn').onclick = ()=>{
-  const q = prompt('اكتب سؤالك:');
+$('#addRevQBtn').onclick = async ()=>{
+  const q = await askText('سؤال جديد للمراجعة', {icon:'✍️', placeholder:'مثلاً: إيه أكتر حاجة تعلمتها؟'});
   if(!q || !q.trim()) return;
   const wk = weekKeyOf();
   revs[wk] = revs[wk] || {};
@@ -5815,7 +5936,7 @@ function saveReminders(r){ localStorage.setItem(REMKEY, JSON.stringify(r)); }
 function notifSupported(){ return 'Notification' in window; }
 
 async function requestNotifPermission(){
-  if(!notifSupported()){ alert('الإشعارات مش مدعومة في المتصفح ده'); return false; }
+  if(!notifSupported()){ showAlert('الإشعارات مش مدعومة في المتصفح ده', {icon:'🔔'}); return false; }
   if(Notification.permission === 'granted') return true;
   const perm = await Notification.requestPermission();
   return perm === 'granted';
@@ -5947,7 +6068,7 @@ if($('#enableNotifBtn')){
   $('#enableNotifBtn').onclick = async ()=>{
     const ok = await requestNotifPermission();
     if(ok){ populateReminders(); startReminderScheduler(); toast('اتفعّلت التذكيرات ✓'); }
-    else { alert('لازم تسمح بالإشعارات من المتصفح عشان التذكيرات تشتغل'); }
+    else { showAlert('لازم تسمح بالإشعارات من المتصفح عشان التذكيرات تشتغل', {icon:'🔔'}); }
   };
 }
 ['remPrayer','remPrayerBefore','remAzkar','remReview','remFast','remAzkarTime','remReviewTime','remFastTime'].forEach(id=>{
