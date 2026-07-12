@@ -496,6 +496,21 @@ input[type=number]{color-scheme:dark light}
 .tasksearchwrap .tasksearchicon .ico-svg{width:16px; height:16px; color:var(--muted)}
 .tasksearchwrap input{flex:1; background:none; border:none; padding:11px 0; font-family:inherit; font-size:14px; color:var(--text); outline:none}
 .tasksearchwrap #taskSearchClear{background:none; border:none; color:var(--muted); font-size:16px; cursor:pointer; padding:4px}
+.expsearchwrap{margin-bottom:10px}
+.expsearchwrap #expSearchClear{background:none; border:none; color:var(--muted); font-size:16px; cursor:pointer; padding:4px}
+#expSearchInfo{background:var(--gold-soft); color:var(--gold); border-radius:12px; padding:10px 14px; font-size:13px; margin-bottom:10px; text-align:center}
+#expSearchInfo b{color:var(--text)}
+/* ===== زر الإضافة السريعة ===== */
+#fab{position:fixed; left:20px; bottom:calc(88px + env(safe-area-inset-bottom)); z-index:45; width:54px; height:54px; border-radius:50%; border:none; background:var(--gold); color:#1a150a; font-size:30px; font-weight:300; line-height:1; cursor:pointer; box-shadow:0 6px 20px rgba(0,0,0,.25); display:flex; align-items:center; justify-content:center; transition:transform .15s}
+#fab:active{transform:scale(.9)}
+#quickOv{position:fixed; inset:0; background:rgba(0,0,0,.6); display:flex; align-items:flex-end; justify-content:center; z-index:64; opacity:0; visibility:hidden; transition:opacity .25s, visibility .25s}
+#quickOv.show{opacity:1; visibility:visible}
+#quickSheet{background:var(--card); border-radius:24px 24px 0 0; width:100%; max-width:560px; padding:20px 20px calc(24px + env(safe-area-inset-bottom)); transform:translateY(100%); transition:transform .3s cubic-bezier(.32,.72,0,1)}
+#quickOv.show #quickSheet{transform:translateY(0)}
+.quicktabs{display:flex; gap:8px; margin-bottom:16px}
+.quicktab{flex:1; background:var(--card2); border:1.5px solid var(--line); border-radius:999px; padding:10px; font-family:inherit; font-size:13px; font-weight:600; color:var(--muted); cursor:pointer; transition:all .15s}
+.quicktab.on{border-color:var(--gold); background:var(--gold-soft); color:var(--gold)}
+#quickTaskBox input, #quickExpBox input, #quickExpBox select{width:100%; margin-bottom:10px}
 .addrow input[type=text]{flex:1}
 .datebtn{position:relative; width:48px; height:48px; flex-shrink:0; background:var(--card2); border:1.5px solid var(--line); border-radius:50%; cursor:pointer; display:flex; align-items:center; justify-content:center; color:var(--muted); padding:0; transition:border-color .15s, color .15s}
 .datebtn:active{border-color:var(--gold)}
@@ -1083,6 +1098,12 @@ nav.bottom button.on{color:var(--gold)}
       <h3>حسب التصنيف</h3>
       <div id="catBars"></div>
     </div>
+    <div class="tasksearchwrap expsearchwrap">
+      <span data-icon="search" class="tasksearchicon"></span>
+      <input type="text" id="expSearch" placeholder="دوّر في مصاريفك..." autocomplete="off">
+      <button id="expSearchClear" class="hidden" aria-label="مسح">✕</button>
+    </div>
+    <div id="expSearchInfo" class="hidden"></div>
     <div id="expList"></div>
     <div class="card">
       <h3 style="display:flex;justify-content:space-between;align-items:center">الالتزامات والديون <span id="oblTotal"></span></h3>
@@ -1151,6 +1172,32 @@ nav.bottom button.on{color:var(--gold)}
     </div>
   </section>
 </main>
+
+<button id="fab" aria-label="إضافة سريعة">+</button>
+
+<div id="quickOv">
+  <div id="quickSheet">
+    <div class="bhdhead">
+      <h2>⚡ إضافة سريعة</h2>
+      <button class="iconbtn" id="quickClose" aria-label="إغلاق">✕</button>
+    </div>
+    <div class="quicktabs">
+      <button class="quicktab on" data-qt="task">☑️ مهمة</button>
+      <button class="quicktab" data-qt="exp">﷼ مصروف</button>
+    </div>
+    <div id="quickTaskBox">
+      <input type="text" id="qTaskText" placeholder="إيه المهمة؟" autocomplete="off">
+      <input type="date" id="qTaskDue">
+      <button class="btn primary" id="qTaskAdd" style="width:100%; margin-top:10px">أضف المهمة</button>
+    </div>
+    <div id="quickExpBox" class="hidden">
+      <input type="number" id="qExpAmt" inputmode="decimal" placeholder="المبلغ">
+      <select id="qExpCat"></select>
+      <input type="text" id="qExpNote" placeholder="ملاحظة (اختياري)" autocomplete="off">
+      <button class="btn primary" id="qExpAdd" style="width:100%; margin-top:10px">أضف المصروف</button>
+    </div>
+  </div>
+</div>
 
 <nav class="bottom">
   <button data-tab="today" class="on"><span class="ic" data-icon="sun"></span>اليوم</button>
@@ -3711,36 +3758,74 @@ function renderExp(){
 
   const list = $('#expList');
   list.innerHTML = '';
+  // بحث في المصاريف — بيدوّر في كل الشهور مش الشهر الحالي بس
+  const q = (window.expSearchQuery || '').trim().toLowerCase();
+  const info = $('#expSearchInfo');
+  if(q){
+    const hits = exps.filter(e=>
+      (e.n||'').toLowerCase().includes(q) ||
+      (e.c||'').toLowerCase().includes(q) ||
+      String(e.a).includes(q)
+    ).sort((a,b)=> b.d.localeCompare(a.d) || b.id-a.id);
+    const hitTotal = hits.reduce((a,e)=>a+e.a,0);
+    info.classList.remove('hidden');
+    info.innerHTML = hits.length
+      ? `لقينا <b>${arNum(hits.length)}</b> نتيجة — الإجمالي <b>${arMoney(hitTotal)} ${settings.currency}</b>`
+      : 'مفيش نتايج';
+    if(!hits.length){
+      list.innerHTML = '<div class="empty-big"><span class="ico">🔍</span><div class="ttl">مفيش نتايج</div><div class="desc">جرّب كلمة تانية أو تصنيف</div></div>';
+      return;
+    }
+    hits.forEach(e=> list.appendChild(buildExpItem(e, true)));
+    return;
+  }
+  info.classList.add('hidden');
   if(!monthExp.length){ list.innerHTML = '<div class="empty-big"><span class="ico">💰</span><div class="ttl">مفيش مصاريف الشهر ده</div><div class="desc">سجّل مصاريفك عشان تعرف فلوسك رايحة فين</div></div>'; return; }
-  monthExp.forEach(e=>{
-    const el = document.createElement('div');
-    el.className = 'eitem';
-    el.innerHTML = `
-      <span class="ecat"></span>
-      <span class="enote"></span>
-      <span class="edate">${arNum(e.d.slice(5).split('-').reverse().join('/'))}</span>
-      <span class="eamt">${arMoney(e.a)}</span>
-      <button class="delbtn" aria-label="حذف">${icon("trash",16)}</button>`;
-    el.querySelector('.ecat').textContent = e.c;
-    el.querySelector('.enote').textContent = e.n || '(بدون ملاحظة)';
-    makeEditable(el.querySelector('.enote'), e.n || '', v=>{ e.n = v; store(K.exp,exps); renderExp(); }, {placeholder:'ملاحظة...', rerender:renderExp});
-    makeEditable(el.querySelector('.eamt'), e.a, v=>{ if(v>0){ e.a = v; store(K.exp,exps); } renderExp(); }, {number:true, rerender:renderExp});
-    // تعديل التاريخ
-    makeDateEditable(el.querySelector('.edate'), e.d, v=>{ if(v){ e.d = v; store(K.exp,exps); } renderExp(); });
-    // تعديل التصنيف (بالضغط عليه يفتح اختيار)
-    el.querySelector('.ecat').onclick = (ev)=>{
-      ev.stopPropagation();
-      openCatPicker(e.c, newCat=>{ e.c = newCat; store(K.exp,exps); renderExp(); });
-    };
-    el.querySelector('.ecat').style.cursor = 'pointer';
-    el.querySelector('.delbtn').onclick = ()=>{
-      const snapshot = e;
-      exps = exps.filter(x=>x.id!==e.id); store(K.exp,exps); renderExp();
-      undoToast('اتحذف المصروف', ()=>{ exps.unshift(snapshot); store(K.exp,exps); renderExp(); });
-    };
-    list.appendChild(el);
-  });
+  monthExp.forEach(e=> list.appendChild(buildExpItem(e, false)));
 }
+
+// بناء عنصر مصروف واحد (showFullDate=true في نتايج البحث عشان تبان السنة)
+function buildExpItem(e, showFullDate){
+  const el = document.createElement('div');
+  el.className = 'eitem';
+  const dateTxt = showFullDate
+    ? arNum(e.d.split('-').reverse().join('/'))
+    : arNum(e.d.slice(5).split('-').reverse().join('/'));
+  el.innerHTML = `
+    <span class="ecat"></span>
+    <span class="enote"></span>
+    <span class="edate">${dateTxt}</span>
+    <span class="eamt">${arMoney(e.a)}</span>
+    <button class="delbtn" aria-label="حذف">${icon("trash",16)}</button>`;
+  el.querySelector('.ecat').textContent = e.c;
+  el.querySelector('.enote').textContent = e.n || '(بدون ملاحظة)';
+  makeEditable(el.querySelector('.enote'), e.n || '', v=>{ e.n = v; store(K.exp,exps); renderExp(); }, {placeholder:'ملاحظة...', rerender:renderExp});
+  makeEditable(el.querySelector('.eamt'), e.a, v=>{ if(v>0){ e.a = v; store(K.exp,exps); } renderExp(); }, {number:true, rerender:renderExp});
+  makeDateEditable(el.querySelector('.edate'), e.d, v=>{ if(v){ e.d = v; store(K.exp,exps); } renderExp(); });
+  el.querySelector('.ecat').onclick = (ev)=>{
+    ev.stopPropagation();
+    openCatPicker(e.c, newCat=>{ e.c = newCat; store(K.exp,exps); renderExp(); });
+  };
+  el.querySelector('.ecat').style.cursor = 'pointer';
+  el.querySelector('.delbtn').onclick = ()=>{
+    const snapshot = e;
+    exps = exps.filter(x=>x.id!==e.id); store(K.exp,exps); renderExp();
+    undoToast('اتحذف المصروف', ()=>{ exps.unshift(snapshot); store(K.exp,exps); renderExp(); });
+  };
+  return el;
+}
+// wiring البحث في المصاريف
+$('#expSearch').addEventListener('input', ()=>{
+  window.expSearchQuery = $('#expSearch').value;
+  $('#expSearchClear').classList.toggle('hidden', !$('#expSearch').value);
+  renderExp();
+});
+$('#expSearchClear').onclick = ()=>{
+  $('#expSearch').value = '';
+  window.expSearchQuery = '';
+  $('#expSearchClear').classList.add('hidden');
+  renderExp();
+};
 $('#expCat').addEventListener('change', async ()=>{
   if($('#expCat').value === '__new__'){
     const name = await askText('تصنيف جديد', {icon:'🏷️', placeholder:'مثلاً: أكل، مواصلات، صحة'});
@@ -3765,6 +3850,52 @@ $('#addExpBtn').onclick = ()=>{
 };
 $('#prevMonthBtn').onclick = ()=>{ expMonthOffset--; renderExp(); };
 $('#nextMonthBtn').onclick = ()=>{ if(expMonthOffset<0){ expMonthOffset++; renderExp(); } };
+
+/* ====== زر الإضافة السريعة (FAB) ====== */
+function openQuickAdd(){
+  // نملأ التصنيفات
+  $('#qExpCat').innerHTML = settings.cats.map(c=>`<option>${c}</option>`).join('');
+  $('#qTaskText').value = '';
+  $('#qTaskDue').value = todayISO();
+  $('#qExpAmt').value = '';
+  $('#qExpNote').value = '';
+  $('#quickOv').classList.add('show');
+  setTimeout(()=>{ const a = $('.quicktab.on'); if(a && a.dataset.qt === 'task') $('#qTaskText').focus(); }, 200);
+}
+$('#fab').onclick = openQuickAdd;
+$('#quickClose').onclick = ()=> $('#quickOv').classList.remove('show');
+$('#quickOv').onclick = e=>{ if(e.target.id === 'quickOv') $('#quickOv').classList.remove('show'); };
+document.querySelectorAll('.quicktab').forEach(tab=>{
+  tab.onclick = ()=>{
+    document.querySelectorAll('.quicktab').forEach(t=>t.classList.toggle('on', t===tab));
+    const isTask = tab.dataset.qt === 'task';
+    $('#quickTaskBox').classList.toggle('hidden', !isTask);
+    $('#quickExpBox').classList.toggle('hidden', isTask);
+    setTimeout(()=>{ (isTask ? $('#qTaskText') : $('#qExpAmt')).focus(); }, 100);
+  };
+});
+$('#qTaskAdd').onclick = ()=>{
+  const title = $('#qTaskText').value.trim();
+  if(!title){ $('#qTaskText').focus(); return; }
+  tasks.unshift({id:Date.now(), t:title, due:$('#qTaskDue').value || todayISO(), done:false});
+  store(K.tasks, tasks);
+  $('#quickOv').classList.remove('show');
+  renderTasks();
+  toast('اتضافت المهمة ✓');
+};
+$('#qExpAdd').onclick = ()=>{
+  const a = parseFloat($('#qExpAmt').value);
+  if(!a || a <= 0){ $('#qExpAmt').focus(); return; }
+  exps.unshift({id:Date.now(), a, c:$('#qExpCat').value, n:$('#qExpNote').value.trim(), d:todayISO()});
+  store(K.exp, exps);
+  expMonthOffset = 0;
+  $('#quickOv').classList.remove('show');
+  renderExp();
+  toast('اتسجل المصروف ✓');
+};
+$('#qTaskText').addEventListener('keydown', e=>{ if(e.key==='Enter') $('#qTaskAdd').click(); });
+$('#qExpAmt').addEventListener('keydown', e=>{ if(e.key==='Enter') $('#qExpAdd').click(); });
+$('#qExpNote').addEventListener('keydown', e=>{ if(e.key==='Enter') $('#qExpAdd').click(); });
 
 /* ================= obligations ================= */
 function addMonthISO(dISO, step){
