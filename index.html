@@ -837,6 +837,17 @@ nav.bottom button.on{color:var(--gold)}
 #dlgOk.danger{background:var(--red); color:#fff; border-color:var(--red)}
 #onboardOverlay{position:fixed; inset:0; z-index:99; background:rgba(0,0,0,.6); display:none; align-items:center; justify-content:center; padding:20px}
 #onboardOverlay.show{display:flex}
+#onbSteps{display:flex; gap:6px; justify-content:center; margin-bottom:18px}
+.onbdot{width:7px; height:7px; border-radius:50%; background:var(--line); transition:all .3s}
+.onbdot.done{background:var(--gold-soft)}
+.onbdot.on{background:var(--gold); width:20px; border-radius:999px}
+.onbicon{font-size:44px; margin-bottom:12px; line-height:1}
+.onbtitle{margin:0 0 8px; color:var(--gold); font-size:19px; font-weight:700}
+.onbbody{font-size:14px; color:var(--muted); margin:0 0 18px; line-height:1.8}
+#onboardName{width:100%; text-align:center; font-size:16px; margin-bottom:6px}
+#onbBtns{display:flex; gap:10px; margin-top:6px}
+#onbBtns .btn{flex:1}
+#onboardSkip{flex:0 0 auto; font-size:13px; padding-left:14px; padding-right:14px}
 #onboardBox{background:var(--card); border-radius:20px; padding:32px 24px; max-width:360px; width:100%; text-align:center}
 </style>
 </head>
@@ -1180,6 +1191,7 @@ nav.bottom button.on{color:var(--gold)}
 
     <label style="margin-top:20px; padding-top:16px; border-top:1px solid var(--line)">التطبيق</label>
     <button class="btn ghost" id="installAppBtn" style="width:100%">📲 ثبّت يومي على موبايلك</button>
+    <button class="btn ghost" id="replayTourBtn" style="width:100%; margin-top:8px">🔄 اعرض جولة التعريف تاني</button>
 
     <label style="margin-top:20px; padding-top:16px; border-top:1px solid var(--line)">🔔 التذكيرات</label>
     <div id="remindersBox">
@@ -1431,12 +1443,12 @@ nav.bottom button.on{color:var(--gold)}
 
 <div id="onboardOverlay">
   <div id="onboardBox">
-    <div style="font-size:40px; margin-bottom:8px">📿</div>
-    <h2 style="margin:0 0 6px; color:var(--gold)">أهلاً بيك في يومي</h2>
-    <p style="font-size:14px; color:var(--muted); margin:0 0 20px; line-height:1.7">تطبيقك الشخصي لمتابعة يومك، عباداتك، وعاداتك. قولّي اسمك الأول عشان نحييك بيه.</p>
-    <input type="text" id="onboardName" placeholder="اسمك..." autocomplete="off" style="width:100%; text-align:center; font-size:16px; margin-bottom:14px">
-    <button class="btn primary" id="onboardBtn" style="width:100%">يلا نبدأ</button>
-    <button class="btn ghost" id="onboardSkip" style="width:100%; margin-top:8px; font-size:13px">تخطّي</button>
+    <div id="onbSteps"></div>
+    <div id="onbContent"></div>
+    <div id="onbBtns">
+      <button class="btn ghost" id="onboardSkip">تخطّي</button>
+      <button class="btn primary" id="onboardBtn">يلا نبدأ</button>
+    </div>
   </div>
 </div>
 
@@ -5793,34 +5805,102 @@ renderGreeting();
 })();
 
 // شاشة الترحيب (splash) + سؤال الاسم أول مرة
+/* ====== جولة الترحيب للمستخدم الجديد ====== */
+const ONB_STEPS = [
+  {
+    icon: '📿',
+    title: 'أهلاً بيك في يومي',
+    body: 'تطبيقك الشخصي لمتابعة يومك، عباداتك، وعاداتك. قولّي اسمك عشان نحييك بيه.',
+    input: true,
+    btn: 'يلا نبدأ'
+  },
+  {
+    icon: '☀️',
+    title: 'صفحة اليوم',
+    body: 'هنا بتسجّل صلواتك، عاداتك، وأذكارك. كل حاجة بتتحفظ لوحدها، ونتيجة اليوم بتتحسب تلقائي — في أقل من دقيقة.',
+    btn: 'التالي'
+  },
+  {
+    icon: '☑️',
+    title: 'المهام والأهداف',
+    body: 'رتّب مهامك حسب العاجل والمهم، واربطها بأهدافك الكبيرة. واسحب بإيدك عشان ترتّبها زي ما تحب.',
+    btn: 'التالي'
+  },
+  {
+    icon: '﷼',
+    title: 'المصاريف والالتزامات',
+    body: 'سجّل مصاريفك، وحدّد ميزانيتك، وتابع الديون والاشتراكات — واعرف فاضل عليك كام بالظبط.',
+    btn: 'التالي'
+  },
+  {
+    icon: '🏆',
+    title: 'التحديات',
+    body: 'ابدأ تحدي (زي الفجر في المسجد ٧ أيام) والتطبيق هيتابع تقدمك تلقائي من بياناتك.',
+    btn: 'يلا نبدأ 🤍'
+  }
+];
+let onbStep = 0;
+function renderOnbStep(){
+  const s = ONB_STEPS[onbStep];
+  $('#onbSteps').innerHTML = ONB_STEPS.map((_,i)=>`<span class="onbdot ${i===onbStep?'on':''} ${i<onbStep?'done':''}"></span>`).join('');
+  $('#onbContent').innerHTML = `
+    <div class="onbicon">${s.icon}</div>
+    <h2 class="onbtitle">${s.title}</h2>
+    <p class="onbbody">${s.body}</p>
+    ${s.input ? '<input type="text" id="onboardName" placeholder="اسمك..." autocomplete="off">' : ''}`;
+  $('#onboardBtn').textContent = s.btn;
+  $('#onboardSkip').textContent = onbStep === 0 ? 'تخطّي' : 'تخطّي الجولة';
+  if(s.input){
+    const inp = $('#onboardName');
+    inp.value = settings.name || '';
+    setTimeout(()=>inp.focus(), 150);
+    inp.addEventListener('keydown', e=>{ if(e.key==='Enter') $('#onboardBtn').click(); });
+  }
+}
+function finishOnboarding(){
+  localStorage.setItem('yawmi_asked_name', '1');
+  localStorage.setItem('yawmi_tour_done', '1');
+  $('#onboardOverlay').classList.remove('show');
+  renderGreeting();
+  const n = (settings.name||'').trim();
+  if(n) toast(`أهلاً بيك يا ${n} 🤍`);
+}
+$('#onboardBtn').onclick = ()=>{
+  const s = ONB_STEPS[onbStep];
+  if(s.input){
+    const inp = $('#onboardName');
+    const n = inp ? inp.value.trim() : '';
+    if(n){ settings.name = n; store(K.set, settings); }
+  }
+  if(onbStep < ONB_STEPS.length - 1){
+    onbStep++;
+    renderOnbStep();
+  } else {
+    finishOnboarding();
+  }
+};
+$('#onboardSkip').onclick = finishOnboarding;
+if($('#replayTourBtn')){
+  $('#replayTourBtn').onclick = ()=>{
+    onbStep = 0;
+    renderOnbStep();
+    $('#onboardOverlay').classList.add('show');
+  };
+}
+
 (function initSplashOnboard(){
   const splash = $('#splash');
   const seenSplash = localStorage.getItem('yawmi_splash_seen');
-  // نظهر السبلاش أول فتح في الجلسة
   if(splash){
     setTimeout(()=>{ splash.classList.add('hide'); setTimeout(()=>{ splash.style.display='none'; }, 500); }, seenSplash ? 1200 : 1800);
     localStorage.setItem('yawmi_splash_seen', '1');
   }
-  // لو مفيش اسم، نسأل عنه بعد ما السبلاش يختفي
-  const hasName = (settings.name || '').trim();
   const askedName = localStorage.getItem('yawmi_asked_name');
-  if(!hasName && !askedName){
-    setTimeout(()=>{ $('#onboardOverlay').classList.add('show'); $('#onboardName').focus(); }, 2000);
+  const tourDone = localStorage.getItem('yawmi_tour_done');
+  if(!askedName && !tourDone){
+    setTimeout(()=>{ onbStep = 0; renderOnbStep(); $('#onboardOverlay').classList.add('show'); }, 2000);
   }
 })();
-$('#onboardBtn').onclick = ()=>{
-  const n = $('#onboardName').value.trim();
-  if(n){ settings.name = n; store(K.set, settings); }
-  localStorage.setItem('yawmi_asked_name', '1');
-  $('#onboardOverlay').classList.remove('show');
-  renderGreeting();
-  if(n) toast(`أهلاً بيك يا ${n} 🤍`);
-};
-$('#onboardSkip').onclick = ()=>{
-  localStorage.setItem('yawmi_asked_name', '1');
-  $('#onboardOverlay').classList.remove('show');
-};
-$('#onboardName').addEventListener('keydown', e=>{ if(e.key==='Enter') $('#onboardBtn').click(); });
 (function initLock(){
   if(!settings.pinH) return;
   const last = parseInt(localStorage.getItem('yawmi_active') || '0', 10);
