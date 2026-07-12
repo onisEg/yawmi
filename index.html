@@ -591,6 +591,20 @@ input[type=number]{color-scheme:dark light}
 .odrecbtn.on{border-color:var(--gold); background:var(--gold-soft); color:var(--gold)}
 .odremrow{display:flex; align-items:center; gap:10px}
 .odremrow input[type=time]{width:auto; padding:6px 10px}
+.oblsummary{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px}
+.obltypecard{flex:1; min-width:100px; background:var(--card2); border:1.5px solid var(--line); border-radius:14px; padding:10px 12px; cursor:pointer; font-family:inherit; display:flex; flex-direction:column; gap:3px; text-align:right; transition:all .15s}
+.obltypecard.on{border-color:var(--gold); background:var(--gold-soft)}
+.otcname{font-size:11px; color:var(--muted)}
+.otcamt{font-size:14px; font-weight:700; color:var(--red)}
+.obltypecard.on .otcamt{color:var(--gold)}
+.paidhead{cursor:pointer; color:var(--teal); margin-top:14px}
+.oitem.opaid{opacity:.65; border-color:var(--teal)}
+.opaidtag{background:var(--teal); color:#fff; border-radius:999px; padding:5px 12px; font-size:11px; font-weight:700; white-space:nowrap; flex-shrink:0}
+.oinst{font-size:11px; color:var(--muted)}
+.instbar{height:5px; background:var(--line); border-radius:999px; overflow:hidden; margin-top:6px}
+.instfill{height:100%; background:linear-gradient(90deg, var(--teal), var(--gold)); border-radius:999px; transition:width .4s}
+.odkindbtn{flex:1; background:var(--card2); border:1.5px solid var(--line); border-radius:999px; padding:9px 6px; font-family:inherit; font-size:11px; font-weight:600; color:var(--text); cursor:pointer; transition:all .15s}
+.odkindbtn.on{border-color:var(--gold); background:var(--gold-soft); color:var(--gold)}
 .oitem.late{border-color:var(--red)}
 .ottl{flex:1; font-size:14px; min-width:0; line-height:1.5}
 .ottl .sub{color:var(--muted); font-size:12px}
@@ -3653,27 +3667,57 @@ function dueLabel(due){
 // تفاصيل الالتزام: تعديل التاريخ والتكرار والموعد
 function openOblDetail(o){
   const body = $('#oblDetailBody');
-  const recType = o.recType || (o.rec ? 'monthly' : 'none');
+  const kind = oblKind(o);
+  const recType = o.recType || 'monthly';
   body.innerHTML = `
     <div class="obldrow">
       <label>الاسم</label>
       <input type="text" id="odName" value="${(o.t||'').replace(/"/g,'&quot;')}">
     </div>
     <div class="obldrow">
-      <label>المبلغ (${settings.currency})</label>
-      <input type="number" id="odAmt" value="${o.a||''}" inputmode="decimal">
+      <label>نوع الالتزام</label>
+      <div class="odrecrow">
+        <button type="button" class="odkindbtn ${kind==='once'?'on':''}" data-kind="once">مرة واحدة</button>
+        <button type="button" class="odkindbtn ${kind==='recurring'?'on':''}" data-kind="recurring">اشتراك متكرر</button>
+        <button type="button" class="odkindbtn ${kind==='installment'?'on':''}" data-kind="installment">دين بأقساط</button>
+      </div>
+    </div>
+    <div id="odRecurBox" class="${kind==='recurring'?'':'hidden'}">
+      <div class="obldrow">
+        <label>المبلغ الشهري (${settings.currency})</label>
+        <input type="number" id="odAmt" value="${o.a||''}" inputmode="decimal">
+      </div>
+      <div class="obldrow">
+        <label>كل قد إيه؟</label>
+        <div class="odrecrow">
+          <button type="button" class="odrecbtn ${recType==='monthly'?'on':''}" data-rec="monthly">كل شهر</button>
+          <button type="button" class="odrecbtn ${recType==='quarterly'?'on':''}" data-rec="quarterly">كل ٣ شهور</button>
+        </div>
+      </div>
+    </div>
+    <div id="odInstBox" class="${kind==='installment'?'':'hidden'}">
+      <div class="obldrow">
+        <label>إجمالي الدين (${settings.currency})</label>
+        <input type="number" id="odTotal" value="${o.total||o.a||''}" inputmode="decimal">
+      </div>
+      <div class="obldrow">
+        <label>القسط الشهري (${settings.currency})</label>
+        <input type="number" id="odInstallment" value="${o.installment||''}" inputmode="decimal" placeholder="المبلغ اللي بتدفعه كل مرة">
+      </div>
+      <div class="obldrow">
+        <label>المدفوع لحد دلوقتي (${settings.currency})</label>
+        <input type="number" id="odPaid" value="${o.paid||0}" inputmode="decimal">
+      </div>
+    </div>
+    <div id="odOnceBox" class="${kind==='once'?'':'hidden'}">
+      <div class="obldrow">
+        <label>المبلغ (${settings.currency})</label>
+        <input type="number" id="odAmtOnce" value="${o.a||''}" inputmode="decimal">
+      </div>
     </div>
     <div class="obldrow">
       <label>تاريخ الاستحقاق</label>
       <input type="date" id="odDue" value="${o.due||''}">
-    </div>
-    <div class="obldrow">
-      <label>التكرار</label>
-      <div class="odrecrow">
-        <button type="button" class="odrecbtn ${recType==='none'?'on':''}" data-rec="none">مرة واحدة</button>
-        <button type="button" class="odrecbtn ${recType==='monthly'?'on':''}" data-rec="monthly">كل شهر</button>
-        <button type="button" class="odrecbtn ${recType==='quarterly'?'on':''}" data-rec="quarterly">كل ٣ شهور</button>
-      </div>
     </div>
     <div class="obldrow">
       <label>تذكير بالموعد</label>
@@ -3684,7 +3728,16 @@ function openOblDetail(o){
       </div>
     </div>
     <button class="btn" id="odSave" style="width:100%; margin-top:8px">حفظ</button>`;
-  let selRec = recType;
+  let selKind = kind, selRec = recType;
+  body.querySelectorAll('.odkindbtn').forEach(btn=>{
+    btn.onclick = ()=>{
+      selKind = btn.dataset.kind;
+      body.querySelectorAll('.odkindbtn').forEach(b=>b.classList.toggle('on', b===btn));
+      $('#odRecurBox').classList.toggle('hidden', selKind!=='recurring');
+      $('#odInstBox').classList.toggle('hidden', selKind!=='installment');
+      $('#odOnceBox').classList.toggle('hidden', selKind!=='once');
+    };
+  });
   body.querySelectorAll('.odrecbtn').forEach(btn=>{
     btn.onclick = ()=>{
       selRec = btn.dataset.rec;
@@ -3694,12 +3747,29 @@ function openOblDetail(o){
   $('#odRemind').onchange = ()=>{ $('#odRemindTime').disabled = !$('#odRemind').checked; };
   $('#odSave').onclick = ()=>{
     const nm = $('#odName').value.trim();
-    const amt = parseFloat($('#odAmt').value);
     if(nm) o.t = nm;
-    if(amt > 0) o.a = amt;
+    o.kind = selKind;
+    if(selKind === 'recurring'){
+      const amt = parseFloat($('#odAmt').value);
+      if(amt > 0) o.a = amt;
+      o.recType = selRec;
+      o.rec = true;
+      delete o.total; delete o.installment;
+    } else if(selKind === 'installment'){
+      const total = parseFloat($('#odTotal').value);
+      const inst = parseFloat($('#odInstallment').value);
+      const paid = parseFloat($('#odPaid').value);
+      if(total > 0) o.total = total;
+      if(inst > 0) o.installment = inst;
+      o.paid = (paid >= 0 && !isNaN(paid)) ? paid : 0;
+      o.a = o.installment || o.total;
+      o.rec = false; delete o.recType;
+    } else {
+      const amt = parseFloat($('#odAmtOnce').value);
+      if(amt > 0) o.a = amt;
+      o.rec = false; delete o.recType; delete o.total; delete o.installment; delete o.paid;
+    }
     o.due = $('#odDue').value || '';
-    o.recType = selRec;
-    o.rec = (selRec === 'monthly' || selRec === 'quarterly'); // توافق مع الكود القديم
     o.remind = $('#odRemind').checked;
     o.remindTime = $('#odRemindTime').value;
     store(K.obl, obls);
@@ -3712,6 +3782,27 @@ function openOblDetail(o){
 $('#oblDetailClose').onclick = ()=> $('#oblDetailOv').classList.remove('show');
 $('#oblDetailOv').onclick = e=>{ if(e.target.id==='oblDetailOv') $('#oblDetailOv').classList.remove('show'); };
 
+// هل الالتزام المتكرر مدفوع للشهر الحالي؟
+function oblPaidThisMonth(o){
+  const mk = monthKey(0);
+  return !!(o.paidMonths && o.paidMonths[mk]);
+}
+// المبلغ المتبقّي على الالتزام (للأقساط: الإجمالي ناقص المدفوع)
+function oblRemaining(o){
+  if(o.kind === 'installment'){
+    const paid = o.paid || 0;
+    return Math.max((o.total || o.a) - paid, 0);
+  }
+  return o.a;
+}
+// نوع سلوك الالتزام
+function oblKind(o){
+  if(o.kind) return o.kind;
+  if(o.recType === 'monthly' || o.recType === 'quarterly' || o.rec) return 'recurring';
+  return 'once';
+}
+let oblFilter = null; // فلتر النوع الحالي
+
 function renderObls(){
   const list = $('#oblList');
   const t0 = todayISO();
@@ -3720,52 +3811,143 @@ function renderObls(){
   if(typeSel){
     typeSel.innerHTML = (settings.oblTypes||['التزام','دين','اشتراك']).map(t=>`<option>${t}</option>`).join('') + '<option value="__new__">➕ نوع جديد...</option>';
   }
-  const sorted = [...obls].filter(o=>!o.del).sort((a,b)=>{
+  const active = obls.filter(o=>!o.del);
+
+  // نقسّم: مدفوع الشهر ده (للمتكرر) / مخلّص بالكامل (للأقساط) / لسه عليك
+  const paidNow = [], due = [];
+  active.forEach(o=>{
+    const kind = oblKind(o);
+    if(kind === 'recurring' && oblPaidThisMonth(o)) paidNow.push(o);
+    else if(kind === 'installment' && oblRemaining(o) <= 0) paidNow.push(o);
+    else due.push(o);
+  });
+
+  // إجمالي اللي لسه عليك (المتبقّي فعلاً)
+  const totalDue = due.reduce((s,o)=>s+oblRemaining(o),0);
+  const paidThisMonthTotal = paidNow.reduce((s,o)=>s+o.a,0);
+  $('#oblTotal').textContent = totalDue ? `لسه عليك ${arMoney(totalDue)} ${settings.currency}` : (active.length ? 'خلّصت كل حاجة الشهر ده ✓' : '');
+
+  list.innerHTML = '';
+
+  // ===== ملخص حسب النوع =====
+  if(active.length){
+    const byType = {};
+    due.forEach(o=>{
+      const ty = o.type || 'غير محدد';
+      byType[ty] = (byType[ty] || 0) + oblRemaining(o);
+    });
+    const types = Object.keys(byType);
+    if(types.length){
+      const sum = document.createElement('div');
+      sum.className = 'oblsummary';
+      sum.innerHTML = types.map(ty=>`
+        <button class="obltypecard ${oblFilter===ty?'on':''}" data-ty="${ty}">
+          <span class="otcname">${ty}</span>
+          <span class="otcamt">${arMoney(byType[ty])} ${settings.currency}</span>
+        </button>`).join('');
+      sum.querySelectorAll('.obltypecard').forEach(btn=>{
+        btn.onclick = ()=>{
+          oblFilter = (oblFilter === btn.dataset.ty) ? null : btn.dataset.ty;
+          renderObls();
+        };
+      });
+      list.appendChild(sum);
+    }
+  }
+
+  // ===== اللي لسه عليك =====
+  const shown = oblFilter ? due.filter(o=>(o.type||'غير محدد') === oblFilter) : due;
+  const sorted = [...shown].sort((a,b)=>{
     const ad = a.due || '9999', bd = b.due || '9999';
     return ad.localeCompare(bd);
   });
-  const total = sorted.reduce((s,o)=>s+o.a,0);
-  $('#oblTotal').textContent = total ? `عليك ${arMoney(total)} ${settings.currency}` : '';
-  list.innerHTML = '';
-  if(!sorted.length){
+
+  if(!active.length){
     list.innerHTML = '<div class="empty" style="padding:14px 0">مفيش التزامات — دماغك مرتاحة 😌</div>';
     renderOblTrash(list);
     return;
   }
-  sorted.forEach(o=>{
-    const late = o.due && o.due < t0;
-    const el = document.createElement('div');
-    el.className = 'oitem' + (late ? ' late' : '');
-    const typeTag = `<span class="otype otypeedit">${o.type || 'حدد النوع'}</span>`;
-    const recLabel = o.recType === 'quarterly' ? '↻ كل ٣ شهور' : (o.recType === 'monthly' || o.rec ? '↻ شهري' : '');
-    el.innerHTML = `
-      <div class="ottl">
-        <div class="tname"></div>
-        <div class="sub">${typeTag}<span class="amt oamt">${arMoney(o.a)}</span> ${settings.currency} ${o.due ? '· ' + dueLabel(o.due) : ''} ${recLabel ? '· <span class="orec">'+recLabel+'</span>' : ''}</div>
-      </div>
-      <button class="opay">اتدفع</button>
-      <button class="odetailbtn" aria-label="تفاصيل">⋯</button>
-      <button class="delbtn" aria-label="حذف">${icon("trash",16)}</button>`;
-    el.querySelector('.tname').textContent = o.t;
-    makeEditable(el.querySelector('.tname'), o.t, v=>{ if(v){ o.t = v; store(K.obl,obls); } renderObls(); }, {rerender:renderObls});
-    makeEditable(el.querySelector('.oamt'), o.a, v=>{ if(v>0){ o.a = v; store(K.obl,obls); } renderObls(); }, {number:true, rerender:renderObls});
-    // تغيير النوع بالضغط عليه
-    el.querySelector('.otypeedit').onclick = (ev)=>{
-      ev.stopPropagation();
-      openOblTypePicker(o.type, newType=>{ o.type = newType; store(K.obl,obls); renderObls(); });
-    };
-    el.querySelector('.odetailbtn').onclick = ()=> openOblDetail(o);
-    el.querySelector('.opay').onclick = ()=>{
-      // نحفظ الحالة للتراجع
-      const prevDue = o.due;
-      const wasInList = !o.del;
-      const expEntry = {id:Date.now(), a:o.a, c:'التزامات', n:o.t, d:todayISO()};
+  if(oblFilter){
+    const clr = document.createElement('button');
+    clr.className = 'btn ghost';
+    clr.style.cssText = 'width:100%; margin-bottom:8px; font-size:12px';
+    clr.textContent = `✕ شيل فلتر "${oblFilter}"`;
+    clr.onclick = ()=>{ oblFilter = null; renderObls(); };
+    list.appendChild(clr);
+  }
+  sorted.forEach(o=> list.appendChild(buildOblItem(o, t0, false)));
+
+  // ===== المدفوع الشهر ده =====
+  if(paidNow.length){
+    const head = document.createElement('div');
+    head.className = 'grouptitle paidhead';
+    head.innerHTML = `✓ اتدفع الشهر ده (${arNum(paidNow.length)}) — ${arMoney(paidThisMonthTotal)} ${settings.currency}`;
+    head.onclick = ()=> $('#oblPaidBody').classList.toggle('hidden');
+    list.appendChild(head);
+    const body = document.createElement('div');
+    body.id = 'oblPaidBody';
+    paidNow.forEach(o=> body.appendChild(buildOblItem(o, t0, true)));
+    list.appendChild(body);
+  }
+  renderOblTrash(list);
+}
+
+// بناء عنصر التزام واحد
+function buildOblItem(o, t0, isPaid){
+  const kind = oblKind(o);
+  const late = !isPaid && o.due && o.due < t0;
+  const el = document.createElement('div');
+  el.className = 'oitem' + (late ? ' late' : '') + (isPaid ? ' opaid' : '');
+  const typeTag = `<span class="otype otypeedit">${o.type || 'حدد النوع'}</span>`;
+  let recLabel = '';
+  if(kind === 'recurring') recLabel = o.recType === 'quarterly' ? '↻ كل ٣ شهور' : '↻ شهري';
+  else if(kind === 'installment') recLabel = '📉 أقساط';
+  // للأقساط نعرض المتبقّي من الإجمالي
+  let amtHTML = '';
+  if(kind === 'installment'){
+    const rem = oblRemaining(o);
+    const total = o.total || o.a;
+    const pct = total ? Math.round((total - rem) / total * 100) : 0;
+    amtHTML = `<span class="amt">${arMoney(rem)}</span> ${settings.currency} <span class="oinst">فاضل من ${arMoney(total)} (${arNum(pct)}٪ اتدفع)</span>`;
+  } else {
+    amtHTML = `<span class="amt oamt">${arMoney(o.a)}</span> ${settings.currency}`;
+  }
+  el.innerHTML = `
+    <div class="ottl">
+      <div class="tname"></div>
+      <div class="sub">${typeTag}${amtHTML} ${o.due && !isPaid ? '· ' + dueLabel(o.due) : ''} ${recLabel ? '· <span class="orec">'+recLabel+'</span>' : ''}</div>
+      ${kind === 'installment' ? `<div class="instbar"><div class="instfill" style="width:${o.total ? Math.min((o.paid||0)/o.total*100,100) : 0}%"></div></div>` : ''}
+    </div>
+    ${isPaid ? '<span class="opaidtag">✓ اتدفع</span>' : '<button class="opay">اتدفع</button>'}
+    <button class="odetailbtn" aria-label="تفاصيل">⋯</button>
+    <button class="delbtn" aria-label="حذف">${icon("trash",16)}</button>`;
+  el.querySelector('.tname').textContent = o.t;
+  makeEditable(el.querySelector('.tname'), o.t, v=>{ if(v){ o.t = v; store(K.obl,obls); } renderObls(); }, {rerender:renderObls});
+  const amtEl = el.querySelector('.oamt');
+  if(amtEl) makeEditable(amtEl, o.a, v=>{ if(v>0){ o.a = v; store(K.obl,obls); } renderObls(); }, {number:true, rerender:renderObls});
+  el.querySelector('.otypeedit').onclick = (ev)=>{
+    ev.stopPropagation();
+    openOblTypePicker(o.type, newType=>{ o.type = newType; store(K.obl,obls); renderObls(); });
+  };
+  el.querySelector('.odetailbtn').onclick = ()=> openOblDetail(o);
+  const payBtn = el.querySelector('.opay');
+  if(payBtn){
+    payBtn.onclick = ()=>{
+      const payAmt = kind === 'installment' ? (o.installment || o.a) : o.a;
+      const expEntry = {id:Date.now(), a:payAmt, c:'التزامات', n:o.t, d:todayISO()};
       exps.unshift(expEntry);
       store(K.exp, exps);
-      const isRec = o.recType === 'monthly' || o.recType === 'quarterly' || o.rec;
-      if(isRec){
+      // نحفظ الحالة للتراجع
+      const snap = { paidMonths: o.paidMonths ? Object.assign({}, o.paidMonths) : undefined, paid: o.paid, due: o.due, del: o.del };
+      if(kind === 'recurring'){
+        // نعلّم الشهر الحالي كمدفوع (يختفي من "عليك" ويرجع الشهر الجاي تلقائي)
+        o.paidMonths = o.paidMonths || {};
+        o.paidMonths[monthKey(0)] = true;
         const step = o.recType === 'quarterly' ? 3 : 1;
-        o.due = addMonthISO(o.due || todayISO(), step);
+        if(o.due) o.due = addMonthISO(o.due, step);
+      } else if(kind === 'installment'){
+        o.paid = (o.paid || 0) + payAmt;
+        if(o.due) o.due = addMonthISO(o.due, 1);
       } else {
         o.del = true; o.delAt = Date.now();
       }
@@ -3775,21 +3957,21 @@ function renderObls(){
       undoToast('اتدفع واتسجل ✓', ()=>{
         exps = exps.filter(e=>e.id !== expEntry.id);
         store(K.exp, exps);
-        if(isRec){ o.due = prevDue; }
-        else { o.del = false; delete o.delAt; }
+        if(snap.paidMonths !== undefined) o.paidMonths = snap.paidMonths; else delete o.paidMonths;
+        o.paid = snap.paid; o.due = snap.due;
+        if(snap.del) o.del = snap.del; else { o.del = false; delete o.delAt; }
         store(K.obl, obls);
         renderExp();
       });
     };
-    el.querySelector('.delbtn').onclick = ()=>{
-      o.del = true; o.delAt = Date.now();
-      store(K.obl, obls);
-      renderObls();
-      undoToast('اتنقل لسلة المحذوفات', ()=>{ o.del = false; delete o.delAt; store(K.obl,obls); renderObls(); });
-    };
-    list.appendChild(el);
-  });
-  renderOblTrash(list);
+  }
+  el.querySelector('.delbtn').onclick = ()=>{
+    o.del = true; o.delAt = Date.now();
+    store(K.obl, obls);
+    renderObls();
+    undoToast('اتنقل لسلة المحذوفات', ()=>{ o.del = false; delete o.delAt; store(K.obl,obls); renderObls(); });
+  };
+  return el;
 }
 // سلة محذوفات الالتزامات
 function renderOblTrash(list){
