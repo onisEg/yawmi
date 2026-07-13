@@ -344,6 +344,8 @@ main{padding:0 16px; max-width:560px; margin:0 auto}
 .chalbar{height:7px; background:var(--line); border-radius:999px; overflow:hidden}
 .chalbarfill{height:100%; background:linear-gradient(90deg, var(--gold), var(--teal)); border-radius:999px; transition:width .5s ease}
 .chalmeta{font-size:11px; color:var(--muted); margin-top:5px}
+.chalbroke{color:var(--red)}
+.chalbest{color:var(--faint)}
 .chalactions{display:flex; align-items:center; gap:4px; flex-shrink:0}
 .chalcheck{width:30px; height:30px; border-radius:50%; border:1.5px solid var(--teal); background:none; color:var(--teal); font-size:15px; cursor:pointer; display:flex; align-items:center; justify-content:center}
 .chalcheck.on{background:var(--teal); color:#fff}
@@ -1779,9 +1781,24 @@ function applyAllData(d){
 // عدد الحقول المليانة في يوم (عشان نعرف اليوم الأغنى بالمحتوى)
 // دمج يوم واحد على مستوى الحقول (مش بنرمي أي حقل)
 function mergeDay(a, b){
-  // a = محلي, b = بعيد. النتيجة بتاخد الأغنى لكل حقل
+  // a = محلي, b = بعيد
   if(!a) return b; if(!b) return a;
+  // ===== الأحدث يكسب =====
+  // لو أحد الجهازين عدّل اليوم ده بعد التاني بوقت واضح، ناخد نسخته كاملة.
+  // ده مهم عشان لو شيلت علامة عادة (أو غيّرت صلاة)، التغيير ينتشر بدل ما "الاتحاد" يرجّعها.
+  const au = a.u || 0, bu = b.u || 0;
+  const GAP = 2000; // فرق ثانيتين يعتبر تعديل أحدث فعلاً
+  if(au && bu){
+    if(au - bu > GAP) return Object.assign({}, a);
+    if(bu - au > GAP) return Object.assign({}, b);
+  } else if(au && !bu){
+    return Object.assign({}, a);   // المحلي متختوم والبعيد قديم (قبل نظام الختم)
+  } else if(bu && !au){
+    return Object.assign({}, b);
+  }
+  // نفس الوقت تقريباً (أو مفيش ختم) → ندمج بالاتحاد زي الأول (ماننساش حاجة)
   const out = {};
+  out.u = Math.max(au, bu) || Date.now();
   // الحقول النصية: ناخد اللي فيه محتوى؛ لو الاتنين مختلفين وفيهم محتوى، ناخد الأطول
   ['j','l','mn'].forEach(f=>{
     const av = (a[f]||'').trim(), bv = (b[f]||'').trim();
@@ -1852,13 +1869,20 @@ function mergeById(localArr, remoteArr){
     if(!existing){ map.set(x.id, x); return; }
     // لو أي نسخة محذوفة (del:true)، الحذف بيكسب — عشان الحذف ينتشر لكل الأجهزة
     if(x.del || existing.del){
-      // ناخد النسخة المحذوفة (بأحدث وقت حذف)
       const delVer = x.del ? x : existing;
       const other = x.del ? existing : x;
       map.set(x.id, Object.assign({}, other, delVer, {del:true, delAt: Math.max(x.delAt||0, existing.delAt||0) || Date.now()}));
-    } else {
-      // الأولوية للمحلي
-      map.set(x.id, x);
+      return;
+    }
+    // ===== الأحدث يكسب (Last-Write-Wins) =====
+    // ده اللي بيمنع الجهاز القديم إنه يرجّع بيانات قديمة فوق الجديدة
+    const lt = x.updatedAt || 0;
+    const rt = existing.updatedAt || 0;
+    if(lt > rt) map.set(x.id, x);                 // المحلي أحدث
+    else if(rt > lt) map.set(x.id, existing);     // البعيد أحدث
+    else {
+      // نفس الوقت (أو الاتنين من غير ختم) → نفضّل المحلي بس نحافظ على أي حقول موجودة في البعيد بس
+      map.set(x.id, Object.assign({}, existing, x));
     }
   });
   return [...map.values()];
@@ -2112,7 +2136,31 @@ function authErrArabic(msg){
 
 const load = (k,d)=>{ try{ const v = JSON.parse(localStorage.getItem(k)); return v ?? d; }catch(e){ return d; } };
 const SYNC_KEYS = ['yawmi_days','yawmi_tasks','yawmi_exp','yawmi_obl','yawmi_rev','yawmi_goals','yawmi_bhdata','yawmi_settings'];
-const store = (k,v)=>{ localStorage.setItem(k, JSON.stringify(v)); if(SYNC_KEYS.includes(k) && typeof syncSoon==='function') syncSoon(); };
+// المفاتيح اللي بياناتها مصفوفات فيها عناصر بـ id (بنختم عليها وقت التعديل)
+const STAMPED_KEYS = ['yawmi_tasks', 'yawmi_exp', 'yawmi_obl', 'yawmi_goals'];
+// بنختم وقت التعديل على أي عنصر اتغيّر — ده أساس الدمج الصح بين الأجهزة
+function stampItems(k, v){
+  if(!STAMPED_KEYS.includes(k) || !Array.isArray(v)) return v;
+  const now = Date.now();
+  let prev = {};
+  try{
+    const old = JSON.parse(localStorage.getItem(k) || '[]');
+    if(Array.isArray(old)) old.forEach(o=>{ if(o && o.id != null) prev[o.id] = o; });
+  }catch(e){}
+  v.forEach(item=>{
+    if(!item || item.id == null) return;
+    const before = prev[item.id];
+    // عنصر جديد → نختمه
+    if(!before){ if(!item.updatedAt) item.updatedAt = now; return; }
+    // اتغيّر؟ نقارن من غير حقل updatedAt نفسه
+    const a = Object.assign({}, item); delete a.updatedAt;
+    const bb = Object.assign({}, before); delete bb.updatedAt;
+    if(JSON.stringify(a) !== JSON.stringify(bb)) item.updatedAt = now;
+    else if(!item.updatedAt) item.updatedAt = before.updatedAt || now;
+  });
+  return v;
+}
+const store = (k,v)=>{ stampItems(k,v); localStorage.setItem(k, JSON.stringify(v)); if(SYNC_KEYS.includes(k) && typeof syncSoon==='function') syncSoon(); };
 
 let days = load(K.days, {});
 let tasks = load(K.tasks, []);
@@ -2594,7 +2642,12 @@ function getDay(dISO){
   if(!d.dh) d.dh = {};
   return d;
 }
-function saveDays(){ store(K.days, days); toast(); }
+function saveDays(){
+  // نختم اليوم اللي اتعدّل بوقت التعديل — أساس الدمج الصح بين الأجهزة
+  if(days[viewDate]) days[viewDate].u = Date.now();
+  store(K.days, days);
+  toast();
+}
 
 let toastTimer;
 /* ============ نوافذ مخصصة بستايل يومي (بدل prompt/confirm/alert) ============ */
@@ -5423,20 +5476,32 @@ function challengeMetOnDay(ch, dISO){
 function challengeProgress(ch){
   const start = new Date(ch.startDate + 'T12:00:00');
   const today = new Date(todayISO() + 'T12:00:00');
-  let streak = 0, broken = false;
+  let streak = 0, broken = false, brokeOn = null, bestStreak = 0;
   const d = new Date(start);
   while(d <= today){
     const k = iso(d);
     if(challengeMetOnDay(ch, k)){
       streak++;
+      if(streak > bestStreak) bestStreak = streak;
     } else {
-      // لو اليوم ده هو النهارده ولسه ماحققش، مش كسر (لسه بدري)
-      if(iso(d) === todayISO()){ /* لسه اليوم شغّال */ }
-      else { broken = true; streak = 0; }
+      // النهارده لسه شغّال — مش كسر
+      if(k === todayISO()){
+        // مانعملش حاجة، اليوم لسه قدامه
+      } else {
+        // السلسلة اتقطعت → نبدأ من الأول
+        if(streak > 0){ broken = true; brokeOn = k; }
+        streak = 0;
+      }
     }
     d.setDate(d.getDate() + 1);
   }
-  return { streak: Math.min(streak, ch.target), broken, done: streak >= ch.target };
+  return {
+    streak: Math.min(streak, ch.target),
+    broken,
+    brokeOn,
+    bestStreak: Math.min(bestStreak, ch.target),
+    done: streak >= ch.target
+  };
 }
 
 function renderChallenges(){
@@ -5470,7 +5535,12 @@ function renderChallenges(){
       <div class="chalinfo">
         <div class="chaltitle">${title}</div>
         <div class="chalbar"><div class="chalbarfill" style="width:${pct}%"></div></div>
-        <div class="chalmeta">${prog.done ? '🎉 اكتمل!' : `🔥 ${arNum(prog.streak)} من ${arNum(ch.target)} يوم`}</div>
+        <div class="chalmeta">${prog.done
+          ? '🎉 اكتمل!'
+          : `🔥 ${arNum(prog.streak)} من ${arNum(ch.target)} يوم` +
+            (prog.broken && prog.streak === 0 ? ` <span class="chalbroke">— السلسلة اتقطعت، ابدأ من تاني 💪</span>` : '') +
+            (prog.broken && prog.streak > 0 ? ` <span class="chalbest">(أطول سلسلة: ${arNum(prog.bestStreak)})</span>` : '')
+        }</div>
       </div>
       <div class="chalactions">
         ${ch.type === 'manual' && !prog.done ? `<button class="chalcheck ${(ch.manualLog&&ch.manualLog[todayISO()])?'on':''}" aria-label="علّم النهارده">${(ch.manualLog&&ch.manualLog[todayISO()])?'✓':'○'}</button>` : ''}
