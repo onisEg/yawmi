@@ -515,6 +515,10 @@ input[type=number]{color-scheme:dark light}
 .quicktab.on{border-color:var(--gold); background:var(--gold-soft); color:var(--gold)}
 #quickTaskBox input, #quickExpBox input, #quickExpBox select{width:100%; margin-bottom:10px}
 /* ===== أقسام الإعدادات ===== */
+/* ===== التبويبين الفرعيين (المهام/الأهداف) ===== */
+.segwrap{display:flex; gap:6px; background:var(--card2); border:1px solid var(--line); border-radius:999px; padding:5px; margin:14px 0 12px}
+.segbtn{flex:1; background:none; border:none; border-radius:999px; padding:11px 8px; font-family:inherit; font-size:14px; font-weight:700; color:var(--muted); cursor:pointer; transition:all .22s}
+.segbtn.on{background:var(--gold); color:#1a150a; box-shadow:0 2px 8px rgba(0,0,0,.12)}
 .setsection{background:var(--card); border:1px solid var(--line); border-radius:18px; margin-bottom:12px; overflow:hidden; box-shadow:0 2px 10px rgba(0,0,0,.03)}
 .setsechead{display:flex; align-items:center; gap:12px; width:100%; background:none; border:none; padding:16px; cursor:pointer; font-family:inherit; text-align:right}
 .setsechead .ssic{font-size:19px; flex-shrink:0}
@@ -1059,32 +1063,39 @@ nav.bottom button.on{color:var(--gold)}
 
   <!-- ============ المهام ============ -->
   <section id="tab-tasks" class="tab">
-    <div class="addrow" style="margin-top:14px">
-      <input type="text" id="taskTitle" placeholder="مهمة جديدة..." autocomplete="off">
-      <button type="button" class="datebtn" id="taskProjBtn" aria-label="اربط بمشروع"><span data-icon="target"></span></button>
-      <button type="button" class="datebtn" id="taskDueBtn" aria-label="تاريخ الاستحقاق"><span data-icon="calendar"></span><input type="date" id="taskDue" aria-label="تاريخ الاستحقاق"></button>
-      <button class="addbtn" id="addTaskBtn" aria-label="إضافة مهمة">+</button>
+    <!-- تبويبين فرعيين: المهام | الأهداف -->
+    <div class="segwrap">
+      <button class="segbtn on" data-seg="tasks">☑️ المهام</button>
+      <button class="segbtn" data-seg="goals">◎ الأهداف</button>
     </div>
-    <div id="taskProjChosen" class="hidden"></div>
-    <div class="tasksearchwrap">
-      <span data-icon="search" class="tasksearchicon"></span>
-      <input type="text" id="taskSearch" placeholder="دوّر على مهمة..." autocomplete="off">
-      <button id="taskSearchClear" class="hidden" aria-label="مسح">✕</button>
-    </div>
-    <div id="taskList"></div>
-  </section>
 
-  <!-- ============ الأهداف ============ -->
-  <section id="tab-goals" class="tab">
-    <div class="addrow" style="margin-top:14px">
-      <input type="text" id="goalTitle" placeholder="هدف جديد... (أتعلم إنجليزي)" autocomplete="off">
-      <select id="goalQ" style="width:70px; flex-shrink:0">
-        <option value="">—</option>
-        <option>Q1</option><option>Q2</option><option>Q3</option><option>Q4</option>
-      </select>
-      <button class="addbtn" id="addGoalBtn" aria-label="إضافة هدف">+</button>
+    <div id="segTasks">
+      <div class="addrow">
+        <input type="text" id="taskTitle" placeholder="مهمة جديدة..." autocomplete="off">
+        <button type="button" class="datebtn" id="taskProjBtn" aria-label="اربط بمشروع"><span data-icon="target"></span></button>
+        <button type="button" class="datebtn" id="taskDueBtn" aria-label="تاريخ الاستحقاق"><span data-icon="calendar"></span><input type="date" id="taskDue" aria-label="تاريخ الاستحقاق"></button>
+        <button class="addbtn" id="addTaskBtn" aria-label="إضافة مهمة">+</button>
+      </div>
+      <div id="taskProjChosen" class="hidden"></div>
+      <div class="tasksearchwrap">
+        <span data-icon="search" class="tasksearchicon"></span>
+        <input type="text" id="taskSearch" placeholder="دوّر على مهمة..." autocomplete="off">
+        <button id="taskSearchClear" class="hidden" aria-label="مسح">✕</button>
+      </div>
+      <div id="taskList"></div>
     </div>
-    <div id="goalList"></div>
+
+    <div id="segGoals" class="hidden">
+      <div class="addrow">
+        <input type="text" id="goalTitle" placeholder="هدف جديد... (أتعلم إنجليزي)" autocomplete="off">
+        <select id="goalQ" style="width:70px; flex-shrink:0">
+          <option value="">—</option>
+          <option>Q1</option><option>Q2</option><option>Q3</option><option>Q4</option>
+        </select>
+        <button class="addbtn" id="addGoalBtn" aria-label="إضافة هدف">+</button>
+      </div>
+      <div id="goalList"></div>
+    </div>
   </section>
 
   <!-- ============ المصاريف ============ -->
@@ -1215,7 +1226,6 @@ nav.bottom button.on{color:var(--gold)}
 <nav class="bottom">
   <button data-tab="today" class="on"><span class="ic" data-icon="sun"></span>اليوم</button>
   <button data-tab="tasks"><span class="ic" data-icon="check_square"></span>المهام</button>
-  <button data-tab="goals"><span class="ic" data-icon="target"></span>الأهداف</button>
   <button data-tab="exp"><span class="ic" data-icon="wallet"></span>المصاريف</button>
   <button data-tab="dash"><span class="ic" data-icon="chart"></span>نظرة</button>
   <button data-tab="settings" id="navSettings"><span class="ic" data-icon="settings"></span>الإعدادات</button>
@@ -2230,8 +2240,7 @@ function renderCurrentTab(){
     const active = document.querySelector('nav.bottom button.on');
     if(active){
       const tab = active.dataset.tab;
-      if(tab==='tasks') renderTasks();
-      else if(tab==='goals') renderGoals();
+      if(tab==='tasks'){ renderTasks(); renderGoals(); }
       else if(tab==='exp') renderExp();
       else if(tab==='dash') renderDash();
     }
@@ -2262,8 +2271,7 @@ function reloadState(){
   const active = document.querySelector('nav.bottom button.on');
   if(active){
     const tab = active.dataset.tab;
-    if(tab==='tasks') renderTasks();
-    else if(tab==='goals') renderGoals();
+    if(tab==='tasks'){ renderTasks(); renderGoals(); }
     else if(tab==='exp') renderExp();
     else if(tab==='dash') renderDash();
   }
@@ -3953,6 +3961,23 @@ $('#addExpBtn').onclick = ()=>{
 };
 $('#prevMonthBtn').onclick = ()=>{ expMonthOffset--; renderExp(); };
 $('#nextMonthBtn').onclick = ()=>{ if(expMonthOffset<0){ expMonthOffset++; renderExp(); } };
+
+/* ====== التبويبين الفرعيين: المهام | الأهداف ====== */
+let currentSeg = localStorage.getItem('yawmi_seg') || 'tasks';
+function setSeg(seg){
+  currentSeg = seg;
+  localStorage.setItem('yawmi_seg', seg);
+  document.querySelectorAll('.segbtn').forEach(b=> b.classList.toggle('on', b.dataset.seg === seg));
+  $('#segTasks').classList.toggle('hidden', seg !== 'tasks');
+  $('#segGoals').classList.toggle('hidden', seg !== 'goals');
+  if(seg === 'tasks') renderTasks(); else renderGoals();
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+document.querySelectorAll('.segbtn').forEach(btn=>{
+  btn.onclick = ()=> setSeg(btn.dataset.seg);
+});
+// نرجّع آخر تبويب فرعي كان مفتوح
+setTimeout(()=>{ if(currentSeg === 'goals') setSeg('goals'); }, 100);
 
 /* ====== أقسام الإعدادات القابلة للطي ====== */
 document.querySelectorAll('.setsechead').forEach(head=>{
