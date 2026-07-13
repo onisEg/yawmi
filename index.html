@@ -825,24 +825,49 @@ nav.bottom button.on{color:var(--gold)}
 /* ---------- history table ---------- */
 .histctrl{display:flex; gap:8px; margin-bottom:12px}
 .histctrl select{flex:1}
+/* قايمة الأيام: ٥ صفوف ظاهرين والباقي scroll */
+#histList{max-height:420px; overflow-y:auto; -webkit-overflow-scrolling:touch; margin:0 -4px; padding:0 4px}
+#histList::-webkit-scrollbar{width:5px}
+#histList::-webkit-scrollbar-thumb{background:var(--line); border-radius:999px}
 .histrow{
-  display:flex; align-items:center; gap:10px; padding:11px 4px;
-  border-top:1px solid var(--line); cursor:pointer;
+  display:flex; flex-direction:column; gap:7px; padding:12px 6px;
+  border-top:1px solid var(--line); cursor:pointer; transition:background .12s;
 }
 .histrow:hover{background:var(--card2)}
 .histrow:first-child{border-top:none}
-.histrow.past{background:var(--card2)}
-.histrow.past .histdate{color:var(--muted)}
-.histrow.past .histsnip{color:var(--faint)}
-.histrow.today{border-right:3px solid var(--gold); padding-right:8px}
+.histrow.today{border-right:3px solid var(--gold); padding-right:9px; background:var(--gold-soft)}
+.histmain{display:flex; align-items:center; gap:11px}
+.histscore{width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:700; flex-shrink:0; border:2px solid var(--line); color:var(--muted)}
+.histscore.hi{border-color:var(--teal); color:var(--teal)}
+.histscore.mid{border-color:var(--gold); color:var(--gold)}
+.histscore.lo{border-color:var(--line); color:var(--faint)}
+.histinfo{flex:1; min-width:0}
+.histtop{display:flex; align-items:center; gap:7px}
+.histdate{font-size:13px; font-weight:600; white-space:nowrap}
 .histrow.today .histdate{color:var(--gold)}
-.histdate{font-size:13px; font-weight:500; white-space:nowrap; width:88px; flex-shrink:0}
-.histmood{font-size:16px; width:22px; text-align:center; flex-shrink:0; filter:grayscale(.2)}
-.histsnip{flex:1; font-size:13px; color:var(--muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0}
-.histmini{display:flex; gap:5px; flex-shrink:0}
-.histmini .m{font-size:11px; color:var(--faint)}
-.histmini .m.on{color:var(--gold)}
+.histmood{font-size:15px; filter:grayscale(.2)}
+.histsnip{font-size:12px; color:var(--faint); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin-top:2px}
+.histstats{display:flex; gap:6px; flex-wrap:wrap; padding-right:43px}
+.histstats .m{font-size:10px; color:var(--faint); background:var(--card2); border:1px solid var(--line); border-radius:999px; padding:3px 8px; white-space:nowrap}
+.histstats .m.on{color:var(--gold); border-color:var(--gold-soft); background:var(--gold-soft)}
+.histstats .m.exp{color:var(--red)}
 .histmore{text-align:center; padding:12px 0 2px; color:var(--gold); font-size:13px; cursor:pointer}
+/* ===== كارت مهام النهارده (خط صغير) ===== */
+.ttchead{display:flex; align-items:center; justify-content:space-between; margin-bottom:10px}
+.ttchead h3{margin:0}
+.ttccount{font-size:12px; color:var(--gold); font-weight:700; background:var(--gold-soft); border-radius:999px; padding:3px 10px}
+.ttcitem{display:flex; align-items:center; gap:9px; padding:8px 4px; border-top:1px solid var(--line)}
+.ttcitem:first-child{border-top:none}
+.ttcitem.done .ttctxt{text-decoration:line-through; color:var(--faint)}
+.ttccheck{width:19px; height:19px; border-radius:50%; border:1.5px solid var(--faint); background:none; color:transparent; font-size:11px; cursor:pointer; flex-shrink:0; display:flex; align-items:center; justify-content:center; transition:all .15s}
+.ttcitem.done .ttccheck{background:var(--teal); border-color:var(--teal); color:#fff}
+.ttctxt{flex:1; font-size:12.5px; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.ttctag{font-size:9px; border-radius:999px; padding:2px 7px; white-space:nowrap; flex-shrink:0}
+.ttctag.urgent{background:rgba(224,120,86,.16); color:var(--red)}
+.ttctag.important{background:var(--gold-soft); color:var(--gold)}
+.ttctime{font-size:10px; color:var(--faint); flex-shrink:0}
+.ttcempty{font-size:12px; color:var(--muted); text-align:center; padding:10px 0}
+.ttclink{color:var(--gold); cursor:pointer; text-decoration:underline}
 /* splash screen */
 #splash{position:fixed; inset:0; z-index:100; background:var(--bg); display:flex; align-items:center; justify-content:center; opacity:1; transition:opacity .5s ease; pointer-events:none}
 #syncStrip{position:sticky; top:0; z-index:40; display:flex; align-items:center; justify-content:center; gap:8px; background:var(--gold-soft); color:var(--gold); font-size:12px; font-weight:600; padding:8px 12px; text-align:center}
@@ -1065,6 +1090,14 @@ nav.bottom button.on{color:var(--gold)}
     <div class="card hidden" id="otdCard">
       <h3>في يوم زي ده 🕰</h3>
       <div id="otdList"></div>
+    </div>
+
+    <div class="card todaytaskscard" id="todayTasksCard">
+      <div class="ttchead">
+        <h3 class="h3ic"><span data-icon="check_square"></span> مهام النهارده</h3>
+        <span id="ttcCount" class="ttccount"></span>
+      </div>
+      <div id="todayTasksList"></div>
     </div>
   </section>
 
@@ -3168,6 +3201,7 @@ function renderToday(){
   renderBanners();
   renderDeeds();
   renderChallenges();
+  renderTodayTasks();
 }
 
 function streak(test, anchor){
@@ -4026,6 +4060,45 @@ $('#addExpBtn').onclick = ()=>{
 $('#prevMonthBtn').onclick = ()=>{ expMonthOffset--; renderExp(); };
 $('#nextMonthBtn').onclick = ()=>{ if(expMonthOffset<0){ expMonthOffset++; renderExp(); } };
 
+/* ====== زر الرجوع (الموبايل) يقفل أي pop-up مفتوح بدل ما يخرج من التطبيق ====== */
+(function backClosesPopups(){
+  const OVERLAYS = ['#dlgOv','#quickOv','#challengeOv','#oblDetailOv','#taskDetailOv','#installGuideOv','#notifOv','#dhikrManageOv','#changePassOv','#bhOverlay','#onboardOverlay'];
+  function topOpenOverlay(){
+    for(const sel of OVERLAYS){
+      const el = document.querySelector(sel);
+      if(el && el.classList.contains('show')) return el;
+    }
+    return null;
+  }
+  function closeOverlay(el){
+    el.classList.remove('show');
+    if(el.id === 'dlgOv' && typeof _dlgClose === 'function'){ try{ _dlgClose(null); }catch(e){} }
+  }
+  let guarded = false;
+  function ensureGuard(){
+    if(guarded) return;
+    history.pushState({yawmiOverlay:true}, '');
+    guarded = true;
+  }
+  const obs = new MutationObserver(()=>{
+    if(topOpenOverlay()) ensureGuard();
+  });
+  OVERLAYS.forEach(sel=>{
+    const el = document.querySelector(sel);
+    if(el) obs.observe(el, {attributes:true, attributeFilter:['class']});
+  });
+  window.addEventListener('popstate', ()=>{
+    const open = topOpenOverlay();
+    if(open){
+      closeOverlay(open);
+      guarded = false;
+      if(topOpenOverlay()) ensureGuard();
+    } else {
+      guarded = false;
+    }
+  });
+})();
+
 /* ====== التبويبين الفرعيين: المهام | الأهداف ====== */
 let currentSeg = localStorage.getItem('yawmi_seg') || 'tasks';
 function setSeg(seg){
@@ -4388,7 +4461,14 @@ function buildOblItem(o, t0, isPaid){
   if(payBtn){
     payBtn.onclick = ()=>{
       const payAmt = kind === 'installment' ? (o.installment || o.a) : o.a;
-      const expEntry = {id:Date.now(), a:payAmt, c:'التزامات', n:o.t, d:todayISO()};
+      // نسجّل المصروف بنوع الالتزام نفسه (اشتراك/دين/التزام...) بدل "التزامات" لكل حاجة
+      const payCat = (o.type && o.type.trim()) ? o.type.trim() : 'التزامات';
+      // نضيف النوع لتصنيفات المصاريف لو مش موجود عشان يبان في الرسوم والملخص
+      if(!settings.cats.includes(payCat)){
+        settings.cats.push(payCat);
+        store(K.set, settings);
+      }
+      const expEntry = {id:Date.now(), a:payAmt, c:payCat, n:o.t, d:todayISO()};
       exps.unshift(expEntry);
       store(K.exp, exps);
       // نحفظ سجل الدفعة عشان نقدر نلغيها بعدين (toggle)
@@ -4443,7 +4523,7 @@ function undoOblPayment(o){
     exps = exps.filter(e=> e.id !== rec.expId);
   } else {
     // مفيش سجل (دفعة قديمة) — نحاول نلاقي المصروف بالاسم والشهر
-    const idx = exps.findIndex(e=> e.c === 'التزامات' && e.n === o.t && (e.d||'').startsWith(mk));
+    const idx = exps.findIndex(e=> e.n === o.t && (e.d||'').startsWith(mk));
     if(idx > -1) exps.splice(idx, 1);
   }
   store(K.exp, exps);
@@ -5773,6 +5853,46 @@ async function createCustomChallenge(){
   }, { baseId: null });
 }
 
+// كارت مهام النهارده (مختصر، في آخر صفحة اليوم)
+function renderTodayTasks(){
+  const card = $('#todayTasksCard');
+  const list = $('#todayTasksList');
+  if(!card || !list) return;
+  // مهام اليوم اللي بنعرضه (viewDate) — مش النهارده بس
+  const dayTasks = tasks.filter(t=> !t.del && t.due === viewDate);
+  const done = dayTasks.filter(t=>t.done).length;
+  $('#ttcCount').textContent = dayTasks.length ? `${arNum(done)}/${arNum(dayTasks.length)}` : '';
+  if(!dayTasks.length){
+    list.innerHTML = '<div class="ttcempty">مفيش مهام لليوم ده — <span class="ttclink">ضيف مهمة</span></div>';
+    const link = list.querySelector('.ttclink');
+    if(link) link.onclick = ()=> document.querySelector('nav.bottom button[data-tab=tasks]').click();
+    return;
+  }
+  // العاجل/المهم الأول
+  const pri = t => (t.urgent?2:0) + (t.important?1:0);
+  const sorted = [...dayTasks].sort((a,b)=> (a.done?1:0)-(b.done?1:0) || pri(b)-pri(a));
+  list.innerHTML = '';
+  sorted.forEach(t=>{
+    const el = document.createElement('div');
+    el.className = 'ttcitem' + (t.done ? ' done' : '');
+    el.innerHTML = `
+      <button class="ttccheck" aria-label="إنجاز">${t.done ? '✓' : ''}</button>
+      <span class="ttctxt"></span>
+      ${t.urgent ? '<span class="ttctag urgent">عاجل</span>' : ''}
+      ${t.important ? '<span class="ttctag important">مهم</span>' : ''}
+      ${t.time ? `<span class="ttctime">${arNum(t.time)}</span>` : ''}`;
+    el.querySelector('.ttctxt').textContent = t.t;
+    el.querySelector('.ttccheck').onclick = ()=>{
+      t.done = !t.done;
+      store(K.tasks, tasks);
+      if(navigator.vibrate) navigator.vibrate(10);
+      renderTodayTasks();
+      if(typeof renderTasks === 'function') renderTasks();
+    };
+    list.appendChild(el);
+  });
+}
+
 function renderDeeds(){
   const card = $('#deedsCard');
   const list = $('#deedsList');
@@ -6020,20 +6140,40 @@ function renderHistory(){
     const d = new Date(k+'T12:00:00');
     const dlabel = arDate(d, {day:'numeric', month:'short'});
     const wd = arDate(d, {weekday:'short'});
-    const snip = (r.j || r.l || '').slice(0, 60);
+    const snip = (r.j || r.l || '').slice(0, 50);
     const pr = r.p ? r.p.reduce((a,b)=>a+(b?1:0),0) : 0;
+    const jamaa = r.p ? r.p.filter(x=> x===2 || x===4).length : 0;
     const hd = r.h ? Object.values(r.h).filter(Boolean).length : 0;
+    const az = r.z ? Object.values(r.z).filter(Boolean).length : 0;
+    const score = (typeof scoreOf === 'function') ? scoreOf(r) : 0;
+    // مهام ومصاريف اليوم ده
+    const dayTasks = tasks.filter(t=>!t.del && t.due === k);
+    const tDone = dayTasks.filter(t=>t.done).length;
+    const dayExp = exps.filter(e=> e.d === k).reduce((a,e)=>a+e.a, 0);
+    const sleep = r.s && r.s.h ? r.s.h : null;
     const row = document.createElement('div');
     const isToday = k === todayISO();
     row.className = 'histrow' + (isToday ? ' today' : (k < todayISO() ? ' past' : ''));
     row.innerHTML = `
-      <span class="histdate">${wd} ${dlabel}</span>
-      <span class="histmood">${r.m ? MOOD_EMO[r.m] : ''}</span>
-      <span class="histsnip"></span>
-      <span class="histmini">
-        <span class="m ${pr===5?'on':''}">🕌${arNum(pr)}</span>
-        <span class="m ${hd?'on':''}">✓${arNum(hd)}</span>
-      </span>`;
+      <div class="histmain">
+        <span class="histscore ${score>=8?'hi':(score>=5?'mid':'lo')}">${arNum(score)}</span>
+        <div class="histinfo">
+          <div class="histtop">
+            <span class="histdate">${wd} ${dlabel}</span>
+            <span class="histmood">${r.m ? MOOD_EMO[r.m] : ''}</span>
+          </div>
+          <div class="histsnip"></div>
+        </div>
+      </div>
+      <div class="histstats">
+        <span class="m ${pr===5?'on':''}" title="صلوات">🕌 ${arNum(pr)}/٥</span>
+        ${jamaa ? `<span class="m on" title="جماعة">👥 ${arNum(jamaa)}</span>` : ''}
+        <span class="m ${hd?'on':''}" title="عادات">✅ ${arNum(hd)}</span>
+        ${az ? `<span class="m on" title="أذكار">📿 ${arNum(az)}</span>` : ''}
+        ${dayTasks.length ? `<span class="m ${tDone===dayTasks.length?'on':''}" title="مهام">☑️ ${arNum(tDone)}/${arNum(dayTasks.length)}</span>` : ''}
+        ${dayExp ? `<span class="m exp" title="مصاريف">﷼ ${arMoney(dayExp)}</span>` : ''}
+        ${sleep ? `<span class="m" title="نوم">🛌 ${arNum(sleep)}س</span>` : ''}
+      </div>`;
     row.querySelector('.histsnip').textContent = snip || '—';
     row.onclick = ()=>{
       viewDate = k;
