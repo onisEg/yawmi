@@ -895,6 +895,32 @@ nav.bottom button.on{color:var(--gold)}
 .ptname{font-size:13px; font-weight:700; color:var(--gold)}
 .ptcount{font-size:15px; font-weight:700; color:var(--text); font-variant-numeric:tabular-nums; margin-right:auto; margin-left:0}
 #prayerTimer.soon .ptcount{color:var(--gold)}
+/* ===== السنن وأذكار الصلاة (نقاط إضافية) ===== */
+.ppdivider{height:1px; background:var(--line); margin:14px 0 12px}
+.ppextrahead{font-size:11px; color:var(--muted); margin-bottom:8px; text-align:center}
+.ppextra{display:flex; align-items:center; gap:11px; width:100%; background:var(--card2); border:1.5px solid var(--line); border-radius:14px; padding:11px 13px; margin-bottom:7px; cursor:pointer; font-family:inherit; text-align:right; transition:all .18s}
+.ppextra.on{border-color:var(--teal); background:rgba(107,191,158,.1)}
+.ppxcheck{width:20px; height:20px; border-radius:50%; border:1.5px solid var(--faint); flex-shrink:0; display:flex; align-items:center; justify-content:center; transition:all .18s}
+.ppextra.on .ppxcheck{background:var(--teal); border-color:var(--teal)}
+.ppextra.on .ppxcheck::after{content:'✓'; color:#fff; font-size:11px}
+.ppxinfo{display:flex; flex-direction:column; gap:1px; min-width:0}
+.ppxinfo b{font-size:13px; font-weight:600; color:var(--text)}
+.ppxinfo small{font-size:10.5px; color:var(--muted)}
+.ppextra.on .ppxinfo b{color:var(--teal)}
+#scoreBonus{color:var(--teal); font-weight:700; font-size:11px; margin-right:5px}
+.beadbonus{font-size:8px; position:absolute; top:2px; left:2px}
+.bead{position:relative}
+/* ===== كارت الإلهام (Hero Slider) ===== */
+.herocard{background:linear-gradient(135deg, var(--gold-soft), var(--card2)); border-color:var(--gold-soft); cursor:pointer; overflow:hidden; padding:20px 18px 14px; text-align:center}
+.heroinner{min-height:78px; display:flex; align-items:center; justify-content:center}
+.heroslide{opacity:1; transform:translateY(0); transition:opacity .26s ease, transform .26s ease; width:100%}
+.heroslide.fading{opacity:0; transform:translateY(-7px)}
+.heroic{font-size:26px; display:block; margin-bottom:8px; line-height:1}
+.herotxt{font-family:'Amiri', serif; font-size:16px; line-height:1.85; color:var(--text); font-weight:700}
+.herosrc{font-size:11px; color:var(--gold); margin-top:7px; font-weight:600}
+.herodots{display:flex; gap:5px; justify-content:center; margin-top:12px}
+.hdot{width:5px; height:5px; border-radius:999px; background:var(--line); transition:all .3s}
+.hdot.on{background:var(--gold); width:16px}
 /* splash screen */
 #splash{position:fixed; inset:0; z-index:100; background:var(--bg); display:flex; align-items:center; justify-content:center; opacity:1; transition:opacity .5s ease; pointer-events:none}
 #syncStrip{position:sticky; top:0; z-index:40; display:flex; align-items:center; justify-content:center; gap:8px; background:var(--gold-soft); color:var(--gold); font-size:12px; font-weight:600; padding:8px 12px; text-align:center}
@@ -997,9 +1023,20 @@ nav.bottom button.on{color:var(--gold)}
       </div>
       <div class="scoretxt">
         <div class="big">نتيجة اليوم</div>
-        <div class="scoreof">من ١٠</div>
+        <div class="scoreof">من ١٠ <span id="scoreBonus" class="hidden"></span></div>
         <div class="sub" id="scoreSub">الصلوات والعادات بيتحسبوا تلقائي</div>
       </div>
+    </div>
+
+    <div class="card herocard" id="heroCard">
+      <div class="heroinner">
+        <div class="heroslide" id="heroSlide">
+          <span class="heroic" id="heroIcon"></span>
+          <div class="herotxt" id="heroText"></div>
+          <div class="herosrc" id="heroSrc"></div>
+        </div>
+      </div>
+      <div class="herodots" id="heroDots"></div>
     </div>
 
     <div class="card">
@@ -1375,6 +1412,10 @@ nav.bottom button.on{color:var(--gold)}
     <div class="setsection">
       <button class="setsechead" data-sec="habits"><span class="ssic">✅</span><span class="sstitle">العادات والعبادات</span><span class="sschev">›</span></button>
       <div class="setsecbody hidden" id="sec-habits">
+        <div class="remrow" style="margin-bottom:14px">
+          <div class="reminfo"><span>✨ تتبّع السنن وأذكار الصلاة</span><small>نقاط إضافية — النتيجة تفضل من ١٠</small></div>
+          <div class="remctrl"><label class="switch"><input type="checkbox" id="setTrackSunan"><span class="slider"></span></label></div>
+        </div>
         <label for="setHabits">العادات (كل عادة في سطر)</label>
         <textarea id="setHabits"></textarea>
         <label for="setBadHabits">عادات تحت السيطرة 🚫 (كل واحدة في سطر — بتتعد بعدّاد)</label>
@@ -1515,6 +1556,19 @@ nav.bottom button.on{color:var(--gold)}
     <button class="ppopt s5" data-st="5"><span class="ppdot"></span>قضاء (بعد الوقت)</button>
     <button class="ppopt s3" data-st="3"><span class="ppdot"></span>خارج الوقت</button>
     <button class="ppopt s0" data-st="0"><span class="ppdot"></span>لسه مصليتهاش</button>
+
+    <div id="ppExtras" class="hidden">
+      <div class="ppdivider"></div>
+      <div class="ppextrahead">نقاط إضافية ✨</div>
+      <button class="ppextra" id="ppSunan">
+        <span class="ppxcheck"></span>
+        <span class="ppxinfo"><b>السنن الراتبة</b><small id="ppSunanCount"></small></span>
+      </button>
+      <button class="ppextra" id="ppAzkar">
+        <span class="ppxcheck"></span>
+        <span class="ppxinfo"><b>أذكار بعد الصلاة</b><small>تسبيح وتحميد وتكبير</small></span>
+      </button>
+    </div>
   </div>
 </div>
 
@@ -1905,6 +1959,9 @@ function mergeDay(a, b){
   out.z = Object.assign({}, b.z, a.z);
   // الأعمال المستحبة: اتحاد
   if(a.deeds || b.deeds) out.deeds = Object.assign({}, b.deeds, a.deeds);
+  // السنن وأذكار الصلاة
+  if(a.sn || b.sn) out.sn = Object.assign({}, b.sn, a.sn);
+  if(a.pz || b.pz) out.pz = Object.assign({}, b.pz, a.pz);
   // عدّاد الذِكر: ناخد الأعلى لكل ذِكر
   out.dh = Object.assign({}, b.dh);
   for(const k in (a.dh||{})){ out.dh[k] = Math.max(a.dh[k]||0, (b.dh||{})[k]||0); }
@@ -3092,7 +3149,14 @@ function renderToday(){
     const b = document.createElement('button');
     b.className = 'bead' + (st ? ' on s'+st : '') + (locked ? ' locked' : '');
     const timeLabel = hasRealTimes ? `<span class="ptime">${minToHM(times[i])}</span>` : '';
-    b.innerHTML = `<span class="dot"></span>${name}${timeLabel}`;
+    // علامة النقاط الإضافية (سنن/أذكار) لو مفعّلة ومعمولة
+    let bonusMark = '';
+    if(sunanEnabled()){
+      const hasSn = rec.sn && rec.sn[i];
+      const hasPz = rec.pz && rec.pz[i];
+      if(hasSn || hasPz) bonusMark = `<span class="beadbonus" title="سنن/أذكار">✨</span>`;
+    }
+    b.innerHTML = `<span class="dot"></span>${name}${timeLabel}${bonusMark}`;
     b.onclick = (e)=>{
       e.stopPropagation();
       if(locked){
@@ -3203,6 +3267,20 @@ function renderToday(){
   const pr = rec.p.reduce((a,b)=>a+(b?1:0),0);
   const hd = settings.habits.filter(h=>rec.h[h]).length;
   $('#scoreSub').textContent = `${arNum(pr)} من ٥ صلوات · ${arNum(hd)} من ${arNum(settings.habits.length)} عادات`;
+  // النقاط الإضافية (السنن وأذكار الصلاة) — بتظهر بس لو الميزة مفعّلة
+  const bonusEl = $('#scoreBonus');
+  if(bonusEl){
+    if(sunanEnabled()){
+      const sn = rec.sn ? Object.values(rec.sn).filter(Boolean).length : 0;
+      const pz = rec.pz ? Object.values(rec.pz).filter(Boolean).length : 0;
+      const bonus = sn + pz;
+      if(bonus > 0){
+        bonusEl.textContent = `+${arNum(bonus)} ✨`;
+        bonusEl.classList.remove('hidden');
+        bonusEl.title = `${arNum(sn)} سنن · ${arNum(pz)} أذكار`;
+      } else bonusEl.classList.add('hidden');
+    } else bonusEl.classList.add('hidden');
+  }
 
   // prayer streak (كل الخمسة)
   const pn = streak(k=>{ const r = days[k]; return !!(r && r.p && r.p.reduce((a,b)=>a+(b?1:0),0) === 5); }, viewDate);
@@ -3362,10 +3440,59 @@ function startBHDetailTimer(){
   bhdTimerInt = setInterval(tick, 1000);
 }
 
+// عدد ركعات السنن الراتبة لكل صلاة (قبلية + بعدية)
+const SUNAN_INFO = [
+  {n:2, txt:'ركعتين قبل الفجر'},
+  {n:6, txt:'٤ قبل الظهر + ٢ بعدها'},
+  {n:0, txt:'مفيش سنن راتبة للعصر'},
+  {n:2, txt:'ركعتين بعد المغرب'},
+  {n:2, txt:'ركعتين بعد العشاء'},
+];
+function sunanEnabled(){ return !!settings.trackSunan; }
+
 function openPrayerPicker(idx, name){
   const rec = getDay(viewDate);
+  rec.sn = rec.sn || {};   // السنن: {0:true,...}
+  rec.pz = rec.pz || {};   // أذكار بعد الصلاة
   $('#ppTitle').textContent = name;
   $('#prayerPicker').classList.add('show');
+
+  // ===== النقاط الإضافية (السنن والأذكار) — بتظهر بس لو مفعّلة =====
+  const extras = $('#ppExtras');
+  const info = SUNAN_INFO[idx];
+  if(sunanEnabled()){
+    extras.classList.remove('hidden');
+    const sunanBtn = $('#ppSunan');
+    const azkarBtn = $('#ppAzkar');
+    // العصر مفيهاش سنن راتبة
+    if(info.n === 0){
+      sunanBtn.classList.add('hidden');
+    } else {
+      sunanBtn.classList.remove('hidden');
+      $('#ppSunanCount').textContent = info.txt;
+      sunanBtn.classList.toggle('on', !!rec.sn[idx]);
+      sunanBtn.onclick = (e)=>{
+        e.stopPropagation();
+        rec.sn[idx] = !rec.sn[idx];
+        saveDays();
+        sunanBtn.classList.toggle('on', !!rec.sn[idx]);
+        if(navigator.vibrate) navigator.vibrate(8);
+        renderToday();
+      };
+    }
+    azkarBtn.classList.toggle('on', !!rec.pz[idx]);
+    azkarBtn.onclick = (e)=>{
+      e.stopPropagation();
+      rec.pz[idx] = !rec.pz[idx];
+      saveDays();
+      azkarBtn.classList.toggle('on', !!rec.pz[idx]);
+      if(navigator.vibrate) navigator.vibrate(8);
+      renderToday();
+    };
+  } else {
+    extras.classList.add('hidden');
+  }
+
   document.querySelectorAll('#prayerPicker .ppopt').forEach(opt=>{
     opt.onclick = ()=>{
       const st = parseInt(opt.dataset.st, 10);
@@ -3376,7 +3503,6 @@ function openPrayerPicker(idx, name){
       $('#prayerPicker').classList.remove('show');
       renderToday();
       if(before < 5 && after === 5) celebrate('الحمد لله، صليت الخمسة! 🕌');
-      // احتفال خاص لو الخمسة كلهم جماعة
       if(after === 5 && rec.p.every(x=>x===2)) celebrate('ما شاء الله، الخمسة جماعة! 🕌✨');
     };
   });
@@ -4093,6 +4219,82 @@ $('#addExpBtn').onclick = ()=>{
 };
 $('#prevMonthBtn').onclick = ()=>{ expMonthOffset--; renderExp(); };
 $('#nextMonthBtn').onclick = ()=>{ if(expMonthOffset<0){ expMonthOffset++; renderExp(); } };
+
+/* ====== كارت الإلهام (Hero Slider) — بيتبدّل كل ٣ ثواني ====== */
+const HERO_ITEMS = [
+  {i:'📖', t:'﴿ وَمَن يَتَّقِ اللَّهَ يَجْعَل لَّهُ مَخْرَجًا ﴾', s:'الطلاق: ٢'},
+  {i:'📖', t:'﴿ إِنَّ مَعَ الْعُسْرِ يُسْرًا ﴾', s:'الشرح: ٦'},
+  {i:'📖', t:'﴿ وَاذْكُر رَّبَّكَ إِذَا نَسِيتَ ﴾', s:'الكهف: ٢٤'},
+  {i:'📖', t:'﴿ أَلَا بِذِكْرِ اللَّهِ تَطْمَئِنُّ الْقُلُوبُ ﴾', s:'الرعد: ٢٨'},
+  {i:'📖', t:'﴿ وَقُل رَّبِّ زِدْنِي عِلْمًا ﴾', s:'طه: ١١٤'},
+  {i:'📖', t:'﴿ إِنَّ اللَّهَ مَعَ الصَّابِرِينَ ﴾', s:'البقرة: ١٥٣'},
+  {i:'🕌', t:'«أحبُّ الأعمال إلى الله أدومُها وإن قلّ»', s:'حديث شريف'},
+  {i:'🕌', t:'«الكلمة الطيبة صدقة»', s:'حديث شريف'},
+  {i:'🕌', t:'«تبسمك في وجه أخيك صدقة»', s:'حديث شريف'},
+  {i:'🕌', t:'«من سلك طريقًا يلتمس فيه علمًا سهّل الله له طريقًا إلى الجنة»', s:'حديث شريف'},
+  {i:'🤲', t:'اللهم أعنّي على ذكرك وشكرك وحسن عبادتك', s:'دعاء'},
+  {i:'🤲', t:'رَبِّ اشْرَحْ لِي صَدْرِي وَيَسِّرْ لِي أَمْرِي', s:'دعاء'},
+  {i:'🤲', t:'اللهم بارك لي في يومي', s:'دعاء'},
+  {i:'✨', t:'خطوة صغيرة كل يوم أحسن من قفزة مرة واحدة', s:'حكمة'},
+  {i:'✨', t:'مش لازم تكون مثالي — لازم بس تكمّل', s:'تحفيز'},
+  {i:'✨', t:'اللي بتعمله دلوقتي، بكرة هتشكر نفسك عليه', s:'تحفيز'},
+  {i:'✨', t:'الاستمرار أهم من الكمال', s:'حكمة'},
+  {i:'🌱', t:'كل يوم بتسجّله، بتبني نسخة أحسن من نفسك', s:'يومي'},
+  {i:'🔥', t:'أصعب خطوة هي الأولى — وانت خدتها خلاص', s:'تحفيز'},
+  {i:'🤍', t:'اطلب من الله، فهو أقرب إليك مما تتصور', s:'تذكير'},
+];
+let heroIdx = 0, heroTimer = null, heroOrder = [];
+function shuffleHero(){
+  heroOrder = HERO_ITEMS.map((_,i)=>i);
+  for(let i = heroOrder.length - 1; i > 0; i--){
+    const j = Math.floor(Math.random() * (i + 1));
+    [heroOrder[i], heroOrder[j]] = [heroOrder[j], heroOrder[i]];
+  }
+}
+function renderHeroSlide(){
+  const slide = $('#heroSlide');
+  if(!slide) return;
+  if(!heroOrder.length) shuffleHero();
+  const item = HERO_ITEMS[heroOrder[heroIdx % heroOrder.length]];
+  // fade out ثم fade in
+  slide.classList.add('fading');
+  setTimeout(()=>{
+    $('#heroIcon').textContent = item.i;
+    $('#heroText').textContent = item.t;
+    $('#heroSrc').textContent = item.s;
+    slide.classList.remove('fading');
+  }, 260);
+  // النقط
+  const dots = $('#heroDots');
+  if(dots){
+    const N = Math.min(heroOrder.length, 5);
+    const active = heroIdx % N;
+    dots.innerHTML = Array.from({length:N}, (_,k)=>`<span class="hdot ${k===active?'on':''}"></span>`).join('');
+  }
+}
+function nextHero(){ heroIdx++; renderHeroSlide(); }
+function startHero(){
+  if(heroTimer) clearInterval(heroTimer);
+  // نحمّل خط أميري (المستخدم في الآيات) لو لسه ماتحملش
+  if(typeof ensureFontLoaded === 'function') ensureFontLoaded('Amiri');
+  shuffleHero();
+  heroIdx = 0;
+  renderHeroSlide();
+  heroTimer = setInterval(nextHero, 3000);
+}
+// الضغط على الكارت يجيب واحدة جديدة فوراً
+if($('#heroCard')){
+  $('#heroCard').onclick = ()=>{
+    nextHero();
+    if(heroTimer){ clearInterval(heroTimer); heroTimer = setInterval(nextHero, 3000); }
+    if(navigator.vibrate) navigator.vibrate(6);
+  };
+}
+// نوقف المؤقت لما التطبيق يبقى في الخلفية (توفير بطارية)
+document.addEventListener('visibilitychange', ()=>{
+  if(document.hidden){ if(heroTimer){ clearInterval(heroTimer); heroTimer = null; } }
+  else if(!heroTimer && $('#heroCard')){ heroTimer = setInterval(nextHero, 3000); }
+});
 
 /* ====== زر الرجوع (الموبايل) يقفل أي pop-up مفتوح بدل ما يخرج من التطبيق ====== */
 (function backClosesPopups(){
@@ -5094,6 +5296,7 @@ function populateSettings(){
     b.classList.toggle('on', parseInt(b.dataset.size,10) === (settings.fontSize || 12));
   });
   $('#setHabits').value = settings.habits.join('\n');
+  if($('#setTrackSunan')) $('#setTrackSunan').checked = !!settings.trackSunan;
   $('#setBadHabits').value = (settings.badHabits || []).join('\n');
   $('#setCountry').innerHTML = COUNTRIES.map(c=>`<option ${c.n===settings.country?'selected':''}>${c.n}</option>`).join('');
   fillCitiesFor(settings.country, settings.city);
@@ -5164,6 +5367,7 @@ $('#bhdRelapse').onclick = async ()=>{
 $('#saveSettings').onclick = async ()=>{
   settings.name = $('#setName').value.trim();
   settings.habits = $('#setHabits').value.split('\n').map(s=>s.trim()).filter(Boolean).slice(0,8);
+  if($('#setTrackSunan')) settings.trackSunan = $('#setTrackSunan').checked;
   settings.badHabits = $('#setBadHabits').value.split('\n').map(s=>s.trim()).filter(Boolean).slice(0,8);
   settings.country = $('#setCountry').value;
   settings.city = $('#setCity').value;
@@ -6365,6 +6569,7 @@ renderIcons();
 updateNavCurr();
 checkOccasionNotifs();
 startPrayerTimer();
+startHero();
 if(notifSupported() && Notification.permission === 'granted') startReminderScheduler();
 updateNotifDot();
 renderToday();
