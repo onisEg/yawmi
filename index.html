@@ -531,8 +531,17 @@ input[type=number]{color-scheme:dark light}
 #expSearchInfo{background:var(--gold-soft); color:var(--gold); border-radius:12px; padding:10px 14px; font-size:13px; margin-bottom:10px; text-align:center}
 #expSearchInfo b{color:var(--text)}
 /* ===== زر الإضافة السريعة ===== */
-#fab{position:fixed; left:20px; bottom:calc(88px + env(safe-area-inset-bottom)); z-index:45; width:54px; height:54px; border-radius:50%; border:none; background:var(--gold); color:#1a150a; font-size:30px; font-weight:300; line-height:1; cursor:pointer; box-shadow:0 6px 20px rgba(0,0,0,.25); display:flex; align-items:center; justify-content:center; transition:transform .15s}
-#fab:active{transform:scale(.9)}
+/* زر الإضافة في نص النav — بارز لفوق */
+nav.bottom #fab{
+  flex:0 0 auto; width:52px; height:52px; border-radius:50%; border:3px solid var(--bg);
+  background:var(--gold); color:#1a150a; font-size:28px; font-weight:300; line-height:1;
+  cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0;
+  margin:0 6px; transform:translateY(-16px);
+  box-shadow:0 6px 18px rgba(0,0,0,.28), 0 0 0 1px rgba(0,0,0,.04);
+  transition:transform .16s ease, box-shadow .16s ease;
+}
+nav.bottom #fab:active{transform:translateY(-16px) scale(.9); box-shadow:0 3px 10px rgba(0,0,0,.3)}
+nav.bottom #fab:hover{transform:translateY(-18px)}
 #quickOv{position:fixed; inset:0; background:rgba(0,0,0,.6); display:flex; align-items:flex-end; justify-content:center; z-index:64; opacity:0; visibility:hidden; transition:opacity .25s, visibility .25s}
 #quickOv.show{opacity:1; visibility:visible}
 #quickSheet{background:var(--card); border-radius:24px 24px 0 0; width:100%; max-width:560px; padding:20px 20px calc(24px + env(safe-area-inset-bottom)); transform:translateY(100%); transition:transform .3s cubic-bezier(.32,.72,0,1)}
@@ -694,9 +703,10 @@ nav.bottom{
   position:fixed; bottom:calc(12px + env(safe-area-inset-bottom)); right:12px; left:12px;
   background:var(--nav-glass); backdrop-filter:blur(20px) saturate(1.4); -webkit-backdrop-filter:blur(20px) saturate(1.4);
   border:1px solid var(--nav-glass-border); border-radius:999px;
-  display:flex; padding:8px 6px;
+  display:flex; align-items:center; padding:8px 6px;
   box-shadow:0 8px 32px rgba(0,0,0,.18), 0 2px 8px rgba(0,0,0,.1);
   max-width:540px; margin:0 auto;
+  overflow:visible;   /* عشان زر الإضافة يطلع فوق */
 }
 nav.bottom button{
   flex:1; background:none; border:none; color:var(--faint); font-family:inherit;
@@ -921,6 +931,21 @@ nav.bottom button.on{color:var(--gold)}
 .herodots{display:flex; gap:5px; justify-content:center; margin-top:12px}
 .hdot{width:5px; height:5px; border-radius:999px; background:var(--line); transition:all .3s}
 .hdot.on{background:var(--gold); width:16px}
+.herocard.mini{padding:14px 16px; margin-top:14px; margin-bottom:12px}
+.herocard.mini .heroinner{min-height:52px}
+.herocard.mini .heroic{font-size:20px; margin-bottom:5px}
+.herocard.mini .herotxt{font-family:inherit; font-size:13px; line-height:1.7; font-weight:600}
+.herocard.mini .herosrc{font-size:10px; margin-top:4px}
+/* ===== مجموعات المصاريف حسب الشهر ===== */
+.expmonthhead{display:flex; align-items:center; gap:9px; width:100%; background:var(--card2); border:1px solid var(--line); border-radius:14px; padding:12px 13px; margin:10px 0 6px; cursor:pointer; font-family:inherit; text-align:right; transition:all .15s}
+.expmonthhead.open{border-color:var(--gold-soft); background:var(--gold-soft)}
+.emchev{color:var(--muted); font-size:16px; transform:rotate(90deg); transition:transform .22s; flex-shrink:0}
+.expmonthhead.open .emchev{transform:rotate(-90deg)}
+.emname{flex:1; font-size:13px; font-weight:700; color:var(--text)}
+.emcount{font-size:10px; color:var(--muted); background:var(--card); border-radius:999px; padding:2px 8px}
+.emtotal{font-size:13px; font-weight:700; color:var(--red); white-space:nowrap}
+.expmonthhead.open .emtotal{color:var(--gold)}
+.expmonthbody{padding-right:4px}
 /* splash screen */
 #splash{position:fixed; inset:0; z-index:100; background:var(--bg); display:flex; align-items:center; justify-content:center; opacity:1; transition:opacity .5s ease; pointer-events:none}
 #syncStrip{position:sticky; top:0; z-index:40; display:flex; align-items:center; justify-content:center; gap:8px; background:var(--gold-soft); color:var(--gold); font-size:12px; font-weight:600; padding:8px 12px; text-align:center}
@@ -1006,6 +1031,17 @@ nav.bottom button.on{color:var(--gold)}
       <button class="navb" id="prevDayBtn" aria-label="اليوم السابق">›</button>
     </div>
 
+    <div class="card herocard" id="heroCard">
+      <div class="heroinner">
+        <div class="heroslide" id="heroSlide">
+          <span class="heroic" id="heroIcon"></span>
+          <div class="herotxt" id="heroText"></div>
+          <div class="herosrc" id="heroSrc"></div>
+        </div>
+      </div>
+      <div class="herodots" id="heroDots"></div>
+    </div>
+
     <div class="card scorecard">
       <div class="ringwrap">
         <svg width="96" height="96" viewBox="0 0 96 96">
@@ -1028,16 +1064,6 @@ nav.bottom button.on{color:var(--gold)}
       </div>
     </div>
 
-    <div class="card herocard" id="heroCard">
-      <div class="heroinner">
-        <div class="heroslide" id="heroSlide">
-          <span class="heroic" id="heroIcon"></span>
-          <div class="herotxt" id="heroText"></div>
-          <div class="herosrc" id="heroSrc"></div>
-        </div>
-      </div>
-      <div class="herodots" id="heroDots"></div>
-    </div>
 
     <div class="card">
       <div style="display:flex; justify-content:space-between; align-items:center">
@@ -1179,6 +1205,15 @@ nav.bottom button.on{color:var(--gold)}
     </div>
 
     <div id="segTasks">
+      <div class="card herocard mini" id="heroTasksCard">
+        <div class="heroinner">
+          <div class="heroslide" id="heroTasksSlide">
+            <span class="heroic" id="heroTasksIcon"></span>
+            <div class="herotxt" id="heroTasksText"></div>
+            <div class="herosrc" id="heroTasksSrc"></div>
+          </div>
+        </div>
+      </div>
       <div class="addrow">
         <input type="text" id="taskTitle" placeholder="مهمة جديدة..." autocomplete="off">
         <button type="button" class="datebtn" id="taskProjBtn" aria-label="اربط بمشروع"><span data-icon="target"></span></button>
@@ -1209,11 +1244,21 @@ nav.bottom button.on{color:var(--gold)}
 
   <!-- ============ المصاريف ============ -->
   <section id="tab-exp" class="tab">
-    <div class="monthnav" style="margin-top:14px">
+    <div class="card herocard mini" id="heroExpCard">
+      <div class="heroinner">
+        <div class="heroslide" id="heroExpSlide">
+          <span class="heroic" id="heroExpIcon"></span>
+          <div class="herotxt" id="heroExpText"></div>
+          <div class="herosrc" id="heroExpSrc"></div>
+        </div>
+      </div>
+    </div>
+    <div class="monthnav">
       <button class="navb" id="nextMonthBtn" aria-label="الشهر التالي">‹</button>
       <span id="expMonthLabel"></span>
       <button class="navb" id="prevMonthBtn" aria-label="الشهر السابق">›</button>
     </div>
+    <button class="btn ghost" id="expGroupBtn" style="width:100%; font-size:12px; margin-bottom:10px">📅 اعرض كل الشهور</button>
     <div class="exptotal">
       <div class="num" id="expTotal">0</div>
       <div class="lbl">إجمالي مصاريف الشهر</div>
@@ -1306,7 +1351,6 @@ nav.bottom button.on{color:var(--gold)}
   </section>
 </main>
 
-<button id="fab" aria-label="إضافة سريعة">+</button>
 
 <div id="quickOv">
   <div id="quickSheet">
@@ -1335,6 +1379,7 @@ nav.bottom button.on{color:var(--gold)}
 <nav class="bottom">
   <button data-tab="today" class="on"><span class="ic" data-icon="sun"></span>اليوم</button>
   <button data-tab="tasks"><span class="ic" data-icon="check_square"></span>المهام</button>
+  <button id="fab" aria-label="إضافة سريعة">+</button>
   <button data-tab="exp"><span class="ic" data-icon="wallet"></span>المصاريف</button>
   <button data-tab="dash"><span class="ic" data-icon="chart"></span>نظرة</button>
   <button data-tab="settings" id="navSettings"><span class="ic" data-icon="settings"></span>الإعدادات</button>
@@ -2769,6 +2814,7 @@ function startPrayerQuoteRotation(){
   }, 8000);
 }
 let expMonthOffset = 0;
+let expGroupMode = false;   // عرض كل الشهور مجمّعة وقابلة للطي
 
 function getDay(dISO){
   if(!days[dISO]) days[dISO] = {j:'', p:[0,0,0,0,0], h:{}, m:0, s:'', l:''};
@@ -4080,7 +4126,13 @@ function renderExp(){
   $('#expMonthLabel').textContent = arDate(d, {month:'long', year:'numeric'});
 
   const sel = $('#expCat');
-  sel.innerHTML = settings.cats.map(c=>`<option>${c}</option>`).join('') + '<option value="__new__">➕ تصنيف جديد...</option>';
+  // نضم تصنيفات المصاريف + أنواع الالتزامات (دين/اشتراك...) عشان تقدر تسجّل مصروف كدين مباشرة
+  const oblTypes = (settings.oblTypes || []).filter(t=> !settings.cats.includes(t));
+  const catOpts = settings.cats.map(c=>`<option>${c}</option>`).join('');
+  const oblOpts = oblTypes.length
+    ? `<optgroup label="التزامات وديون">${oblTypes.map(t=>`<option>${t}</option>`).join('')}</optgroup>`
+    : '';
+  sel.innerHTML = catOpts + oblOpts + '<option value="__new__">➕ تصنيف جديد...</option>';
 
   const monthExp = exps.filter(e=>e.d.startsWith(mk)).sort((a,b)=> b.d.localeCompare(a.d) || b.id-a.id);
   const total = monthExp.reduce((a,e)=>a+e.a,0);
@@ -4150,6 +4202,46 @@ function renderExp(){
   }
   info.classList.add('hidden');
   if(!monthExp.length){ list.innerHTML = '<div class="empty-big"><span class="ico">💰</span><div class="ttl">مفيش مصاريف الشهر ده</div><div class="desc">سجّل مصاريفك عشان تعرف فلوسك رايحة فين</div></div>'; return; }
+  // ===== عرض حسب الشهر (مجموعات قابلة للطي) أو شهر واحد =====
+  if(expGroupMode){
+    // كل الشهور، مجمّعة وقابلة للطي
+    const byMonth = {};
+    exps.forEach(e=>{
+      const m = (e.d || '').slice(0,7);
+      if(!m) return;
+      (byMonth[m] = byMonth[m] || []).push(e);
+    });
+    const months = Object.keys(byMonth).sort().reverse();
+    if(!months.length){
+      list.innerHTML = '<div class="empty-big"><span class="ico">💰</span><div class="ttl">مفيش مصاريف لسه</div><div class="desc">سجّل مصاريفك عشان تعرف فلوسك رايحة فين</div></div>';
+      return;
+    }
+    months.forEach((m, i)=>{
+      const items = byMonth[m].sort((a,b)=> b.d.localeCompare(a.d) || b.id-a.id);
+      const mTotal = items.reduce((a,e)=>a+e.a, 0);
+      const mDate = new Date(m + '-15T12:00:00');
+      const mLabel = arDate(mDate, {month:'long', year:'numeric'});
+      const openByDefault = i === 0; // أحدث شهر مفتوح
+      const head = document.createElement('button');
+      head.className = 'expmonthhead' + (openByDefault ? ' open' : '');
+      head.innerHTML = `
+        <span class="emchev">›</span>
+        <span class="emname">${mLabel}</span>
+        <span class="emcount">${arNum(items.length)}</span>
+        <span class="emtotal">${arMoney(mTotal)} ${settings.currency}</span>`;
+      const body = document.createElement('div');
+      body.className = 'expmonthbody' + (openByDefault ? '' : ' hidden');
+      items.forEach(e=> body.appendChild(buildExpItem(e, true)));
+      head.onclick = ()=>{
+        const isOpen = !body.classList.contains('hidden');
+        body.classList.toggle('hidden', isOpen);
+        head.classList.toggle('open', !isOpen);
+      };
+      list.appendChild(head);
+      list.appendChild(body);
+    });
+    return;
+  }
   monthExp.forEach(e=> list.appendChild(buildExpItem(e, false)));
 }
 
@@ -4217,10 +4309,16 @@ $('#addExpBtn').onclick = ()=>{
   expMonthOffset = 0;
   renderExp(); toast('اتسجل ✓');
 };
+$('#expGroupBtn').onclick = ()=>{
+  expGroupMode = !expGroupMode;
+  $('#expGroupBtn').textContent = expGroupMode ? '📆 اعرض شهر واحد' : '📅 اعرض كل الشهور';
+  document.querySelector('.monthnav').classList.toggle('hidden', expGroupMode);
+  renderExp();
+};
 $('#prevMonthBtn').onclick = ()=>{ expMonthOffset--; renderExp(); };
 $('#nextMonthBtn').onclick = ()=>{ if(expMonthOffset<0){ expMonthOffset++; renderExp(); } };
 
-/* ====== كارت الإلهام (Hero Slider) — بيتبدّل كل ٣ ثواني ====== */
+/* ====== كروت الإلهام (Hero Sliders) — بتتبدّل كل ٣ ثواني ====== */
 const HERO_ITEMS = [
   {i:'📖', t:'﴿ وَمَن يَتَّقِ اللَّهَ يَجْعَل لَّهُ مَخْرَجًا ﴾', s:'الطلاق: ٢'},
   {i:'📖', t:'﴿ إِنَّ مَعَ الْعُسْرِ يُسْرًا ﴾', s:'الشرح: ٦'},
@@ -4231,69 +4329,104 @@ const HERO_ITEMS = [
   {i:'🕌', t:'«أحبُّ الأعمال إلى الله أدومُها وإن قلّ»', s:'حديث شريف'},
   {i:'🕌', t:'«الكلمة الطيبة صدقة»', s:'حديث شريف'},
   {i:'🕌', t:'«تبسمك في وجه أخيك صدقة»', s:'حديث شريف'},
-  {i:'🕌', t:'«من سلك طريقًا يلتمس فيه علمًا سهّل الله له طريقًا إلى الجنة»', s:'حديث شريف'},
   {i:'🤲', t:'اللهم أعنّي على ذكرك وشكرك وحسن عبادتك', s:'دعاء'},
   {i:'🤲', t:'رَبِّ اشْرَحْ لِي صَدْرِي وَيَسِّرْ لِي أَمْرِي', s:'دعاء'},
-  {i:'🤲', t:'اللهم بارك لي في يومي', s:'دعاء'},
   {i:'✨', t:'خطوة صغيرة كل يوم أحسن من قفزة مرة واحدة', s:'حكمة'},
   {i:'✨', t:'مش لازم تكون مثالي — لازم بس تكمّل', s:'تحفيز'},
-  {i:'✨', t:'اللي بتعمله دلوقتي، بكرة هتشكر نفسك عليه', s:'تحفيز'},
   {i:'✨', t:'الاستمرار أهم من الكمال', s:'حكمة'},
   {i:'🌱', t:'كل يوم بتسجّله، بتبني نسخة أحسن من نفسك', s:'يومي'},
-  {i:'🔥', t:'أصعب خطوة هي الأولى — وانت خدتها خلاص', s:'تحفيز'},
   {i:'🤍', t:'اطلب من الله، فهو أقرب إليك مما تتصور', s:'تذكير'},
 ];
-let heroIdx = 0, heroTimer = null, heroOrder = [];
-function shuffleHero(){
-  heroOrder = HERO_ITEMS.map((_,i)=>i);
-  for(let i = heroOrder.length - 1; i > 0; i--){
-    const j = Math.floor(Math.random() * (i + 1));
-    [heroOrder[i], heroOrder[j]] = [heroOrder[j], heroOrder[i]];
+// إلهام المهام
+const HERO_TASKS = [
+  {i:'🎯', t:'ركّز على مهمة واحدة في المرة — وهتخلّصها كلها', s:'إنتاجية'},
+  {i:'🐸', t:'ابدأ بأصعب مهمة الصبح، وباقي اليوم هيبقى سهل', s:'قاعدة الضفدع'},
+  {i:'⏱️', t:'لو المهمة أقل من دقيقتين — اعملها دلوقتي', s:'قاعدة الدقيقتين'},
+  {i:'✂️', t:'المهمة الكبيرة؟ قسّمها لخطوات صغيرة تقدر تبدأها', s:'إنتاجية'},
+  {i:'🕌', t:'«إن الله يحب إذا عمل أحدكم عملاً أن يتقنه»', s:'حديث شريف'},
+  {i:'📝', t:'اللي مش مكتوب، بيتنسي — سجّل مهامك', s:'تذكير'},
+  {i:'🔥', t:'خلّص مهمة واحدة دلوقتي — الزخم هيجي لوحده', s:'تحفيز'},
+  {i:'⚖️', t:'مش كل عاجل مهم، ومش كل مهم عاجل — رتّب صح', s:'أولويات'},
+  {i:'🌅', t:'خطة الليلة بتوفّر ساعة الصبح', s:'إنتاجية'},
+  {i:'💪', t:'الإنجاز الصغير النهارده أحسن من خطة كبيرة بكرة', s:'تحفيز'},
+];
+// إلهام المصاريف
+const HERO_EXP = [
+  {i:'📖', t:'﴿ وَلَا تُسْرِفُوا ۚ إِنَّهُ لَا يُحِبُّ الْمُسْرِفِينَ ﴾', s:'الأنعام: ١٤١'},
+  {i:'📖', t:'﴿ وَالَّذِينَ إِذَا أَنفَقُوا لَمْ يُسْرِفُوا وَلَمْ يَقْتُرُوا ﴾', s:'الفرقان: ٦٧'},
+  {i:'🕌', t:'«ما عال من اقتصد»', s:'حديث شريف'},
+  {i:'💰', t:'اللي بتسجّله، بتتحكم فيه', s:'قاعدة'},
+  {i:'🛑', t:'اسأل نفسك: محتاجه فعلاً ولا عايزه بس؟', s:'قبل ما تشتري'},
+  {i:'📊', t:'راجع مصاريفك أسبوعياً — هتتفاجئ', s:'نصيحة'},
+  {i:'🎯', t:'ادفع لنفسك الأول — ادّخر قبل ما تصرف', s:'قاعدة ذهبية'},
+  {i:'🤲', t:'اللهم اكفني بحلالك عن حرامك، وأغنني بفضلك عمن سواك', s:'دعاء'},
+  {i:'🌱', t:'الديون بتقل خطوة خطوة — كمّل', s:'تحفيز'},
+  {i:'✨', t:'الغنى مش كتر المال، الغنى غنى النفس', s:'حكمة'},
+];
+
+function makeHero(cardId, slideId, iconId, textId, srcId, items, dotsId){
+  const card = document.getElementById(cardId);
+  if(!card) return null;
+  let idx = 0, timer = null, order = [];
+  function shuffle(){
+    order = items.map((_,i)=>i);
+    for(let i = order.length - 1; i > 0; i--){
+      const j = Math.floor(Math.random() * (i + 1));
+      [order[i], order[j]] = [order[j], order[i]];
+    }
   }
-}
-function renderHeroSlide(){
-  const slide = $('#heroSlide');
-  if(!slide) return;
-  if(!heroOrder.length) shuffleHero();
-  const item = HERO_ITEMS[heroOrder[heroIdx % heroOrder.length]];
-  // fade out ثم fade in
-  slide.classList.add('fading');
-  setTimeout(()=>{
-    $('#heroIcon').textContent = item.i;
-    $('#heroText').textContent = item.t;
-    $('#heroSrc').textContent = item.s;
-    slide.classList.remove('fading');
-  }, 260);
-  // النقط
-  const dots = $('#heroDots');
-  if(dots){
-    const N = Math.min(heroOrder.length, 5);
-    const active = heroIdx % N;
-    dots.innerHTML = Array.from({length:N}, (_,k)=>`<span class="hdot ${k===active?'on':''}"></span>`).join('');
+  function render(){
+    const slide = document.getElementById(slideId);
+    if(!slide) return;
+    if(!order.length) shuffle();
+    const item = items[order[idx % order.length]];
+    slide.classList.add('fading');
+    setTimeout(()=>{
+      const ic = document.getElementById(iconId);
+      const tx = document.getElementById(textId);
+      const sr = document.getElementById(srcId);
+      if(ic) ic.textContent = item.i;
+      if(tx) tx.textContent = item.t;
+      if(sr) sr.textContent = item.s;
+      slide.classList.remove('fading');
+    }, 260);
+    if(dotsId){
+      const dots = document.getElementById(dotsId);
+      if(dots){
+        const N = Math.min(order.length, 5);
+        const active = idx % N;
+        dots.innerHTML = Array.from({length:N}, (_,k)=>`<span class="hdot ${k===active?'on':''}"></span>`).join('');
+      }
+    }
   }
-}
-function nextHero(){ heroIdx++; renderHeroSlide(); }
-function startHero(){
-  if(heroTimer) clearInterval(heroTimer);
-  // نحمّل خط أميري (المستخدم في الآيات) لو لسه ماتحملش
-  if(typeof ensureFontLoaded === 'function') ensureFontLoaded('Amiri');
-  shuffleHero();
-  heroIdx = 0;
-  renderHeroSlide();
-  heroTimer = setInterval(nextHero, 3000);
-}
-// الضغط على الكارت يجيب واحدة جديدة فوراً
-if($('#heroCard')){
-  $('#heroCard').onclick = ()=>{
-    nextHero();
-    if(heroTimer){ clearInterval(heroTimer); heroTimer = setInterval(nextHero, 3000); }
+  function next(){ idx++; render(); }
+  function start(){
+    if(timer) clearInterval(timer);
+    if(typeof ensureFontLoaded === 'function') ensureFontLoaded('Amiri');
+    shuffle(); idx = 0; render();
+    timer = setInterval(next, 3000);
+  }
+  function stop(){ if(timer){ clearInterval(timer); timer = null; } }
+  card.onclick = ()=>{
+    next();
+    if(timer){ clearInterval(timer); timer = setInterval(next, 3000); }
     if(navigator.vibrate) navigator.vibrate(6);
   };
+  return { start, stop, next, isRunning: ()=> !!timer, resume: ()=>{ if(!timer) timer = setInterval(next, 3000); } };
 }
-// نوقف المؤقت لما التطبيق يبقى في الخلفية (توفير بطارية)
+
+let heroMain = null, heroTasks = null, heroExp = null;
+function startHero(){
+  heroMain  = makeHero('heroCard', 'heroSlide', 'heroIcon', 'heroText', 'heroSrc', HERO_ITEMS, 'heroDots');
+  heroTasks = makeHero('heroTasksCard', 'heroTasksSlide', 'heroTasksIcon', 'heroTasksText', 'heroTasksSrc', HERO_TASKS, null);
+  heroExp   = makeHero('heroExpCard', 'heroExpSlide', 'heroExpIcon', 'heroExpText', 'heroExpSrc', HERO_EXP, null);
+  [heroMain, heroTasks, heroExp].forEach(h=> h && h.start());
+}
+// نوقف المؤقتات لما التطبيق يبقى في الخلفية (توفير بطارية)
 document.addEventListener('visibilitychange', ()=>{
-  if(document.hidden){ if(heroTimer){ clearInterval(heroTimer); heroTimer = null; } }
-  else if(!heroTimer && $('#heroCard')){ heroTimer = setInterval(nextHero, 3000); }
+  const all = [heroMain, heroTasks, heroExp].filter(Boolean);
+  if(document.hidden) all.forEach(h=> h.stop());
+  else all.forEach(h=> h.resume());
 });
 
 /* ====== زر الرجوع (الموبايل) يقفل أي pop-up مفتوح بدل ما يخرج من التطبيق ====== */
@@ -5216,7 +5349,7 @@ function switchToTab(tabName, isBack){
     if(tabHistory.length > 20) tabHistory.shift();
   }
   currentTab = tabName;
-  document.querySelectorAll('nav.bottom button').forEach(x=>x.classList.remove('on'));
+  document.querySelectorAll('nav.bottom button[data-tab]').forEach(x=>x.classList.remove('on'));
   document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
   b.classList.add('on');
   $('#tab-'+tabName).classList.add('active');
@@ -5231,7 +5364,7 @@ function switchToTab(tabName, isBack){
   $('#backBtn').classList.toggle('hidden', tabHistory.length === 0);
   window.scrollTo({top:0});
 }
-document.querySelectorAll('nav.bottom button').forEach(b=>{
+document.querySelectorAll('nav.bottom button[data-tab]').forEach(b=>{
   b.onclick = ()=> switchToTab(b.dataset.tab, false);
 });
 $('#backBtn').onclick = ()=>{
