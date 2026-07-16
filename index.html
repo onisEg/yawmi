@@ -4339,6 +4339,45 @@ function renderExp(){
     return;
   }
   monthExp.forEach(e=> list.appendChild(buildExpItem(e, false)));
+  
+  // سلة مهملات المصروفات - soft delete يتم الحذف الفعلي بعد 30 يوم
+  const trashed = exps.filter(e=>e.del).sort((a,b)=>(b.delAt||'').localeCompare(a.delAt||''));
+  const thirtyDaysAgo = iso(new Date(Date.now() - 30*86400000));
+  trashed.forEach(e=>{ if((e.delAt||'') < thirtyDaysAgo) exps = exps.filter(x=>x.id!==e.id); });
+  if(trashed.length > exps.filter(e=>e.del).length) store(K.exp,exps);
+  const trashedAfterClean = exps.filter(e=>e.del).sort((a,b)=>(b.delAt||'').localeCompare(a.delAt||''));
+  
+  if(!trashedAfterClean.length) return;
+  const head = document.createElement('div');
+  head.className = 'grouptitle trashhead';
+  head.innerHTML = `<span data-icon="trash"></span> سلة المهملات (${arNum(trashedAfterClean.length)})`;
+  head.onclick = ()=> $('#expTrashBody').classList.toggle('hidden');
+  
+  const body = document.createElement('div');
+  body.id = 'expTrashBody';
+  body.classList.add('hidden');
+  trashedAfterClean.forEach(e=>{
+    const el = document.createElement('div');
+    el.className = 'eitem trashitem';
+    const dateTxt = arNum(e.d.slice(5).split('-').reverse().join('/'));
+    el.innerHTML = `
+      <span class="ecat">${e.c}</span>
+      <span class="enote">${e.n || '(بدون ملاحظة)'}</span>
+      <span class="edate">${dateTxt}</span>
+      <span class="eamt">${arMoney(e.a)}</span>
+      <button class="trestore" aria-label="رجّع">↩</button>
+      <button class="delbtn tperm" aria-label="مسح نهائي">${icon('trash',16)}</button>`;
+    el.querySelector('.trestore').onclick = ()=>{
+      e.del = false; delete e.delAt; store(K.exp,exps); renderExp(); toast('رجعت المصروف ✓');
+    };
+    el.querySelector('.tperm').onclick = async ()=>{
+      if(!await askConfirm('تمسح المصروف دا نهائياً؟', {danger:true, title:'مسح نهائي'})) return;
+      exps = exps.filter(x=>x.id!==e.id); store(K.exp,exps); renderExp(); toast('اتمسح نهائياً');
+    };
+    body.appendChild(el);
+  });
+  list.appendChild(head);
+  list.appendChild(body);
 }
 
 // بناء عنصر مصروف واحد (showFullDate=true في نتايج البحث عشان تبان السنة)
@@ -4365,9 +4404,10 @@ function buildExpItem(e, showFullDate){
   };
   el.querySelector('.ecat').style.cursor = 'pointer';
   el.querySelector('.delbtn').onclick = ()=>{
-    const snapshot = e;
-    exps = exps.filter(x=>x.id!==e.id); store(K.exp,exps); renderExp();
-    undoToast('اتحذف المصروف', ()=>{ exps.unshift(snapshot); store(K.exp,exps); renderExp(); });
+    e.del = true;
+    e.delAt = iso(new Date());
+    store(K.exp,exps); renderExp();
+    undoToast('اتحذف المصروف', ()=>{ e.del = false; e.delAt = null; store(K.exp,exps); renderExp(); });
   };
   return el;
 }
