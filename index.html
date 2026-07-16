@@ -4498,8 +4498,13 @@ document.querySelectorAll('.setsechead').forEach(head=>{
 
 /* ====== زر الإضافة السريعة (FAB) ====== */
 function openQuickAdd(){
-  // نملأ التصنيفات
-  $('#qExpCat').innerHTML = settings.cats.map(c=>`<option>${c}</option>`).join('');
+  // نملأ التصنيفات + الالتزامات (دين، اشتراك، إلخ)
+  const oblTypes = (settings.oblTypes || []).filter(t=> !settings.cats.includes(t));
+  const catOpts = settings.cats.map(c=>`<option>${c}</option>`).join('');
+  const oblOpts = oblTypes.length
+    ? `<optgroup label="التزامات وديون">${oblTypes.map(t=>`<option>${t}</option>`).join('')}</optgroup>`
+    : '';
+  $('#qExpCat').innerHTML = catOpts + oblOpts;
   $('#qTaskText').value = '';
   $('#qTaskDue').value = todayISO();
   $('#qExpAmt').value = '';
