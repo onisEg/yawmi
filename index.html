@@ -4393,15 +4393,15 @@ function makeHero(cardId, slideId, iconId, textId, srcId, items, dotsId){
     if(timer) clearInterval(timer);
     if(typeof ensureFontLoaded === 'function') ensureFontLoaded('Amiri');
     shuffle(); idx = 0; render();
-    timer = setInterval(next, 3000);
+    timer = setInterval(next, 10000);
   }
   function stop(){ if(timer){ clearInterval(timer); timer = null; } }
   card.onclick = ()=>{
     next();
-    if(timer){ clearInterval(timer); timer = setInterval(next, 3000); }
+    if(timer){ clearInterval(timer); timer = setInterval(next, 10000); }
     if(navigator.vibrate) navigator.vibrate(6);
   };
-  return { start, stop, next, isRunning: ()=> !!timer, resume: ()=>{ if(!timer) timer = setInterval(next, 3000); } };
+  return { start, stop, next, isRunning: ()=> !!timer, resume: ()=>{ if(!timer) timer = setInterval(next, 10000); } };
 }
 
 let heroMain = null, heroTasks = null, heroExp = null;
