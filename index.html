@@ -280,6 +280,23 @@ main{padding:0 16px; max-width:560px; margin:0 auto}
 .wirdlabel{font-size:12px; color:var(--muted)}
 .wirdhint{text-align:center; font-size:12px; color:var(--faint); margin-top:8px}
 .wirdcard.done .wirdnum b{color:var(--teal)}
+/* المسبحة الإلكترونية */
+#tasbihOv{position:fixed; inset:0; background:rgba(0,0,0,.6); display:flex; align-items:flex-end; justify-content:center; z-index:60; opacity:0; visibility:hidden; transition:opacity .25s ease, visibility .25s}
+#tasbihOv.show{opacity:1; visibility:visible}
+#tasbihModal{background:var(--card); border-radius:24px 24px 0 0; width:100%; max-width:560px; padding:20px 20px calc(24px + env(safe-area-inset-bottom)); transform:translateY(100%); transition:transform .3s cubic-bezier(.32,.72,0,1)}
+#tasbihOv.show #tasbihModal{transform:translateY(0)}
+.tasbihpick{display:flex; gap:8px; justify-content:center; flex-wrap:wrap; margin-bottom:16px}
+.tasbihpick button{background:var(--card2); border:1.5px solid var(--line); color:var(--muted); border-radius:999px; padding:8px 16px; font-family:inherit; font-size:14px; cursor:pointer; transition:all .15s}
+.tasbihpick button.on{border-color:var(--gold); color:var(--gold); background:var(--gold-soft)}
+.tasbihtap{width:100%; background:linear-gradient(135deg, var(--gold-soft), var(--card2)); border:2px solid var(--gold); border-radius:24px; padding:36px 20px; cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:8px; -webkit-tap-highlight-color:transparent; transition:transform .08s ease}
+.tasbihtap:active{transform:scale(.97)}
+.tasbihbig{font-size:64px; font-weight:800; color:var(--gold); line-height:1; font-variant-numeric:tabular-nums}
+.tasbihof{font-size:13px; color:var(--muted)}
+.tasbihdhikr{font-size:22px; color:var(--text); font-weight:600; margin-top:4px; text-align:center; line-height:1.6}
+.tasbihctrls{display:flex; align-items:center; justify-content:space-between; margin-top:16px}
+.tasbihreset{background:none; border:1.5px solid var(--line); color:var(--muted); border-radius:999px; padding:10px 20px; font-family:inherit; font-size:14px; cursor:pointer; transition:all .15s}
+.tasbihreset:active{background:var(--card2)}
+.tasbihtotal{font-size:13px; color:var(--faint)}
 .dhikrcard.done .dhikrtext{color:var(--teal)}
 .dhikrcard.done .dhikrnum b{color:var(--teal)}
 #dhikrManageOv{position:fixed; inset:0; background:rgba(0,0,0,.6); display:flex; align-items:flex-end; justify-content:center; z-index:58; opacity:0; visibility:hidden; transition:opacity .25s ease, visibility .25s}
@@ -1123,6 +1140,7 @@ nav.bottom button.on{color:var(--gold)}
       <div class="dhikrhead">
         <h3 class="h3ic"><span data-icon="beads"></span>ذِكر اليوم</h3>
         <div style="display:flex; gap:4px">
+          <button class="dhikrmenu" id="tasbihBtn" aria-label="المسبحة">📿</button>
           <button class="dhikrmenu" id="dhikrChangeBtn" aria-label="غيّر الذِكر"><span data-icon="refresh"></span></button>
           <button class="dhikrmenu" id="dhikrMenuBtn" aria-label="إدارة الأذكار">⋯</button>
         </div>
@@ -1722,6 +1740,25 @@ nav.bottom button.on{color:var(--gold)}
         <input type="number" id="newDhikrTarget" inputmode="numeric" placeholder="العدد" style="width:100px" value="33">
         <button class="btn primary" id="addDhikrBtn" style="flex:1">إضافة</button>
       </div>
+    </div>
+  </div>
+</div>
+
+<div id="tasbihOv">
+  <div id="tasbihModal">
+    <div class="bhdhead">
+      <h2>📿 المسبحة</h2>
+      <button class="iconbtn" id="tasbihClose" aria-label="إغلاق">✕</button>
+    </div>
+    <div class="tasbihpick" id="tasbihPick"></div>
+    <button class="tasbihtap" id="tasbihTap">
+      <div class="tasbihbig" id="tasbihBig">0</div>
+      <div class="tasbihof" id="tasbihOf">دوس في أي مكان للتسبيح</div>
+      <div class="tasbihdhikr" id="tasbihDhikr">سبحان الله</div>
+    </button>
+    <div class="tasbihctrls">
+      <button class="tasbihreset" id="tasbihReset">↺ صفّر</button>
+      <div class="tasbihtotal" id="tasbihTotal"></div>
     </div>
   </div>
 </div>
@@ -3289,6 +3326,49 @@ function changeWird(delta){
   } else if(navigator.vibrate) navigator.vibrate(8);
 }
 
+// ===== المسبحة الإلكترونية =====
+const TASBIH_DHIKRS = ['سبحان الله', 'الحمد لله', 'الله أكبر', 'لا إله إلا الله', 'أستغفر الله', 'سبحان الله وبحمده', 'لا حول ولا قوة إلا بالله'];
+let tasbihCount = 0, tasbihTargetVal = 33, tasbihDhikrIdx = 0;
+function tasbihTotal(){ return parseInt(localStorage.getItem('yawmi_tasbih_total') || '0', 10); }
+function openTasbih(){
+  tasbihCount = 0;
+  renderTasbihPicks();
+  updateTasbihUI();
+  $('#tasbihOv').classList.add('show');
+}
+function renderTasbihPicks(){
+  const wrap = $('#tasbihPick');
+  const targets = [33, 99, 100, 1000];
+  wrap.innerHTML = targets.map(t=>`<button data-t="${t}" class="${t===tasbihTargetVal?'on':''}">${arNum(t)}</button>`).join('');
+  wrap.querySelectorAll('button').forEach(b=>{
+    b.onclick = ()=>{ tasbihTargetVal = parseInt(b.dataset.t,10); tasbihCount = 0; renderTasbihPicks(); updateTasbihUI(); };
+  });
+}
+function updateTasbihUI(){
+  $('#tasbihBig').textContent = arNum(tasbihCount);
+  $('#tasbihOf').textContent = 'من ' + arNum(tasbihTargetVal);
+  $('#tasbihDhikr').textContent = TASBIH_DHIKRS[tasbihDhikrIdx];
+  const tot = tasbihTotal();
+  $('#tasbihTotal').textContent = tot ? ('إجمالي تسبيحك: ' + arNum(tot)) : '';
+}
+function tapTasbih(){
+  tasbihCount++;
+  localStorage.setItem('yawmi_tasbih_total', String(tasbihTotal() + 1));
+  updateTasbihUI();
+  if(tasbihCount >= tasbihTargetVal){
+    if(navigator.vibrate) navigator.vibrate([20,50,20,50,20]);
+    toast('سبحان الله ✓ كمّلت ' + arNum(tasbihTargetVal));
+    // ننتقل تلقائياً للذكر اللي بعده
+    tasbihDhikrIdx = (tasbihDhikrIdx + 1) % TASBIH_DHIKRS.length;
+    tasbihCount = 0;
+    setTimeout(updateTasbihUI, 300);
+  } else if(tasbihCount % 33 === 0){
+    if(navigator.vibrate) navigator.vibrate([15,30,15]);
+  } else {
+    if(navigator.vibrate) navigator.vibrate(8);
+  }
+}
+
 function renderToday(){
   const rec = getDay(viewDate);
   $('#gdate').textContent = fmtDate(viewDate);
@@ -3797,6 +3877,11 @@ $('#dhikrTapZone').onclick = ()=>{
 };
 $('#dhikrMenuBtn').onclick = openDhikrManage;
 $('#dhikrChangeBtn').onclick = openDhikrPicker;
+$('#tasbihBtn').onclick = openTasbih;
+$('#tasbihClose').onclick = ()=> $('#tasbihOv').classList.remove('show');
+$('#tasbihOv').onclick = e=>{ if(e.target.id==='tasbihOv') $('#tasbihOv').classList.remove('show'); };
+$('#tasbihTap').onclick = tapTasbih;
+$('#tasbihReset').onclick = ()=>{ tasbihCount = 0; updateTasbihUI(); if(navigator.vibrate) navigator.vibrate(10); };
 function openDhikrPicker(){
   const list = settings.dhikrList || [];
   const cur = dhikrOfDay(viewDate);
@@ -4705,7 +4790,7 @@ document.addEventListener('visibilitychange', ()=>{
 
 /* ====== زر الرجوع (الموبايل) يقفل أي pop-up مفتوح بدل ما يخرج من التطبيق ====== */
 (function backClosesPopups(){
-  const OVERLAYS = ['#dlgOv','#quickOv','#challengeOv','#oblDetailOv','#taskDetailOv','#installGuideOv','#notifOv','#dhikrManageOv','#changePassOv','#bhOverlay','#onboardOverlay'];
+  const OVERLAYS = ['#dlgOv','#quickOv','#challengeOv','#oblDetailOv','#taskDetailOv','#installGuideOv','#notifOv','#dhikrManageOv','#tasbihOv','#changePassOv','#bhOverlay','#onboardOverlay'];
   function topOpenOverlay(){
     for(const sel of OVERLAYS){
       const el = document.querySelector(sel);
