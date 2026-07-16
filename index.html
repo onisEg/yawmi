@@ -94,13 +94,22 @@ main{padding:0 16px; max-width:560px; margin:0 auto}
 .card{
   background:var(--card); border:1px solid var(--line);
   border-radius:var(--r); padding:16px; margin-bottom:14px;
-  box-shadow:0 2px 12px rgba(0,0,0,.04);
+  box-shadow:0 2px 12px rgba(0,0,0,.04); position:relative;
 }
 .card h3{
   margin:0 0 12px; font-size:14px; font-weight:500; color:var(--muted);
   letter-spacing:.3px;
 }
 .hidden{display:none!important}
+.carddraghandle{
+  position:absolute; top:10px; left:10px; cursor:grab;
+  color:var(--faint); font-size:14px; line-height:1; user-select:none;
+  padding:4px 6px; border-radius:6px; opacity:.5;
+  touch-action:none; transition:opacity .15s, background .15s; z-index:2;
+}
+.carddraghandle:hover{opacity:1; background:var(--card2)}
+.carddraghandle:active{cursor:grabbing; opacity:1}
+.todaycard{padding-top:20px}
 .todaycard.dragging{opacity:.5; box-shadow:0 8px 24px rgba(0,0,0,.12)}
 .dragplaceholder{background:var(--card2); border:2px dashed var(--gold); border-radius:var(--r); opacity:.6}
 
@@ -1024,7 +1033,7 @@ nav.bottom button.on{color:var(--gold)}
     </div>
 
     <div class="card herocard todaycard" id="heroCard" data-cid="hero" draggable="false">
-      <div class="carddraghandle" style="position:absolute; top:8px; right:8px; cursor:grab; color:var(--muted); font-size:20px; user-select:none">≡</div>
+      <div class="carddraghandle">⣿</div>
       <div class="heroinner">
         <div class="heroslide" id="heroSlide">
           <span class="heroic" id="heroIcon"></span>
@@ -1036,7 +1045,7 @@ nav.bottom button.on{color:var(--gold)}
     </div>
 
     <div class="card scorecard todaycard" data-cid="score" draggable="false">
-      <div class="carddraghandle" style="position:absolute; top:8px; right:8px; cursor:grab; color:var(--muted); font-size:20px; user-select:none">≡</div>
+      <div class="carddraghandle">⣿</div>
       <div class="ringwrap">
         <svg width="96" height="96" viewBox="0 0 96 96">
           <defs>
@@ -1060,7 +1069,7 @@ nav.bottom button.on{color:var(--gold)}
 
 
     <div class="card todaycard" data-cid="prayer" draggable="false">
-      <div class="carddraghandle" style="position:absolute; top:8px; right:8px; cursor:grab; color:var(--muted); font-size:20px; user-select:none">≡</div>
+      <div class="carddraghandle">⣿</div>
       <div style="display:flex; justify-content:space-between; align-items:center">
         <h3 id="prayH3" class="h3ic" style="margin:0"><span data-icon="beads"></span>الصلاة</h3>
         <button class="linkbtn" id="prayDetailsBtn" style="margin:0">المواعيد والتقدم ›</button>
@@ -1079,7 +1088,7 @@ nav.bottom button.on{color:var(--gold)}
     </div>
 
     <div class="card todaycard" data-cid="habits" draggable="false">
-      <div class="carddraghandle" style="position:absolute; top:8px; right:8px; cursor:grab; color:var(--muted); font-size:20px; user-select:none">≡</div>
+      <div class="carddraghandle">⣿</div>
       <h3 class="h3ic"><span data-icon="check_square"></span>العادات</h3>
       <div class="chips" id="habitChips"></div>
       <div id="badHabitWrap" class="hidden">
@@ -1089,13 +1098,13 @@ nav.bottom button.on{color:var(--gold)}
     </div>
 
     <div class="card todaycard" data-cid="azkar" draggable="false">
-      <div class="carddraghandle" style="position:absolute; top:8px; right:8px; cursor:grab; color:var(--muted); font-size:20px; user-select:none">≡</div>
+      <div class="carddraghandle">⣿</div>
       <h3 class="h3ic"><span data-icon="beads"></span>الأذكار</h3>
       <div class="chips" id="azkarChips"></div>
     </div>
 
     <div class="card dhikrcard todaycard" id="dhikrCard" data-cid="dhikr" draggable="false">
-      <div class="carddraghandle" style="position:absolute; top:8px; right:8px; cursor:grab; color:var(--muted); font-size:20px; user-select:none">≡</div>
+      <div class="carddraghandle">⣿</div>
       <div class="dhikrhead">
         <h3 class="h3ic"><span data-icon="beads"></span>ذِكر اليوم</h3>
         <div style="display:flex; gap:4px">
@@ -1117,13 +1126,13 @@ nav.bottom button.on{color:var(--gold)}
     </div>
 
     <div class="card deedscard todaycard hidden" id="deedsCard" data-cid="deeds" draggable="false">
-      <div class="carddraghandle" style="position:absolute; top:8px; right:8px; cursor:grab; color:var(--muted); font-size:20px; user-select:none">≡</div>
+      <div class="carddraghandle">⣿</div>
       <h3 class="h3ic"><span>🌿</span> الأعمال المستحبة النهارده</h3>
       <div id="deedsList"></div>
     </div>
 
     <div class="card todaycard" id="challengesCard" data-cid="challenges" draggable="false">
-      <div class="carddraghandle" style="position:absolute; top:8px; right:8px; cursor:grab; color:var(--muted); font-size:20px; user-select:none">≡</div>
+      <div class="carddraghandle">⣿</div>
       <div class="chalhead">
         <h3 class="h3ic"><span>🏆</span> التحديات</h3>
         <button class="chaladd" id="openChallenges">+ تحدي</button>
@@ -1132,7 +1141,7 @@ nav.bottom button.on{color:var(--gold)}
     </div>
 
     <div class="card collapsecard todaycard" id="moodCard" data-cid="mood" draggable="false">
-      <div class="carddraghandle" style="position:absolute; top:8px; right:8px; cursor:grab; color:var(--muted); font-size:20px; user-select:none">≡</div>
+      <div class="carddraghandle">⣿</div>
       <button class="collapsehead" id="moodHead">
         <span class="ct"><span data-icon="smile"></span>حالتي النفسية اليوم</span>
         <span class="collapsearrow">›</span>
@@ -1147,7 +1156,7 @@ nav.bottom button.on{color:var(--gold)}
     </div>
 
     <div class="card collapsecard todaycard" id="sleepCard" data-cid="sleep" draggable="false">
-      <div class="carddraghandle" style="position:absolute; top:8px; right:8px; cursor:grab; color:var(--muted); font-size:20px; user-select:none">≡</div>
+      <div class="carddraghandle">⣿</div>
       <button class="collapsehead" id="sleepHead">
         <span class="ct"><span data-icon="bed"></span>النوم</span>
         <span class="collapsearrow">›</span>
@@ -1165,7 +1174,7 @@ nav.bottom button.on{color:var(--gold)}
     </div>
 
     <div class="card collapsecard todaycard" id="learnCard" data-cid="learn" draggable="false">
-      <div class="carddraghandle" style="position:absolute; top:8px; right:8px; cursor:grab; color:var(--muted); font-size:20px; user-select:none">≡</div>
+      <div class="carddraghandle">⣿</div>
       <button class="collapsehead" id="learnHead">
         <span class="ct"><span data-icon="book"></span>تعلمت النهارده</span>
         <span class="collapsearrow" id="learnArrow">›</span>
@@ -1176,7 +1185,7 @@ nav.bottom button.on{color:var(--gold)}
     </div>
 
     <div class="card collapsecard todaycard" id="journalCard" data-cid="journal" draggable="false">
-      <div class="carddraghandle" style="position:absolute; top:8px; right:8px; cursor:grab; color:var(--muted); font-size:20px; user-select:none">≡</div>
+      <div class="carddraghandle">⣿</div>
       <button class="collapsehead" id="journalHead">
         <span class="ct"><span data-icon="pencil"></span>يومياتي</span>
         <span class="collapsearrow" id="journalArrow">›</span>
@@ -1192,7 +1201,7 @@ nav.bottom button.on{color:var(--gold)}
     </div>
 
     <div class="card todaytaskscard todaycard" id="todayTasksCard" data-cid="tasks" draggable="false">
-      <div class="carddraghandle" style="position:absolute; top:8px; right:8px; cursor:grab; color:var(--muted); font-size:20px; user-select:none">≡</div>
+      <div class="carddraghandle">⣿</div>
       <div class="ttchead">
         <h3 class="h3ic"><span data-icon="check_square"></span> مهام النهارده</h3>
         <span id="ttcCount" class="ttccount"></span>
@@ -3893,13 +3902,14 @@ function saveTodayCardsOrder(){
   const todayTab = $('#tab-today');
   if(!todayTab) return;
   const order = [...todayTab.querySelectorAll('.todaycard')].map(el=>el.dataset.cid).filter(Boolean);
-  store('yawmi_cards_order', order);
+  try{ localStorage.setItem('yawmi_cards_order', JSON.stringify(order)); }catch(e){}
 }
 
 function applySavedCardsOrder(){
   const todayTab = $('#tab-today');
   if(!todayTab) return;
-  const saved = retrieve('yawmi_cards_order') || [];
+  let saved = [];
+  try{ saved = JSON.parse(localStorage.getItem('yawmi_cards_order')) || []; }catch(e){ saved = []; }
   if(!saved.length) return;
   const cards = [...todayTab.querySelectorAll('.todaycard')];
   const cardMap = Object.fromEntries(cards.map(c=>[c.dataset.cid, c]));
@@ -4247,7 +4257,7 @@ function renderExp(){
     : '';
   sel.innerHTML = catOpts + oblOpts + '<option value="__new__">➕ تصنيف جديد...</option>';
 
-  const monthExp = exps.filter(e=>e.d.startsWith(mk)).sort((a,b)=> b.d.localeCompare(a.d) || b.id-a.id);
+  const monthExp = exps.filter(e=>!e.del && e.d.startsWith(mk)).sort((a,b)=> b.d.localeCompare(a.d) || b.id-a.id);
   const total = monthExp.reduce((a,e)=>a+e.a,0);
   $('#expTotal').textContent = arMoney(total) + ' ' + settings.currency;
   const rem = $('#expRemain');
@@ -4297,9 +4307,10 @@ function renderExp(){
   const info = $('#expSearchInfo');
   if(q){
     const hits = exps.filter(e=>
+      !e.del && (
       (e.n||'').toLowerCase().includes(q) ||
       (e.c||'').toLowerCase().includes(q) ||
-      String(e.a).includes(q)
+      String(e.a).includes(q))
     ).sort((a,b)=> b.d.localeCompare(a.d) || b.id-a.id);
     const hitTotal = hits.reduce((a,e)=>a+e.a,0);
     info.classList.remove('hidden');
@@ -4320,6 +4331,7 @@ function renderExp(){
     // كل الشهور، مجمّعة وقابلة للطي
     const byMonth = {};
     exps.forEach(e=>{
+      if(e.del) return;
       const m = (e.d || '').slice(0,7);
       if(!m) return;
       (byMonth[m] = byMonth[m] || []).push(e);
@@ -5300,7 +5312,7 @@ function renderDash(){
   const dueToday = tasks.filter(t=>!t.del && t.due===t0);
   const doneToday = dueToday.filter(t=>t.done).length;
   const late = tasks.filter(t=>!t.del && !t.done && t.due && t.due<t0).length;
-  const expToday = exps.filter(e=>e.d===t0).reduce((a,e)=>a+e.a,0);
+  const expToday = exps.filter(e=>!e.del && e.d===t0).reduce((a,e)=>a+e.a,0);
 
   $('#todayStats').innerHTML = `
     <div class="stat"><div class="num">${arNum(sc%1===0?sc:sc.toFixed(1))}</div><div class="lbl">نتيجة النهارده</div></div>
@@ -5330,7 +5342,7 @@ function renderDash(){
   // month stats
   const mk = monthKey(0);
   const daysLogged = Object.keys(days).filter(k=>k.startsWith(mk) && (days[k].j || (days[k].p && days[k].p.some(x=>x)) || Object.values(days[k].h||{}).some(x=>x))).length;
-  const mExp = exps.filter(e=>e.d.startsWith(mk)).reduce((a,e)=>a+e.a,0);
+  const mExp = exps.filter(e=>!e.del && e.d.startsWith(mk)).reduce((a,e)=>a+e.a,0);
   let prDone=0, prTotal=0;
   Object.keys(days).filter(k=>k.startsWith(mk)).forEach(k=>{
     const p = days[k] && days[k].p;
@@ -5363,7 +5375,7 @@ function renderDash(){
   const wk = weekKeyOf();
   $('#revWeek').textContent = 'من الجمعة ' + arNum(wk.slice(5).split('-').reverse().join('/'));
   renderReviewQuestions(wk);
-  const wkExp = exps.filter(e => e.d >= wk).reduce((a,e)=>a+e.a,0);
+  const wkExp = exps.filter(e => !e.del && e.d >= wk).reduce((a,e)=>a+e.a,0);
   $('#revSummary').textContent = cnt
     ? `أسبوعك: متوسط ${arNum((sum/cnt).toFixed(1))} من ١٠ · صرفت ${arMoney(wkExp)} ${settings.currency}`
     : '';
@@ -5676,7 +5688,7 @@ function doExportPDF(){
   const PRC = ['#999','#d9a441','#5fb89e','#e4a0a0','#3d8f6f','#c99a3f'];
   const monthK = todayISO().slice(0,7);
   const monthDays = Object.keys(days).filter(k=>k.startsWith(monthK)).sort();
-  const mExp = exps.filter(e=>e.d.startsWith(monthK)).reduce((a,e)=>a+e.a,0);
+  const mExp = exps.filter(e=>!e.del && e.d.startsWith(monthK)).reduce((a,e)=>a+e.a,0);
   const name = settings.name ? ` — ${settings.name}` : '';
   let rows = '';
   monthDays.forEach(k=>{
@@ -6691,7 +6703,7 @@ function renderHistory(){
     // مهام ومصاريف اليوم ده
     const dayTasks = tasks.filter(t=>!t.del && t.due === k);
     const tDone = dayTasks.filter(t=>t.done).length;
-    const dayExp = exps.filter(e=> e.d === k).reduce((a,e)=>a+e.a, 0);
+    const dayExp = exps.filter(e=> !e.del && e.d === k).reduce((a,e)=>a+e.a, 0);
     const sleep = r.s && r.s.h ? r.s.h : null;
     const row = document.createElement('div');
     const isToday = k === todayISO();
