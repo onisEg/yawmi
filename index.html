@@ -2170,14 +2170,21 @@ function mergeData(local, remote){
 let syncTimer = null, syncing = false, syncDirty = false, syncReady = false;
 
 let lastSyncError = '';
+// helper: يلفّ أي promise بمهلة زمنية عشان مايعلّقش للأبد على نت بطيء
+function withTimeout(promise, ms, label){
+  return Promise.race([
+    promise,
+    new Promise((_, reject)=> setTimeout(()=> reject(new Error((label||'العملية') + ' اتأخرت')), ms))
+  ]);
+}
 async function syncPush(){
   if(!isLoggedIn() || !navigator.onLine || !sb) return false;
   try{
-    const { error } = await sb.from(DATA_TABLE).upsert({
+    const { error } = await withTimeout(sb.from(DATA_TABLE).upsert({
       user_id: currentUser.id,
       data: collectAllData(),
       updated_at: new Date().toISOString()
-    });
+    }), 12000, 'رفع البيانات');
     if(error){ lastSyncError = 'رفع: ' + (error.message||error.code||'خطأ'); console.error('syncPush error', error); }
     return !error;
   }catch(e){ lastSyncError = 'رفع: ' + (e.message||e); console.error('syncPush exception', e); return false; }
@@ -2185,8 +2192,10 @@ async function syncPush(){
 async function syncPull(){
   if(!isLoggedIn() || !navigator.onLine || !sb) return {status:'offline'};
   try{
-    const { data, error } = await sb.from(DATA_TABLE)
-      .select('data, updated_at').eq('user_id', currentUser.id).maybeSingle();
+    const { data, error } = await withTimeout(
+      sb.from(DATA_TABLE).select('data, updated_at').eq('user_id', currentUser.id).maybeSingle(),
+      12000, 'سحب البيانات'
+    );
     if(error){ lastSyncError = 'سحب: ' + (error.message||error.code||'خطأ'); console.error('syncPull error', error); return {status:'error'}; }
     if(!data) return {status:'empty'};       // مفيش صف فعلاً
     return {status:'ok', row:data};
@@ -2231,8 +2240,11 @@ async function syncFull(silent){
 
   if(res.status === 'error' || res.status === 'offline'){
     // فشل السحب → منعملش أي رفع (عشان منمسحش بيانات السحابة بالغلط)
+    // بس بنعلّم syncReady=true عشان التطبيق يكمّل ببياناتك المحلية ومايفضلش عالق
     syncing = false;
+    syncReady = true;
     setSyncStrip(false); hideDataLoading();
+    try{ reloadState(); renderCurrentTab(); }catch(e){}
     if(!silent) toast('المزامنة فشلت: ' + (lastSyncError || 'النت') + ' — بياناتك سليمة');
     return;
   }
@@ -7033,19 +7045,21 @@ window.addEventListener('supabase-failed', ()=>{
   // نحسم حالة الدخول عشان الواجهة متفضلش عالقة على "بنجيب بياناتك"
   authResolved = true; hideDataLoading(); setSyncStrip(false); refreshAuthUI();
 });
-// إعادة محاولة تحميل Supabase كل ٨ ثواني لو لسه مش جاهز (مثلاً رجع النت)
-// بنوقف بعد ٥ محاولات (٤٠ ثانية) عشان مانفضلش ندور للأبد ونستهلك بطارية/موارد
+// إعادة محاولة تحميل Supabase لو لسه مش جاهز (مثلاً النت رجع بعد انقطاع)
+// نبطّئ التردد تدريجياً عشان مانستهلكش موارد، بس مانوقفش نهائياً لأن ده آلية الإنقاذ
 let _sbRetries = 0;
-const _sbRetryTimer = setInterval(()=>{
-  if(sb || !window._createSupabaseClient || _sbRetries >= 5){
-    clearInterval(_sbRetryTimer);
-    return;
-  }
-  _sbRetries++;
-  initSupabase();
-}, 8000);
-// حماية قصوى: مهما حصل، بعد ١٠ ثواني نحسم حالة الدخول ونخفي شاشة التحميل
-// (لو Supabase مش بيحمّل خالص، مايفضلش التطبيق عالق على شاشة التحميل)
+function _scheduleSbRetry(){
+  if(sb || !window._createSupabaseClient) return;
+  const delay = _sbRetries < 3 ? 8000 : 20000; // أول ٣ محاولات كل ٨ث، بعدها كل ٢٠ث
+  setTimeout(()=>{
+    if(sb) return;
+    if(window._createSupabaseClient){ _sbRetries++; initSupabase(); }
+    _scheduleSbRetry();
+  }, delay);
+}
+_scheduleSbRetry();
+// حماية قصوى: مهما حصل، بعد ٦ ثواني نحسم حالة الدخول ونخفي شاشة التحميل
+// (لو Supabase مش بيحمّل خالص، مايفضلش التطبيق عالق على شاشة التحميل — بياناتك المحلية تظهر فوراً)
 setTimeout(()=>{
   if(!authResolved){
     authResolved = true;
@@ -7054,7 +7068,7 @@ setTimeout(()=>{
     try{ reloadState(); renderCurrentTab(); }catch(e){}
     refreshAuthUI();
   }
-}, 10000);
+}, 6000);
 window.addEventListener('online', ()=>{ if(isLoggedIn()) syncFull(true); });
 // اقتراح تثبيت التطبيق على الموبايل (PWA)
 let deferredInstallPrompt = null;
