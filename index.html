@@ -7032,8 +7032,15 @@ window.addEventListener('supabase-failed', ()=>{
   authResolved = true; hideDataLoading(); setSyncStrip(false); refreshAuthUI();
 });
 // إعادة محاولة تحميل Supabase كل ٨ ثواني لو لسه مش جاهز (مثلاً رجع النت)
-setInterval(()=>{
-  if(!sb && window._createSupabaseClient){ initSupabase(); }
+// بنوقف بعد ٥ محاولات (٤٠ ثانية) عشان مانفضلش ندور للأبد ونستهلك بطارية/موارد
+let _sbRetries = 0;
+const _sbRetryTimer = setInterval(()=>{
+  if(sb || !window._createSupabaseClient || _sbRetries >= 5){
+    clearInterval(_sbRetryTimer);
+    return;
+  }
+  _sbRetries++;
+  initSupabase();
 }, 8000);
 // حماية قصوى: مهما حصل، بعد ١٠ ثواني نحسم حالة الدخول ونخفي شاشة التحميل
 // (لو Supabase مش بيحمّل خالص، مايفضلش التطبيق عالق على شاشة التحميل)
