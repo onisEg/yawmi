@@ -297,6 +297,16 @@ main{padding:0 16px; max-width:560px; margin:0 auto}
 .tasbihreset{background:none; border:1.5px solid var(--line); color:var(--muted); border-radius:999px; padding:10px 20px; font-family:inherit; font-size:14px; cursor:pointer; transition:all .15s}
 .tasbihreset:active{background:var(--card2)}
 .tasbihtotal{font-size:13px; color:var(--faint)}
+/* الأوسمة */
+.badgesgrid{display:grid; grid-template-columns:repeat(auto-fill, minmax(88px, 1fr)); gap:12px; margin-top:6px}
+.badge{display:flex; flex-direction:column; align-items:center; text-align:center; gap:6px; padding:12px 6px; border-radius:16px; background:var(--card2); border:1.5px solid var(--line); transition:transform .15s}
+.badge.earned{border-color:var(--gold); background:var(--gold-soft)}
+.badge.earned:active{transform:scale(.95)}
+.badge .bemoji{font-size:32px; line-height:1; filter:grayscale(1) opacity(.4)}
+.badge.earned .bemoji{filter:none}
+.badge .bname{font-size:11px; font-weight:600; color:var(--muted); line-height:1.3}
+.badge.earned .bname{color:var(--text)}
+.badge .bprog{font-size:10px; color:var(--faint)}
 .dhikrcard.done .dhikrtext{color:var(--teal)}
 .dhikrcard.done .dhikrnum b{color:var(--teal)}
 #dhikrManageOv{position:fixed; inset:0; background:rgba(0,0,0,.6); display:flex; align-items:flex-end; justify-content:center; z-index:58; opacity:0; visibility:hidden; transition:opacity .25s ease, visibility .25s}
@@ -1376,6 +1386,11 @@ nav.bottom button.on{color:var(--gold)}
   <section id="tab-dash" class="tab">
     <div style="height:14px"></div>
     <div class="grid2" id="todayStats"></div>
+
+    <div class="card" id="badgesCard">
+      <h3>🏅 أوسمتك</h3>
+      <div class="badgesgrid" id="badgesGrid"></div>
+    </div>
 
     <div class="card" id="prayerCard">
       <h3>التزام الصلوات</h3>
@@ -5497,8 +5512,60 @@ $('#addGoalBtn').onclick = ()=>{
 };
 $('#goalTitle').addEventListener('keydown', e=>{ if(e.key==='Enter') $('#addGoalBtn').click(); });
 
+/* ================= الأوسمة (Badges) ================= */
+// كل وسام: id, الأيقونة، الاسم، دالة تحسب التقدم {have, need}
+function computeBadges(){
+  const t0 = todayISO();
+  // سلسلة الصلوات الكاملة (كل الخمسة)
+  const prayerStreak = streak(k=>{ const r = days[k]; return !!(r && r.p && r.p.reduce((a,b)=>a+(b?1:0),0) === 5); }, t0);
+  // إجمالي أيام فيها نشاط
+  const activeDays = Object.keys(days).filter(k=> days[k] && dayHasContent(days[k])).length;
+  // إجمالي المهام المنجزة
+  const doneTasks = tasks.filter(t=>t.done && !t.del).length;
+  // أطول سلسلة أي عادة
+  let bestHabit = 0;
+  (settings.habits||[]).forEach(h=>{
+    const s = streak(k=>{ const r = days[k]; return !!(r && r.h && r.h[h]); }, t0);
+    if(s > bestHabit) bestHabit = s;
+  });
+  // إجمالي التسبيح
+  const tasbih = parseInt(localStorage.getItem('yawmi_tasbih_total')||'0',10);
+  // إجمالي صفحات القرآن
+  let quranPages = 0;
+  for(const k in days){ if(days[k] && days[k].qw) quranPages += days[k].qw; }
+
+  return [
+    { id:'p7',  emoji:'🕌', name:'أسبوع صلاة', have:prayerStreak, need:7 },
+    { id:'p30', emoji:'🕋', name:'شهر صلاة', have:prayerStreak, need:30 },
+    { id:'h7',  emoji:'🔥', name:'عادة ٧ أيام', have:bestHabit, need:7 },
+    { id:'h30', emoji:'💪', name:'عادة ٣٠ يوم', have:bestHabit, need:30 },
+    { id:'d30', emoji:'📅', name:'٣٠ يوم نشاط', have:activeDays, need:30 },
+    { id:'d100',emoji:'🌟', name:'١٠٠ يوم نشاط', have:activeDays, need:100 },
+    { id:'t50', emoji:'✅', name:'٥٠ مهمة', have:doneTasks, need:50 },
+    { id:'t200',emoji:'🎯', name:'٢٠٠ مهمة', have:doneTasks, need:200 },
+    { id:'ts1000', emoji:'📿', name:'١٠٠٠ تسبيحة', have:tasbih, need:1000 },
+    { id:'q30', emoji:'📖', name:'٣٠ صفحة قرآن', have:quranPages, need:30 },
+    { id:'q300',emoji:'🕮', name:'٣٠٠ صفحة قرآن', have:quranPages, need:300 },
+  ];
+}
+function renderBadges(){
+  const grid = $('#badgesGrid');
+  if(!grid) return;
+  const badges = computeBadges();
+  grid.innerHTML = badges.map(b=>{
+    const earned = b.have >= b.need;
+    const prog = earned ? 'تم ✓' : `${arNum(Math.min(b.have,b.need))}/${arNum(b.need)}`;
+    return `<div class="badge ${earned?'earned':''}" title="${b.name}">
+      <div class="bemoji">${b.emoji}</div>
+      <div class="bname">${b.name}</div>
+      <div class="bprog">${prog}</div>
+    </div>`;
+  }).join('');
+}
+
 /* ================= dashboard ================= */
 function renderDash(){
+  renderBadges();
   const t0 = todayISO();
   const rec = days[t0] ? getDay(t0) : null;
   const sc = rec ? scoreOf(rec) : 0;
