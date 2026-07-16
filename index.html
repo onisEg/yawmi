@@ -4166,7 +4166,24 @@ $('#addTaskBtn').onclick = ()=>{
 $('#taskDue').addEventListener('change', ()=>{
   $('#taskDueBtn').classList.toggle('has', !!$('#taskDue').value);
 });
-$('#taskTitle').addEventListener('keydown', e=>{ if(e.key==='Enter') $('#addTaskBtn').click(); });
+$('#taskTitle').addEventListener('keydown', e=>{ 
+  if(e.key==='Enter'){
+    e.preventDefault();
+    const title = $('#taskTitle').value.trim();
+    if(!title) return;
+    const hasProjects = goals.some(g=>g.projects && g.projects.length);
+    if(hasProjects){
+      // فتح picker ثم اضيف المهمة بعد الاختيار
+      openProjPicker(pid=>{ 
+        pendingProj = pid; 
+        $('#addTaskBtn').click(); 
+      });
+    } else {
+      // ما في مشاريع، ضيف مباشرة
+      $('#addTaskBtn').click();
+    }
+  }
+});
 
 // اختيار مشروع للمهمة الجديدة
 $('#taskProjBtn').onclick = ()=> openProjPicker(pid=>{ pendingProj = pid; updateProjChosen(); });
