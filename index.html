@@ -3201,6 +3201,15 @@ function fmtHijri(dISO){
 
 // عرض قايمة شيبس (عادات/أذكار) مع إضافة وحذف من مكانها
 // listArr: مصفوفة الأسماء في settings | recObj: rec.h أو rec.z | field: 'h' أو 'z'
+// رسائل تشجيعية متغيّرة — تغذية راجعة فورية بلغة إيجابية (مكافأة متغيّرة باعتدال)
+const ENCOURAGE_MSGS = ['أحسنت 🌟', 'ما شاء الله ✨', 'خطوة كمان 💪', 'تمام كده 👌', 'استمر 🌿', 'بارك الله فيك 🤍', 'جميل 🎯', 'كده تمام ✓'];
+function encourageToast(streakN){
+  // لو السلسلة وصلت لرقم مميز، رسالة خاصة؛ غير كده رسالة عشوائية محفّزة
+  if(streakN && streakN % 7 === 0) toast(`🔥 ${arNum(streakN)} يوم متواصل! إنجاز رائع`);
+  else if(streakN === 3) toast('🔥 ٣ أيام ورا بعض، كمّل!');
+  else toast(ENCOURAGE_MSGS[Math.floor(Math.random() * ENCOURAGE_MSGS.length)]);
+}
+
 function renderChipList(container, listArr, recObj, field, kindLabel){
   container.innerHTML = '';
   listArr.forEach(name=>{
@@ -3208,7 +3217,18 @@ function renderChipList(container, listArr, recObj, field, kindLabel){
     c.className = 'chip' + (recObj[name] ? ' on' : '');
     const n = streak(k=>{ const r = days[k]; return !!(r && r[field] && r[field][name]); }, viewDate);
     c.textContent = n >= 2 ? `${name} 🔥${arNum(n)}` : name;
-    c.onclick = ()=>{ recObj[name] = !recObj[name]; saveDays(); renderToday(); };
+    c.onclick = ()=>{
+      const wasOn = recObj[name];
+      recObj[name] = !recObj[name];
+      saveDays();
+      renderToday();
+      // تغذية راجعة فورية محفّزة عند التفعيل (مش عند الإلغاء)
+      if(!wasOn && recObj[name]){
+        if(navigator.vibrate) navigator.vibrate(8);
+        const newStreak = streak(k=>{ const r = days[k]; return !!(r && r[field] && r[field][name]); }, viewDate);
+        encourageToast(newStreak);
+      }
+    };
     // ضغطة مطوّلة = حذف
     let lpTimer = null;
     const startLP = ()=>{ lpTimer = setTimeout(()=> confirmDeleteChip(name, listArr, field), 550); };
