@@ -1577,8 +1577,12 @@ nav.bottom button.on{color:var(--gold)}
               <div class="remctrl"><select id="remPrayerBefore" class="remselect"><option value="0">في وقتها</option><option value="5">قبلها ٥ د</option><option value="10">قبلها ١٠ د</option><option value="15">قبلها ١٥ د</option></select><label class="switch"><input type="checkbox" id="remPrayer"><span class="slider"></span></label></div>
             </div>
             <div class="remrow">
-              <div class="reminfo"><span>📿 تذكير الأذكار والورد</span><small>يوصّلك تذكير يومي</small></div>
+              <div class="reminfo"><span>📿 تذكير الأذكار</span><small>يوصّلك تذكير يومي</small></div>
               <div class="remctrl"><input type="time" id="remAzkarTime" value="18:00"><label class="switch"><input type="checkbox" id="remAzkar"><span class="slider"></span></label></div>
+            </div>
+            <div class="remrow">
+              <div class="reminfo"><span>📖 تذكير ورد القرآن</span><small>يفكّرك بوردك لو نسيته</small></div>
+              <div class="remctrl"><input type="time" id="remWirdTime" value="19:30"><label class="switch"><input type="checkbox" id="remWird"><span class="slider"></span></label></div>
             </div>
             <div class="remrow">
               <div class="reminfo"><span>✍️ المراجعة الأسبوعية</span><small>كل جمعة</small></div>
@@ -7750,6 +7754,16 @@ function checkDueReminders(){
     addNotif('📿', 'تذكير الأذكار', 'حان وقت أذكارك اليومية');
     fired.azkar = true;
   }
+  // تذكير ورد القرآن (يومي) — بس لو لسه مكمّلش ورده
+  if(r.wird && r.wirdTime === hhmm && !fired.wird){
+    const rec = days[todayKey];
+    const doneWird = rec && rec.qw >= (settings.wirdTarget || 4);
+    if(!doneWird){
+      showLocalNotif('📖 ورد القرآن', 'لسه ما سجّلتش وردك النهارده — صفحة واحدة بداية 🤍');
+      addNotif('📖', 'تذكير ورد القرآن', 'حان وقت وردك اليومي من القرآن');
+    }
+    fired.wird = true;
+  }
   // المراجعة الأسبوعية (الجمعة فقط)
   if(r.review && wd === 5 && r.reviewTime === hhmm && !fired.review){
     showLocalNotif('✍️ المراجعة الأسبوعية', 'النهارده الجمعة — خُد دقيقتين تراجع أسبوعك');
@@ -7860,6 +7874,7 @@ function populateReminders(){
   $('#reminderOptions').classList.toggle('hidden', !enabled);
   if($('#remPrayer')){ $('#remPrayer').checked = !!r.prayer; $('#remPrayerBefore').value = r.prayerBefore || '0'; }
   if($('#remAzkar')){ $('#remAzkar').checked = !!r.azkar; $('#remAzkarTime').value = r.azkarTime || '18:00'; }
+  if($('#remWird')){ $('#remWird').checked = !!r.wird; $('#remWirdTime').value = r.wirdTime || '19:30'; }
   if($('#remReview')){ $('#remReview').checked = !!r.review; $('#remReviewTime').value = r.reviewTime || '20:00'; }
   if($('#remFast')){ $('#remFast').checked = !!r.fast; $('#remFastTime').value = r.fastTime || '21:00'; }
 }
@@ -7867,6 +7882,7 @@ function saveReminderSettings(){
   const r = {
     prayer: $('#remPrayer').checked, prayerBefore: $('#remPrayerBefore').value,
     azkar: $('#remAzkar').checked, azkarTime: $('#remAzkarTime').value,
+    wird: $('#remWird').checked, wirdTime: $('#remWirdTime').value,
     review: $('#remReview').checked, reviewTime: $('#remReviewTime').value,
     fast: $('#remFast').checked, fastTime: $('#remFastTime').value,
   };
@@ -7881,7 +7897,7 @@ if($('#enableNotifBtn')){
     else { showAlert('لازم تسمح بالإشعارات من المتصفح عشان التذكيرات تشتغل', {icon:'🔔'}); }
   };
 }
-['remPrayer','remPrayerBefore','remAzkar','remReview','remFast','remAzkarTime','remReviewTime','remFastTime'].forEach(id=>{
+['remPrayer','remPrayerBefore','remAzkar','remWird','remReview','remFast','remAzkarTime','remWirdTime','remReviewTime','remFastTime'].forEach(id=>{
   const el = $('#'+id);
   if(el) el.addEventListener('change', saveReminderSettings);
 });
