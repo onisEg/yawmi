@@ -71,7 +71,7 @@ body{
   background:var(--bg); color:var(--text);
   font-family:var(--app-font,'IBM Plex Sans Arabic'),system-ui,sans-serif;
   font-size:var(--base-size,12px); line-height:1.7;
-  padding-bottom:calc(100px + env(safe-area-inset-bottom));
+  padding-bottom:calc(110px + env(safe-area-inset-bottom));
 }
 :root{--app-font:'IBM Plex Sans Arabic'; --base-size:12px}
 .amiri{font-family:'Amiri',serif}
@@ -837,6 +837,7 @@ input[type=number]{color-scheme:dark light}
 /* ---------- bottom nav ---------- */
 nav.bottom{
   position:fixed; bottom:calc(12px + env(safe-area-inset-bottom)); right:12px; left:12px;
+  z-index:50;
   background:var(--nav-glass); backdrop-filter:blur(20px) saturate(1.4); -webkit-backdrop-filter:blur(20px) saturate(1.4);
   border:1px solid var(--nav-glass-border); border-radius:999px;
   display:flex; align-items:center; padding:8px 6px;
