@@ -5070,6 +5070,15 @@ function makeHero(cardId, slideId, iconId, textId, srcId, items, dotsId){
       const j = Math.floor(Math.random() * (i + 1));
       [order[i], order[j]] = [order[j], order[i]];
     }
+    // "عنصر اليوم": نخلّي أول عنصر ثابت حسب تاريخ النهارده — نفس المحتوى طول اليوم
+    // (سبب للعودة اليومية: افتح الصبح تشوف آية/حكمة النهارده)
+    const t = todayISO();
+    let seed = 0;
+    for(let i = 0; i < t.length; i++) seed = (seed * 31 + t.charCodeAt(i)) & 0xffffffff;
+    const dailyIdx = Math.abs(seed) % items.length;
+    // ننقل عنصر اليوم لأول المصفوفة
+    const pos = order.indexOf(dailyIdx);
+    if(pos > 0){ order.splice(pos, 1); order.unshift(dailyIdx); }
   }
   function render(){
     const slide = document.getElementById(slideId);
