@@ -285,15 +285,15 @@ main{padding:0 16px; max-width:560px; margin:0 auto}
 .wirdcard.done .wirdstepup{background:var(--teal); box-shadow:0 4px 14px rgba(107,191,158,.32)}
 .wirdcard.done .wirdfill{background:var(--teal)}
 /* بانر السلسلة */
-.streakbanner{display:flex; align-items:center; gap:12px; padding:12px 16px; margin-top:12px; border-radius:18px; background:linear-gradient(120deg, rgba(232,154,68,.16), rgba(224,120,86,.10)); border:1.5px solid rgba(232,154,68,.35)}
-.streakflame{font-size:30px; line-height:1; flex-shrink:0; animation:flamepulse 2.4s ease-in-out infinite}
+.streakbanner{display:flex; align-items:center; gap:10px; padding:9px 13px; margin-top:10px; border-radius:14px; background:linear-gradient(120deg, rgba(232,154,68,.16), rgba(224,120,86,.10)); border:1.5px solid rgba(232,154,68,.35)}
+.streakflame{font-size:22px; line-height:1; flex-shrink:0; animation:flamepulse 2.4s ease-in-out infinite}
 @keyframes flamepulse{0%,100%{transform:scale(1)}50%{transform:scale(1.12)}}
-.streaktext{flex:1; line-height:1.4}
-.streaktext .streaknum{font-size:19px; font-weight:800; color:var(--gold)}
-.streaktext .streaklbl{font-size:13px; color:var(--text)}
-.streaktext .streaksub{font-size:11.5px; color:var(--muted); display:block; margin-top:1px}
+.streaktext{flex:1; line-height:1.35}
+.streaktext .streaknum{font-size:16px; font-weight:800; color:var(--gold)}
+.streaktext .streaklbl{font-size:12px; color:var(--text)}
+.streaktext .streaksub{font-size:10.5px; color:var(--muted); display:block; margin-top:1px}
 /* بطاقة الخطوة التالية */
-.nextaction{display:flex; align-items:center; gap:14px; width:100%; text-align:right; padding:16px 18px; margin-top:12px; border-radius:20px; border:none; cursor:pointer; background:linear-gradient(120deg, var(--gold), #d98a3a); box-shadow:0 6px 20px rgba(232,154,68,.28); -webkit-tap-highlight-color:transparent; transition:transform .12s ease, box-shadow .15s; font-family:inherit}
+.nextaction{display:flex; align-items:center; gap:11px; width:100%; text-align:right; padding:11px 14px; margin-top:10px; border-radius:15px; border:none; cursor:pointer; background:linear-gradient(120deg, var(--gold), #d98a3a); box-shadow:0 4px 14px rgba(232,154,68,.24); -webkit-tap-highlight-color:transparent; transition:transform .12s ease, box-shadow .15s; font-family:inherit}
 /* تقلّص كروت اللمحة السريعة بعد ثواني */
 #glanceCards{overflow:hidden; transition:max-height .45s cubic-bezier(.4,0,.2,1), opacity .35s ease, margin .35s ease; max-height:400px; opacity:1}
 #glanceCards.collapsed{max-height:0; opacity:0; margin:0; pointer-events:none}
@@ -304,11 +304,11 @@ main{padding:0 16px; max-width:560px; margin:0 auto}
 .glancepill .gpicon{font-size:15px}
 .nextaction:active{transform:scale(.98); box-shadow:0 3px 12px rgba(232,154,68,.24)}
 .nextaction.done{background:linear-gradient(120deg, var(--teal), #5aa88a); box-shadow:0 6px 20px rgba(107,191,158,.26)}
-.naicon{font-size:30px; line-height:1; flex-shrink:0}
+.naicon{font-size:22px; line-height:1; flex-shrink:0}
 .natext{flex:1}
-.nalabel{font-size:12px; color:rgba(26,21,10,.62); font-weight:600; margin-bottom:2px}
-.natitle{font-size:16px; font-weight:800; color:#1a150a; line-height:1.3}
-.naarrow{font-size:22px; color:#1a150a; flex-shrink:0; opacity:.5}
+.nalabel{font-size:11px; color:rgba(26,21,10,.62); font-weight:600; margin-bottom:1px}
+.natitle{font-size:14px; font-weight:800; color:#1a150a; line-height:1.25}
+.naarrow{font-size:19px; color:#1a150a; flex-shrink:0; opacity:.5}
 .nextaction.done .nalabel{color:rgba(20,30,26,.6)}
 .nextaction.done .natitle, .nextaction.done .naarrow{color:#122019}
 .flashcard{animation:flashcard 1.2s ease}
@@ -3630,6 +3630,26 @@ function collapseGlance(){
   buildGlancePill();
   wrap.classList.add('collapsed');
   pill.classList.add('show');
+  // نبعت المحتوى للإشعارات عشان يفضل متسجّل ويرجعله المستخدم وقت ما يحب
+  sendGlanceToNotif();
+}
+function sendGlanceToNotif(){
+  if(typeof addNotif !== 'function') return;
+  if(viewDate !== todayISO()) return;
+  // الخطوة التالية
+  const na = computeNextAction();
+  if(na && !na.done){
+    addNotif(na.icon, 'خطوتك التالية', na.title + ' — افتح يومك وكمّل 🤍');
+  }
+  // السلسلة (لو فيها رقم مميز)
+  const streakEl = $('#streakBanner');
+  if(streakEl && !streakEl.classList.contains('hidden')){
+    const numEl = streakEl.querySelector('.streaknum');
+    const lblEl = streakEl.querySelector('.streaklbl');
+    if(numEl && lblEl){
+      addNotif('🔥', 'سلسلتك مستمرة', `${numEl.textContent} ${lblEl.textContent} — حافظ عليها 🔥`);
+    }
+  }
 }
 function manageGlanceCards(){
   // بس في يوم النهارده، وبس أول مرة نفتح فيها التطبيق في الجلسة
@@ -7436,9 +7456,19 @@ function loadNotifs(){ try{ return JSON.parse(localStorage.getItem(K.notifs)) ||
 function saveNotifs(arr){ localStorage.setItem(K.notifs, JSON.stringify(arr.slice(0, 50))); }
 function addNotif(icon, title, body){
   const arr = loadNotifs();
-  // نتجنب التكرار: نفس العنوان في نفس اليوم
+  // نفس العنوان في نفس اليوم: نحدّث المحتوى بدل ما نضيف مكرر
   const todayKey = todayISO();
-  if(arr.some(n => n.title === title && n.dayKey === todayKey)) return;
+  const existing = arr.find(n => n.title === title && n.dayKey === todayKey);
+  if(existing){
+    // لو المحتوى اتغير، نحدّثه ونرجّعه لأول القائمة كغير مقروء
+    if(existing.body !== body){
+      existing.body = body; existing.icon = icon; existing.ts = Date.now(); existing.read = false;
+      const idx = arr.indexOf(existing);
+      arr.splice(idx, 1); arr.unshift(existing);
+      saveNotifs(arr); updateNotifDot();
+    }
+    return;
+  }
   arr.unshift({id:Date.now(), icon, title, body, ts:Date.now(), dayKey:todayKey, read:false});
   saveNotifs(arr);
   updateNotifDot();
