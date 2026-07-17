@@ -393,6 +393,10 @@ main{padding:0 16px; max-width:560px; margin:0 auto}
 .priaxisrow{display:flex; gap:8px}
 .axisbtn{flex:1; background:var(--card2); border:1.5px solid var(--line); border-radius:14px; padding:11px 8px; font-family:inherit; font-size:13px; color:var(--text); cursor:pointer; transition:all .15s}
 .axisbtn.on{border-color:var(--gold); background:var(--gold-soft); color:var(--gold)}
+.tdrepeat{display:flex; gap:6px; flex-wrap:wrap}
+.repbtn{flex:1; min-width:70px; background:var(--card2); border:1.5px solid var(--line); border-radius:12px; padding:9px 6px; font-family:inherit; font-size:12px; color:var(--text); cursor:pointer; transition:all .15s}
+.repbtn.on{border-color:var(--teal); background:var(--teal-soft, rgba(95,184,158,.12)); color:var(--teal)}
+.taskrepeat{font-size:11px; color:var(--teal); display:inline-flex; align-items:center; gap:2px}
 .headleft{display:flex; align-items:center; gap:8px}
 .headicons{display:flex; align-items:center; gap:2px}
 .fontsizerow{display:flex; gap:8px}
@@ -1812,6 +1816,13 @@ nav.bottom button.on{color:var(--gold)}
     </div>
     <label for="tdTime" style="margin-top:14px">وقت المهمة (اختياري)</label>
     <input type="time" id="tdTime" style="width:100%">
+    <label style="margin-top:14px">التكرار</label>
+    <div class="tdrepeat" id="tdRepeat">
+      <button class="repbtn on" data-rep="none">مرة واحدة</button>
+      <button class="repbtn" data-rep="daily">يومياً</button>
+      <button class="repbtn" data-rep="weekly">أسبوعياً</button>
+      <button class="repbtn" data-rep="monthly">شهرياً</button>
+    </div>
     <label for="tdDesc" style="margin-top:14px">تفاصيل / ملاحظات</label>
     <textarea id="tdDesc" placeholder="اكتب تفاصيل المهمة..." style="min-height:90px" autocomplete="off"></textarea>
     <button class="btn primary" id="tdSave" style="width:100%; margin-top:16px">حفظ</button>
@@ -4001,11 +4012,49 @@ function groupMotivation(name){
 }
 // تفاصيل المهمة (أولوية، وقت، ملاحظات)
 let tdCurrentTask = null;
+// توليد النسخة التالية لمهمة متكررة عند إتمامها
+function nextRecurDate(dISO, repeat){
+  const d = new Date(dISO + 'T12:00:00');
+  if(repeat === 'daily') d.setDate(d.getDate() + 1);
+  else if(repeat === 'weekly') d.setDate(d.getDate() + 7);
+  else if(repeat === 'monthly') d.setMonth(d.getMonth() + 1);
+  else return null;
+  return iso(d);
+}
+function spawnNextRecurrence(t){
+  if(!t.repeat || t.repeat === 'none' || !t.done) return;
+  const nextDue = nextRecurDate(t.due || todayISO(), t.repeat);
+  if(!nextDue) return;
+  // نتأكد إن مفيش نسخة موجودة بالفعل لنفس المهمة في التاريخ التالي (نتجنب التكرار)
+  const exists = tasks.some(x=> !x.del && x.repeat === t.repeat && x.t === t.t && x.due === nextDue && x.recurParent === (t.recurParent || t.id));
+  if(exists) return;
+  const clone = {
+    id: Date.now() + Math.floor(Math.random()*1000),
+    t: t.t,
+    due: nextDue,
+    done: false,
+    repeat: t.repeat,
+    recurParent: t.recurParent || t.id,
+    updatedAt: Date.now()
+  };
+  if(t.urgent) clone.urgent = true;
+  if(t.important) clone.important = true;
+  if(t.time) clone.time = t.time;
+  if(t.desc) clone.desc = t.desc;
+  if(t.pj) clone.pj = t.pj;
+  tasks.unshift(clone);
+  // المهمة الأصلية تبقى عادية (مش متكررة) بعد ما ولّدت نسختها
+  delete t.repeat;
+}
+
 function openTaskDetail(t){
   tdCurrentTask = t;
   $('#tdTitle').textContent = t.t || 'تفاصيل المهمة';
   $('#tdTime').value = t.time || '';
   $('#tdDesc').value = t.desc || '';
+  // التكرار
+  const rep = t.repeat || 'none';
+  document.querySelectorAll('.repbtn').forEach(b=> b.classList.toggle('on', b.dataset.rep === rep));
   // تحديد المحورين (عاجل/مهم)
   const urgent = t.urgent ? '1' : '0';
   const important = t.important ? '1' : '0';
@@ -4022,6 +4071,12 @@ document.querySelectorAll('.axisbtn').forEach(b=>{
     b.classList.add('on');
   };
 });
+document.querySelectorAll('.repbtn').forEach(b=>{
+  b.onclick = ()=>{
+    document.querySelectorAll('.repbtn').forEach(x=>x.classList.remove('on'));
+    b.classList.add('on');
+  };
+});
 $('#tdClose').onclick = ()=> $('#taskDetailOv').classList.remove('show');
 $('#taskDetailOv').onclick = e=>{ if(e.target.id==='taskDetailOv') $('#taskDetailOv').classList.remove('show'); };
 $('#tdSave').onclick = ()=>{
@@ -4032,6 +4087,9 @@ $('#tdSave').onclick = ()=>{
   tdCurrentTask.important = importantBtn ? importantBtn.dataset.val === '1' : false;
   tdCurrentTask.time = $('#tdTime').value || '';
   tdCurrentTask.desc = $('#tdDesc').value.trim();
+  const repBtn = document.querySelector('.repbtn.on');
+  tdCurrentTask.repeat = repBtn ? repBtn.dataset.rep : 'none';
+  if(tdCurrentTask.repeat === 'none') delete tdCurrentTask.repeat;
   store(K.tasks, tasks);
   $('#taskDetailOv').classList.remove('show');
   renderTasks();
@@ -4275,12 +4333,14 @@ function renderTasks(){
       const pcolor = proj ? projColor(t.pj) : null;
       const projTag = proj ? `<span class="taskprojtag mini">🎯 ${proj.project.t}</span>` : '';
       const timeTag = t.time ? `<span class="ttime">🕐 ${arNum(t.time)}</span>` : '';
+      const repLabels = {daily:'يومياً', weekly:'أسبوعياً', monthly:'شهرياً'};
+      const repeatTag = (t.repeat && repLabels[t.repeat]) ? `<span class="taskrepeat">🔁 ${repLabels[t.repeat]}</span>` : '';
       const urgentTag = t.urgent ? `<span class="pritag pri-urgent">عاجل</span>` : '';
       const importantTag = t.important ? `<span class="pritag pri-important">مهم</span>` : '';
       el.innerHTML = `
         <button class="tdrag" aria-label="اسحب لإعادة الترتيب">⠿</button>
         <button class="tcheck" aria-label="إنجاز">✓</button>
-        <div class="ttxtwrap"><div class="ttxtline"><span class="ttxt"></span></div><div class="tmeta">${urgentTag}${importantTag}${timeTag}<span class="taskprojtag mini tpj${proj ? ' set' : ''}"${proj ? ` style="color:${pcolor}; background:${hexToSoft(pcolor)}"` : ''}>${proj ? '🎯 ' + proj.project.t : '🎯 اربط بمشروع'}</span></div></div>
+        <div class="ttxtwrap"><div class="ttxtline"><span class="ttxt"></span></div><div class="tmeta">${urgentTag}${importantTag}${timeTag}${repeatTag}<span class="taskprojtag mini tpj${proj ? ' set' : ''}"${proj ? ` style="color:${pcolor}; background:${hexToSoft(pcolor)}"` : ''}>${proj ? '🎯 ' + proj.project.t : '🎯 اربط بمشروع'}</span></div></div>
         <span class="tdue ${late?'late':''} teditdate">${t.due ? arNum(t.due.slice(5).split('-').reverse().join('/')) : '📅 تاريخ'}</span>
         <button class="tdetailbtn" aria-label="تفاصيل">⋯</button>
         <button class="delbtn" aria-label="حذف">${icon("trash",16)}</button>`;
@@ -4298,7 +4358,9 @@ function renderTasks(){
         openTaskDetail(t);
       };
       el.querySelector('.tcheck').onclick = ()=>{
-        t.done = !t.done; store(K.tasks,tasks);
+        t.done = !t.done;
+        if(t.done) spawnNextRecurrence(t);
+        store(K.tasks,tasks);
         // احتفال لو خلصت كل مهام النهارده
         const t0b = todayISO();
         const todays = tasks.filter(x=>!x.del && x.due===t0b);
