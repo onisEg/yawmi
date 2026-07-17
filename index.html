@@ -1324,7 +1324,7 @@ nav.bottom button.on{color:var(--gold)}
       <div class="collapsebody">
         <div class="inline" style="margin-top:4px">
           <label for="sleepInp">كام ساعة نمت؟</label>
-          <input type="number" id="sleepInp" min="0" max="24" step="0.5" inputmode="decimal" placeholder="—" style="width:90px">
+          <input type="number" id="sleepInp" min="0" max="24" step="0.5" inputmode="decimal" placeholder="—" style="width:90px" autocomplete="off" autocapitalize="off" autocorrect="off" data-1p-ignore data-lpignore="true" data-form-type="other">
         </div>
         <div id="sleepQ" class="hidden">
           <div class="moodq" style="margin-bottom:10px">نومك كان عامل إزاي؟</div>
@@ -1389,15 +1389,15 @@ nav.bottom button.on{color:var(--gold)}
         </div>
       </div>
       <div class="addrow">
-        <input type="text" id="taskTitle" placeholder="مهمة جديدة..." autocomplete="off">
+        <input type="text" id="taskTitle" placeholder="مهمة جديدة..." autocomplete="off" autocapitalize="off" autocorrect="off" data-1p-ignore data-lpignore="true" data-form-type="other">
         <button type="button" class="datebtn" id="taskProjBtn" aria-label="اربط بمشروع"><span data-icon="target"></span></button>
-        <button type="button" class="datebtn" id="taskDueBtn" aria-label="تاريخ الاستحقاق"><span data-icon="calendar"></span><input type="date" id="taskDue" aria-label="تاريخ الاستحقاق"></button>
+        <button type="button" class="datebtn" id="taskDueBtn" aria-label="تاريخ الاستحقاق"><span data-icon="calendar"></span><input type="date" id="taskDue" aria-label="تاريخ الاستحقاق" autocomplete="off" autocapitalize="off" autocorrect="off" data-1p-ignore data-lpignore="true" data-form-type="other"></button>
         <button class="addbtn" id="addTaskBtn" aria-label="إضافة مهمة">+</button>
       </div>
       <div id="taskProjChosen" class="hidden"></div>
       <div class="tasksearchwrap">
         <span data-icon="search" class="tasksearchicon"></span>
-        <input type="text" id="taskSearch" placeholder="دوّر على مهمة..." autocomplete="off">
+        <input type="text" id="taskSearch" placeholder="دوّر على مهمة..." autocomplete="off" autocapitalize="off" autocorrect="off" data-1p-ignore data-lpignore="true" data-form-type="other">
         <button id="taskSearchClear" class="hidden" aria-label="مسح">✕</button>
       </div>
       <div id="taskList"></div>
@@ -1405,7 +1405,7 @@ nav.bottom button.on{color:var(--gold)}
 
     <div id="segGoals" class="hidden">
       <div class="addrow">
-        <input type="text" id="goalTitle" placeholder="هدف جديد... (أتعلم إنجليزي)" autocomplete="off">
+        <input type="text" id="goalTitle" placeholder="هدف جديد... (أتعلم إنجليزي)" autocomplete="off" autocapitalize="off" autocorrect="off" data-1p-ignore data-lpignore="true" data-form-type="other">
         <select id="goalQ" style="width:70px; flex-shrink:0">
           <option value="">—</option>
           <option>Q1</option><option>Q2</option><option>Q3</option><option>Q4</option>
@@ -1439,12 +1439,12 @@ nav.bottom button.on{color:var(--gold)}
       <div class="lbl" id="expRemain" style="margin-top:4px"></div>
     </div>
     <div class="addrow">
-      <input type="number" id="expAmt" inputmode="decimal" placeholder="المبلغ">
+      <input type="number" id="expAmt" inputmode="decimal" placeholder="المبلغ" autocomplete="off" autocapitalize="off" autocorrect="off" data-1p-ignore data-lpignore="true" data-form-type="other">
       <select id="expCat" style="flex:1"></select>
       <button class="addbtn" id="addExpBtn" aria-label="إضافة مصروف">+</button>
     </div>
     <div class="addrow" style="margin-top:-8px">
-      <input type="text" id="expNote" placeholder="ملاحظة (اختياري)..." autocomplete="off">
+      <input type="text" id="expNote" placeholder="ملاحظة (اختياري)..." autocomplete="off" autocapitalize="off" autocorrect="off" data-1p-ignore data-lpignore="true" data-form-type="other">
     </div>
     <div class="card" id="catBarsCard">
       <h3>حسب التصنيف</h3>
@@ -1452,7 +1452,7 @@ nav.bottom button.on{color:var(--gold)}
     </div>
     <div class="tasksearchwrap expsearchwrap">
       <span data-icon="search" class="tasksearchicon"></span>
-      <input type="text" id="expSearch" placeholder="دوّر في مصاريفك..." autocomplete="off">
+      <input type="text" id="expSearch" placeholder="دوّر في مصاريفك..." autocomplete="off" autocapitalize="off" autocorrect="off" data-1p-ignore data-lpignore="true" data-form-type="other">
       <button id="expSearchClear" class="hidden" aria-label="مسح">✕</button>
     </div>
     <div id="expSearchInfo" class="hidden"></div>
@@ -1461,11 +1461,11 @@ nav.bottom button.on{color:var(--gold)}
       <h3 style="display:flex;justify-content:space-between;align-items:center">الالتزامات والديون <span id="oblTotal"></span></h3>
       <div id="oblList"></div>
       <div class="addrow" style="margin:12px 0 0">
-        <input type="text" id="oblTitle" placeholder="الاسم... (فاتورة، سلفة، كورس)" autocomplete="off">
+        <input type="text" id="oblTitle" placeholder="الاسم... (فاتورة، سلفة، كورس)" autocomplete="off" autocapitalize="off" autocorrect="off" data-1p-ignore data-lpignore="true" data-form-type="other">
       </div>
       <div class="addrow" style="margin-top:8px; margin-bottom:0">
-        <input type="number" id="oblAmt" inputmode="decimal" placeholder="المبلغ" style="flex:1">
-        <button type="button" class="datebtn" id="oblDueBtn" aria-label="ميعاد الدفع"><span data-icon="calendar"></span><input type="date" id="oblDue" aria-label="ميعاد الدفع"></button>
+        <input type="number" id="oblAmt" inputmode="decimal" placeholder="المبلغ" style="flex:1" autocomplete="off" autocapitalize="off" autocorrect="off" data-1p-ignore data-lpignore="true" data-form-type="other">
+        <button type="button" class="datebtn" id="oblDueBtn" aria-label="ميعاد الدفع"><span data-icon="calendar"></span><input type="date" id="oblDue" aria-label="ميعاد الدفع" autocomplete="off" autocapitalize="off" autocorrect="off" data-1p-ignore data-lpignore="true" data-form-type="other"></button>
         <select id="oblType" style="flex:0; width:auto; min-width:90px"></select>
         <button class="addbtn" id="addOblBtn" aria-label="إضافة التزام">+</button>
       </div>
@@ -1531,7 +1531,7 @@ nav.bottom button.on{color:var(--gold)}
 
     <div class="card">
       <h3>دوّر في يومياتك</h3>
-      <input type="text" id="searchInp" placeholder="اكتب كلمة من اللي فات..." autocomplete="off">
+      <input type="text" id="searchInp" placeholder="اكتب كلمة من اللي فات..." autocomplete="off" autocapitalize="off" autocorrect="off" data-1p-ignore data-lpignore="true" data-form-type="other">
       <div id="searchRes"></div>
     </div>
 
@@ -1557,14 +1557,14 @@ nav.bottom button.on{color:var(--gold)}
       <button class="quicktab" data-qt="exp">💰 مصروف</button>
     </div>
     <div id="quickTaskBox">
-      <input type="text" id="qTaskText" placeholder="إيه المهمة؟" autocomplete="off">
-      <input type="date" id="qTaskDue">
+      <input type="text" id="qTaskText" placeholder="إيه المهمة؟" autocomplete="off" autocapitalize="off" autocorrect="off" data-1p-ignore data-lpignore="true" data-form-type="other">
+      <input type="date" id="qTaskDue" autocomplete="off" autocapitalize="off" autocorrect="off" data-1p-ignore data-lpignore="true" data-form-type="other">
       <button class="btn primary" id="qTaskAdd" style="width:100%; margin-top:10px">أضف المهمة</button>
     </div>
     <div id="quickExpBox" class="hidden">
-      <input type="number" id="qExpAmt" inputmode="decimal" placeholder="المبلغ">
+      <input type="number" id="qExpAmt" inputmode="decimal" placeholder="المبلغ" autocomplete="off" autocapitalize="off" autocorrect="off" data-1p-ignore data-lpignore="true" data-form-type="other">
       <select id="qExpCat"></select>
-      <input type="text" id="qExpNote" placeholder="ملاحظة (اختياري)" autocomplete="off">
+      <input type="text" id="qExpNote" placeholder="ملاحظة (اختياري)" autocomplete="off" autocapitalize="off" autocorrect="off" data-1p-ignore data-lpignore="true" data-form-type="other">
       <button class="btn primary" id="qExpAdd" style="width:100%; margin-top:10px">أضف المصروف</button>
     </div>
   </div>
@@ -1597,7 +1597,7 @@ nav.bottom button.on{color:var(--gold)}
           <span id="nameGreet"></span>
           <button type="button" id="editNameBtn" aria-label="عدّل الاسم">✏️</button>
         </div>
-        <input type="text" id="setName" placeholder="عشان نحييك باسمك" style="width:100%" autocomplete="off">
+        <input type="text" id="setName" placeholder="عشان نحييك باسمك" style="width:100%" autocomplete="off" autocapitalize="off" autocorrect="off" data-1p-ignore data-lpignore="true" data-form-type="other">
 
         <label for="setFont">خط التطبيق</label>
         <select id="setFont">
@@ -1636,19 +1636,19 @@ nav.bottom button.on{color:var(--gold)}
             </div>
             <div class="remrow">
               <div class="reminfo"><span>📿 تذكير الأذكار</span><small>يوصّلك تذكير يومي</small></div>
-              <div class="remctrl"><input type="time" id="remAzkarTime" value="18:00"><label class="switch"><input type="checkbox" id="remAzkar"><span class="slider"></span></label></div>
+              <div class="remctrl"><input type="time" id="remAzkarTime" value="18:00" autocomplete="off" autocapitalize="off" autocorrect="off" data-1p-ignore data-lpignore="true" data-form-type="other"><label class="switch"><input type="checkbox" id="remAzkar"><span class="slider"></span></label></div>
             </div>
             <div class="remrow">
               <div class="reminfo"><span>📖 تذكير ورد القرآن</span><small>يفكّرك بوردك لو نسيته</small></div>
-              <div class="remctrl"><input type="time" id="remWirdTime" value="19:30"><label class="switch"><input type="checkbox" id="remWird"><span class="slider"></span></label></div>
+              <div class="remctrl"><input type="time" id="remWirdTime" value="19:30" autocomplete="off" autocapitalize="off" autocorrect="off" data-1p-ignore data-lpignore="true" data-form-type="other"><label class="switch"><input type="checkbox" id="remWird"><span class="slider"></span></label></div>
             </div>
             <div class="remrow">
               <div class="reminfo"><span>✍️ المراجعة الأسبوعية</span><small>كل جمعة</small></div>
-              <div class="remctrl"><input type="time" id="remReviewTime" value="20:00"><label class="switch"><input type="checkbox" id="remReview"><span class="slider"></span></label></div>
+              <div class="remctrl"><input type="time" id="remReviewTime" value="20:00" autocomplete="off" autocapitalize="off" autocorrect="off" data-1p-ignore data-lpignore="true" data-form-type="other"><label class="switch"><input type="checkbox" id="remReview"><span class="slider"></span></label></div>
             </div>
             <div class="remrow">
               <div class="reminfo"><span>🌙 تذكير الصيام</span><small>ليلة الاثنين/الخميس والمناسبات</small></div>
-              <div class="remctrl"><input type="time" id="remFastTime" value="21:00"><label class="switch"><input type="checkbox" id="remFast"><span class="slider"></span></label></div>
+              <div class="remctrl"><input type="time" id="remFastTime" value="21:00" autocomplete="off" autocapitalize="off" autocorrect="off" data-1p-ignore data-lpignore="true" data-form-type="other"><label class="switch"><input type="checkbox" id="remFast"><span class="slider"></span></label></div>
             </div>
             <button class="btn ghost" id="testNotifBtn" style="width:100%; margin-top:6px; font-size:13px">جرّب إشعار دلوقتي</button>
           </div>
@@ -1683,9 +1683,9 @@ nav.bottom button.on{color:var(--gold)}
         <label for="setCats">تصنيفات المصاريف (كل تصنيف في سطر — تقدر تحدد ميزانية كده: أكل: 2000)</label>
         <textarea id="setCats"></textarea>
         <label for="setIncome">الدخل الشهري (اختياري — عشان تشوف فاضلك كام)</label>
-        <input type="number" id="setIncome" inputmode="decimal" placeholder="—" style="width:150px">
+        <input type="number" id="setIncome" inputmode="decimal" placeholder="—" style="width:150px" autocomplete="off" autocapitalize="off" autocorrect="off" data-1p-ignore data-lpignore="true" data-form-type="other">
         <label for="setCurr">العملة</label>
-        <input type="text" id="setCurr" style="width:110px" autocomplete="off">
+        <input type="text" id="setCurr" style="width:110px" autocomplete="off" autocapitalize="off" autocorrect="off" data-1p-ignore data-lpignore="true" data-form-type="other">
       </div>
     </div>
 
@@ -1696,7 +1696,7 @@ nav.bottom button.on{color:var(--gold)}
         <label for="setPin">رقم سري لقفل التطبيق (من ٤ لـ ٦ أرقام)</label>
         <div id="pinStatus" style="font-size:13px; color:var(--muted); margin-bottom:8px"></div>
         <div style="display:flex; gap:8px; align-items:center">
-          <input type="password" id="setPin" inputmode="numeric" maxlength="6" placeholder="••••" style="width:150px; text-align:center; letter-spacing:6px; font-size:18px">
+          <input type="password" id="setPin" inputmode="numeric" maxlength="6" placeholder="••••" style="width:150px; text-align:center; letter-spacing:6px; font-size:18px" autocomplete="off" autocapitalize="off" autocorrect="off" data-1p-ignore data-lpignore="true" data-form-type="other">
           <button class="btn ghost hidden" id="removePin" style="flex:0; padding:10px 16px; font-size:13px; white-space:nowrap">إلغاء القفل</button>
         </div>
         <label for="setLockMins">يقفل تلقائي بعد</label>
@@ -1832,7 +1832,7 @@ nav.bottom button.on{color:var(--gold)}
     <label for="authEmail">الإيميل</label>
     <input type="email" id="authEmail" placeholder="you@example.com" autocomplete="email" style="width:100%">
     <label for="authPass">الباسورد</label>
-    <input type="password" id="authPass" placeholder="6 حروف على الأقل" autocomplete="current-password" style="width:100%">
+    <input type="password" id="authPass" placeholder="6 حروف على الأقل" autocomplete="current-password" style="width:100%" autocapitalize="off" autocorrect="off" data-1p-ignore data-lpignore="true" data-form-type="other">
     <button id="authForgot" style="background:none; border:none; color:var(--gold); font-size:12px; cursor:pointer; padding:6px 0; display:none">نسيت الباسورد؟</button>
     <div id="authError" class="autherror hidden"></div>
     <button class="btn primary" id="authSubmit" style="width:100%; margin-top:14px">تسجيل جديد</button>
@@ -1851,9 +1851,9 @@ nav.bottom button.on{color:var(--gold)}
     </div>
     <p style="font-size:13px; color:var(--muted); margin:0 0 14px; line-height:1.7">اكتب باسورد جديد لحسابك (٦ حروف على الأقل).</p>
     <label for="newPass">الباسورد الجديد</label>
-    <input type="password" id="newPass" placeholder="6 حروف على الأقل" autocomplete="new-password" style="width:100%">
+    <input type="password" id="newPass" placeholder="6 حروف على الأقل" autocomplete="new-password" style="width:100%" autocapitalize="off" autocorrect="off" data-1p-ignore data-lpignore="true" data-form-type="other">
     <label for="newPass2" style="margin-top:10px">أكّد الباسورد</label>
-    <input type="password" id="newPass2" placeholder="اكتبه تاني" autocomplete="new-password" style="width:100%">
+    <input type="password" id="newPass2" placeholder="اكتبه تاني" autocomplete="new-password" style="width:100%" autocapitalize="off" autocorrect="off" data-1p-ignore data-lpignore="true" data-form-type="other">
     <div id="changePassError" class="autherror hidden"></div>
     <button class="btn primary" id="changePassSubmit" style="width:100%; margin-top:14px">حفظ الباسورد الجديد</button>
   </div>
@@ -1871,7 +1871,7 @@ nav.bottom button.on{color:var(--gold)}
       <label for="newDhikrText" style="display:block; font-size:13px; color:var(--muted); margin-bottom:6px">ضيف ذِكر جديد</label>
       <textarea id="newDhikrText" placeholder="نص الذِكر..." style="min-height:60px"></textarea>
       <div style="display:flex; gap:8px; align-items:center; margin-top:8px">
-        <input type="number" id="newDhikrTarget" inputmode="numeric" placeholder="العدد" style="width:100px" value="33">
+        <input type="number" id="newDhikrTarget" inputmode="numeric" placeholder="العدد" style="width:100px" value="33" autocomplete="off" autocapitalize="off" autocorrect="off" data-1p-ignore data-lpignore="true" data-form-type="other">
         <button class="btn primary" id="addDhikrBtn" style="flex:1">إضافة</button>
       </div>
     </div>
@@ -1915,7 +1915,7 @@ nav.bottom button.on{color:var(--gold)}
       </div>
     </div>
     <label for="tdTime" style="margin-top:14px">وقت المهمة (اختياري)</label>
-    <input type="time" id="tdTime" style="width:100%">
+    <input type="time" id="tdTime" style="width:100%" autocomplete="off" autocapitalize="off" autocorrect="off" data-1p-ignore data-lpignore="true" data-form-type="other">
     <label style="margin-top:14px">التكرار</label>
     <div class="tdrepeat" id="tdRepeat">
       <button class="repbtn on" data-rep="none">مرة واحدة</button>
@@ -1928,7 +1928,7 @@ nav.bottom button.on{color:var(--gold)}
     <label style="margin-top:14px">مهام فرعية <span id="tdSubCount" style="color:var(--faint); font-weight:400; font-size:12px"></span></label>
     <div id="tdSubList"></div>
     <div class="tdsubadd">
-      <input type="text" id="tdSubInput" placeholder="ضيف خطوة فرعية..." autocomplete="off">
+      <input type="text" id="tdSubInput" placeholder="ضيف خطوة فرعية..." autocomplete="off" autocapitalize="off" autocorrect="off" data-1p-ignore data-lpignore="true" data-form-type="other">
       <button class="addbtn" id="tdSubAddBtn" aria-label="إضافة">+</button>
     </div>
     <button class="btn primary" id="tdSave" style="width:100%; margin-top:16px">حفظ</button>
@@ -2046,7 +2046,7 @@ nav.bottom button.on{color:var(--gold)}
     <div id="dlgIcon"></div>
     <h3 id="dlgTitle"></h3>
     <p id="dlgMsg"></p>
-    <input type="text" id="dlgInput" autocomplete="off">
+    <input type="text" id="dlgInput" autocomplete="off" autocapitalize="off" autocorrect="off" data-1p-ignore data-lpignore="true" data-form-type="other">
     <div id="dlgErr"></div>
     <div id="dlgBtns">
       <button class="btn ghost" id="dlgCancel">إلغاء</button>
@@ -5414,7 +5414,7 @@ function openOblDetail(o){
   body.innerHTML = `
     <div class="obldrow">
       <label>الاسم</label>
-      <input type="text" id="odName" value="${(o.t||'').replace(/"/g,'&quot;')}">
+      <input type="text" id="odName" value="${(o.t||'').replace(/"/g,'&quot;')}" autocomplete="off" autocapitalize="off" autocorrect="off" data-1p-ignore data-lpignore="true" data-form-type="other">
     </div>
     <div class="obldrow">
       <label>نوع الالتزام</label>
@@ -5427,7 +5427,7 @@ function openOblDetail(o){
     <div id="odRecurBox" class="${kind==='recurring'?'':'hidden'}">
       <div class="obldrow">
         <label>المبلغ الشهري (${settings.currency})</label>
-        <input type="number" id="odAmt" value="${o.a||''}" inputmode="decimal">
+        <input type="number" id="odAmt" value="${o.a||''}" inputmode="decimal" autocomplete="off" autocapitalize="off" autocorrect="off" data-1p-ignore data-lpignore="true" data-form-type="other">
       </div>
       <div class="obldrow">
         <label>كل قد إيه؟</label>
@@ -5440,32 +5440,32 @@ function openOblDetail(o){
     <div id="odInstBox" class="${kind==='installment'?'':'hidden'}">
       <div class="obldrow">
         <label>إجمالي الدين (${settings.currency})</label>
-        <input type="number" id="odTotal" value="${o.total||o.a||''}" inputmode="decimal">
+        <input type="number" id="odTotal" value="${o.total||o.a||''}" inputmode="decimal" autocomplete="off" autocapitalize="off" autocorrect="off" data-1p-ignore data-lpignore="true" data-form-type="other">
       </div>
       <div class="obldrow">
         <label>القسط الشهري (${settings.currency})</label>
-        <input type="number" id="odInstallment" value="${o.installment||''}" inputmode="decimal" placeholder="المبلغ اللي بتدفعه كل مرة">
+        <input type="number" id="odInstallment" value="${o.installment||''}" inputmode="decimal" placeholder="المبلغ اللي بتدفعه كل مرة" autocomplete="off" autocapitalize="off" autocorrect="off" data-1p-ignore data-lpignore="true" data-form-type="other">
       </div>
       <div class="obldrow">
         <label>المدفوع لحد دلوقتي (${settings.currency})</label>
-        <input type="number" id="odPaid" value="${o.paid||0}" inputmode="decimal">
+        <input type="number" id="odPaid" value="${o.paid||0}" inputmode="decimal" autocomplete="off" autocapitalize="off" autocorrect="off" data-1p-ignore data-lpignore="true" data-form-type="other">
       </div>
     </div>
     <div id="odOnceBox" class="${kind==='once'?'':'hidden'}">
       <div class="obldrow">
         <label>المبلغ (${settings.currency})</label>
-        <input type="number" id="odAmtOnce" value="${o.a||''}" inputmode="decimal">
+        <input type="number" id="odAmtOnce" value="${o.a||''}" inputmode="decimal" autocomplete="off" autocapitalize="off" autocorrect="off" data-1p-ignore data-lpignore="true" data-form-type="other">
       </div>
     </div>
     <div class="obldrow">
       <label>تاريخ الاستحقاق</label>
-      <input type="date" id="odDue" value="${o.due||''}">
+      <input type="date" id="odDue" value="${o.due||''}" autocomplete="off" autocapitalize="off" autocorrect="off" data-1p-ignore data-lpignore="true" data-form-type="other">
     </div>
     <div class="obldrow">
       <label>تذكير بالموعد</label>
       <div class="odremrow">
         <label class="switch"><input type="checkbox" id="odRemind" ${o.remind?'checked':''}><span class="slider"></span></label>
-        <input type="time" id="odRemindTime" value="${o.remindTime||'10:00'}" ${o.remind?'':'disabled'}>
+        <input type="time" id="odRemindTime" value="${o.remindTime||'10:00'}" ${o.remind?'':'disabled'} autocomplete="off" autocapitalize="off" autocorrect="off" data-1p-ignore data-lpignore="true" data-form-type="other">
         <span style="font-size:11px; color:var(--muted)">يوم الاستحقاق</span>
       </div>
     </div>
@@ -5887,7 +5887,7 @@ function renderGoals(){
       </div>
       <div class="projs"></div>
       <div class="addproj">
-        <input type="text" class="projInp" placeholder="ضيف مشروع تحت الهدف ده..." autocomplete="off">
+        <input type="text" class="projInp" placeholder="ضيف مشروع تحت الهدف ده..." autocomplete="off" autocapitalize="off" autocorrect="off" data-1p-ignore data-lpignore="true" data-form-type="other">
         <button class="addbtn projAdd" aria-label="إضافة مشروع">+</button>
       </div>`;
     card.querySelector('.goaltitle').textContent = g.t;
@@ -7895,7 +7895,7 @@ function renderOnbStep(){
     <div class="onbicon">${s.icon}</div>
     <h2 class="onbtitle">${s.title}</h2>
     <p class="onbbody">${s.body}</p>
-    ${s.input ? '<input type="text" id="onboardName" placeholder="اسمك..." autocomplete="off">' : ''}`;
+    ${s.input ? '<input type="text" id="onboardName" placeholder="اسمك..." autocomplete="off" autocapitalize="off" autocorrect="off" data-1p-ignore data-lpignore="true" data-form-type="other">' : ''}`;
   $('#onboardBtn').textContent = s.btn;
   $('#onboardSkip').textContent = onbStep === 0 ? 'تخطّي' : 'تخطّي الجولة';
   if(s.input){
