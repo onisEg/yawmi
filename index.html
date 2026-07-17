@@ -3468,28 +3468,49 @@ function tapTasbih(){
 }
 
 // ===== بانر السلسلة =====
+// سلسلة متسامحة: تسمح بفجوة يوم واحد ("يوم راحة") قبل ما تنكسر
+function forgivingStreak(test, anchor){
+  let n = 0, usedGrace = false, graceReal = false;
+  const d = new Date(anchor + 'T12:00:00');
+  // لو النهارده لسه مش مسجّل، نبدأ من امبارح
+  if(!test(iso(d))) d.setDate(d.getDate() - 1);
+  while(true){
+    if(test(iso(d))){ n++; d.setDate(d.getDate() - 1); if(n > 3650) break; }
+    else if(!usedGrace && n > 0){
+      // نجرّب نتخطّى يوم واحد، بس بنعدّه "يوم راحة حقيقي" فقط لو فيه نشاط بعده
+      usedGrace = true;
+      const probe = new Date(d); probe.setDate(probe.getDate() - 1);
+      if(test(iso(probe))){ graceReal = true; d.setDate(d.getDate() - 1); }
+      else break; // مفيش نشاط بعد الفجوة → السلسلة خلصت من غير ما نستهلك الراحة فعلياً
+    }
+    else break;
+  }
+  return { count: n, usedGrace: graceReal };
+}
 function renderStreakBanner(){
   const banner = $('#streakBanner');
   if(!banner) return;
   const t0 = todayISO();
-  // سلسلة الصلاة الكاملة
-  const prayerStreak = streak(k=>{ const r = days[k]; return !!(r && r.p && r.p.reduce((a,b)=>a+(b?1:0),0) === 5); }, t0);
-  // سلسلة التسجيل (أي يوم فيه محتوى)
-  const logStreak = streak(k=>{ const r = days[k]; return !!(r && dayHasContent(r)); }, t0);
+  // سلسلة الصلاة الكاملة (متسامحة)
+  const prayer = forgivingStreak(k=>{ const r = days[k]; return !!(r && r.p && r.p.reduce((a,b)=>a+(b?1:0),0) === 5); }, t0);
+  // سلسلة التسجيل (متسامحة)
+  const log = forgivingStreak(k=>{ const r = days[k]; return !!(r && dayHasContent(r)); }, t0);
   // نختار الأقوى للعرض
-  let flame, num, lbl, sub;
-  if(prayerStreak >= 2){
-    flame = '🕌'; num = prayerStreak;
-    lbl = prayerStreak === 1 ? 'يوم صلاة كاملة' : 'يوم صلاة كاملة متواصلة';
+  let flame, num, lbl, sub, usedGrace;
+  if(prayer.count >= 2){
+    flame = '🕌'; num = prayer.count; usedGrace = prayer.usedGrace;
+    lbl = 'يوم صلاة كاملة متواصلة';
     sub = 'حافظ عليها — الله يعينك ويثبّتك';
-  } else if(logStreak >= 2){
-    flame = '🔥'; num = logStreak;
+  } else if(log.count >= 2){
+    flame = '🔥'; num = log.count; usedGrace = log.usedGrace;
     lbl = 'يوم متواصل في يومي';
     sub = 'استمرارك ده عادة بتتبني، متكسرهاش';
   } else {
     banner.classList.add('hidden');
     return;
   }
+  // لو استعمل يوم الراحة، نطمّنه إن سلسلته لسه شغالة
+  if(usedGrace) sub = '🛡️ استخدمت يوم راحة — سلسلتك لسه محفوظة';
   banner.classList.remove('hidden');
   banner.innerHTML = `
     <div class="streakflame">${flame}</div>
