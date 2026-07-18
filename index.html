@@ -1610,12 +1610,12 @@ nav.bottom button.on{color:var(--gold)}
           <option value="Amiri">Amiri — أميري (كلاسيكي)</option>
         </select>
 
-        <label>حجم الخط</label>
+        <label>حجم العرض</label>
         <div class="fontsizerow">
-          <button type="button" class="fsbtn" data-size="12">صغير جداً</button>
-          <button type="button" class="fsbtn" data-size="14">صغير</button>
-          <button type="button" class="fsbtn" data-size="17">عادي</button>
-          <button type="button" class="fsbtn" data-size="20">كبير</button>
+          <button type="button" class="fsbtn" data-scale="0.85">صغير</button>
+          <button type="button" class="fsbtn" data-scale="1" data-default>عادي</button>
+          <button type="button" class="fsbtn" data-scale="1.15">كبير</button>
+          <button type="button" class="fsbtn" data-scale="1.3">أكبر</button>
         </div>
       </div>
     </div>
@@ -6487,10 +6487,20 @@ function ensureFontLoaded(font){
 }
 function applyFontSettings(){
   const font = settings.font || 'IBM Plex Sans Arabic';
-  const size = settings.fontSize || 12;
   ensureFontLoaded(font);
   document.documentElement.style.setProperty('--app-font', `'${font}'`);
-  document.documentElement.style.setProperty('--base-size', size + 'px');
+  // حجم العرض: يكبّر/يصغّر كل حاجة (خطوط، كروت، أزرار، مسافات) بشكل واضح
+  const scale = settings.displayScale || 1;
+  applyDisplayScale(scale);
+}
+function applyDisplayScale(scale){
+  // نستخدم font-size على الجذر بوحدة نسبية — كل الأحجام اللي بـ rem تكبر
+  // بس عشان معظم التطبيق بـ px، نستخدم zoom اللي بيكبّر كل حاجة فعلياً
+  const root = document.documentElement;
+  // نحاول zoom الأول (مدعوم في أغلب المتصفحات ومنها WebKit/موبايل)
+  if('zoom' in root.style || true){
+    root.style.zoom = scale;
+  }
 }
 // ===== رحلتك في يومي: تُظهر للمستخدم كم بنى (استثمار) =====
 function renderJourney(){
@@ -6553,7 +6563,7 @@ function populateSettings(){
   refreshAuthUI();
   $('#setFont').value = settings.font || 'IBM Plex Sans Arabic';
   document.querySelectorAll('.fsbtn').forEach(b=>{
-    b.classList.toggle('on', parseInt(b.dataset.size,10) === (settings.fontSize || 12));
+    b.classList.toggle('on', parseFloat(b.dataset.scale) === (settings.displayScale || 1));
   });
   $('#setHabits').value = settings.habits.join('\n');
   if($('#setTrackSunan')) $('#setTrackSunan').checked = !!settings.trackSunan;
@@ -6588,7 +6598,7 @@ document.querySelectorAll('.fsbtn').forEach(b=>{
   b.onclick = ()=>{
     document.querySelectorAll('.fsbtn').forEach(x=>x.classList.remove('on'));
     b.classList.add('on');
-    settings.fontSize = parseInt(b.dataset.size, 10);
+    settings.displayScale = parseFloat(b.dataset.scale);
     store(K.set, settings);
     applyFontSettings();
   };
