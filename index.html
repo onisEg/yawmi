@@ -3136,6 +3136,34 @@ function askText(title, opts){
     okText: opts.okText || 'حفظ'
   });
 }
+// نافذة اختيار وقت وتاريخ الانتكاسة (افتراضياً الوقت الحالي، ويقدر يختار وقت أقدم)
+function localDatetimeValue(ts){
+  // نحوّل timestamp لصيغة datetime-local (YYYY-MM-DDTHH:MM) بتوقيت الجهاز المحلي
+  const d = new Date(ts - new Date(ts).getTimezoneOffset() * 60000);
+  return d.toISOString().slice(0, 16);
+}
+async function askRelapseTime(name){
+  const now = Date.now();
+  const val = await _dlgOpen({
+    icon: '🔄',
+    title: 'وقت الانتكاسة',
+    msg: `امتى حصلت الانتكاسة في "${name}"؟ (تقدر تختار وقت قبل دلوقتي)`,
+    input: true,
+    type: 'datetime-local',
+    value: localDatetimeValue(now),
+    okText: 'سجّل',
+    danger: true
+  });
+  if(val === false || val == null || val === '') return null;
+  const ts = new Date(val).getTime();
+  if(isNaN(ts)) return null;
+  // مانقبلش وقت في المستقبل
+  if(ts > Date.now() + 60000){
+    await showAlert('مينفعش تسجّل انتكاسة في المستقبل 🙂', {icon:'⚠️'});
+    return null;
+  }
+  return ts;
+}
 // نافذة رسالة (بدل alert)
 function showAlert(msg, opts){
   opts = opts || {};
@@ -3817,10 +3845,11 @@ function renderToday(){
     card.onclick = (e)=>{ if(!e.target.closest('.bhrelapse')) openBHDetail(name); };
     card.querySelector('.bhrelapse').onclick = async (e)=>{
       e.stopPropagation();
-      if(!await askConfirm(`تسجّل انتكاسة في "${name}"؟ العدّاد هيبدأ من جديد.`, {icon:'🔄', title:'انتكاسة', okText:'أيوة، سجّل'})) return;
+      const ts = await askRelapseTime(name);
+      if(ts == null) return;
       const dd = getBH(name);
-      dd.relapses.push(Date.now());
-      dd.last = Date.now();
+      dd.relapses.push(ts);
+      dd.last = Math.max(dd.last || 0, ts);
       saveBH(); renderToday();
     };
     bhList.appendChild(card);
@@ -6615,10 +6644,11 @@ $('#bhdClose').onclick = closeBHDetail;
 $('#bhOverlay').onclick = e=>{ if(e.target.id==='bhOverlay') closeBHDetail(); };
 $('#bhdRelapse').onclick = async ()=>{
   const name = $('#bhdTitle').textContent;
-  if(!await askConfirm(`تسجّل انتكاسة في "${name}"؟ العدّاد هيبدأ من جديد.`, {icon:'🔄', title:'انتكاسة', okText:'أيوة، سجّل'})) return;
+  const ts = await askRelapseTime(name);
+  if(ts == null) return;
   const d = getBH(name);
-  d.relapses.push(Date.now());
-  d.last = Date.now();
+  d.relapses.push(ts);
+  d.last = Math.max(d.last || 0, ts);
   saveBH(); openBHDetail(name); renderToday();
 };
 $('#saveSettings').onclick = async ()=>{
