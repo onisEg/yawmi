@@ -7180,8 +7180,10 @@ function challengeTemplates(){
 // هل تحقق شرط التحدي في يوم معين؟
 function challengeMetOnDay(ch, dISO){
   const rec = days[dISO];
+  // التعليم اليدوي يُحتسب لأي تحدي (حتى الـ auto) — لو المستخدم علّم اليوم يدوياً يبقى متحقق
+  if(ch.manualLog && ch.manualLog[dISO]) return true;
   if(ch.type === 'manual'){
-    return !!(ch.manualLog && ch.manualLog[dISO]);
+    return false; // اليدوي بالكامل يعتمد على manualLog بس
   }
   if(!rec) return false;
   const src = ch.source || '';
@@ -7300,24 +7302,22 @@ function renderChallenges(){
       <div class="chalactions">
         <button class="chaldel" aria-label="حذف">✕</button>
       </div>`;
-    // الضغط على أي يوم في الأسبوع يسجّل/يشيل (للتحديات اليدوية بس)
-    if(ch.type === 'manual'){
-      el.querySelectorAll('.cwday').forEach((dayEl, i)=>{
-        const d = week[i];
-        if(d.beforeStart || d.isFuture) return; // ماينفعش نعدّل يوم قبل البداية أو في المستقبل
-        dayEl.style.cursor = 'pointer';
-        dayEl.onclick = (ev)=>{
-          ev.stopPropagation();
-          ch.manualLog = ch.manualLog || {};
-          ch.manualLog[d.k] = !ch.manualLog[d.k];
-          saveChallenges(chs);
-          if(navigator.vibrate) navigator.vibrate(8);
-          const p2 = challengeProgress(ch);
-          if(p2.done && !ch.celebrated){ ch.celebrated = true; saveChallenges(chs); celebrate('كمّلت التحدي! 🎉🔥'); addNotif('🏆','تحدي مكتمل', title + ' — مبروك كمّلته!'); }
-          renderChallenges();
-        };
-      });
-    }
+    // الضغط على أي يوم في الأسبوع يسجّل/يشيل يدوياً (لأي تحدي)
+    el.querySelectorAll('.cwday').forEach((dayEl, i)=>{
+      const d = week[i];
+      if(d.beforeStart || d.isFuture) return; // ماينفعش نعدّل يوم قبل البداية أو في المستقبل
+      dayEl.style.cursor = 'pointer';
+      dayEl.onclick = (ev)=>{
+        ev.stopPropagation();
+        ch.manualLog = ch.manualLog || {};
+        ch.manualLog[d.k] = !ch.manualLog[d.k];
+        saveChallenges(chs);
+        if(navigator.vibrate) navigator.vibrate(8);
+        const p2 = challengeProgress(ch);
+        if(p2.done && !ch.celebrated){ ch.celebrated = true; saveChallenges(chs); celebrate('كمّلت التحدي! 🎉🔥'); addNotif('🏆','تحدي مكتمل', title + ' — مبروك كمّلته!'); }
+        renderChallenges();
+      };
+    });
     // الضغط على الكرت يفتح التعديل — إلا لو الضغطة على يوم أو زر الحذف
     el.style.cursor = 'pointer';
     el.onclick = (ev)=>{
