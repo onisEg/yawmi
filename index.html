@@ -6442,7 +6442,7 @@ function renderPrayerCard(){
   pm.querySelectorAll('.pmcell[data-k]').forEach(cell=>{
     cell.onclick = ()=>{
       viewDate = cell.dataset.k;
-      document.querySelector('nav.bottom button[data-tab=today]').click();
+      switchToTab('today', false);
     };
   });
 }
@@ -6482,7 +6482,11 @@ function switchToTab(tabName, isBack){
   window.scrollTo({top:0});
 }
 document.querySelectorAll('nav.bottom button[data-tab]').forEach(b=>{
-  b.onclick = ()=> switchToTab(b.dataset.tab, false);
+  b.onclick = ()=>{
+    // الضغط المباشر على تاب "اليوم" يرجّع للنهارده (لو كنت بتتصفّح يوم قديم)
+    if(b.dataset.tab === 'today') viewDate = todayISO();
+    switchToTab(b.dataset.tab, false);
+  };
 });
 $('#backBtn').onclick = ()=>{
   if(!tabHistory.length) return;
@@ -7681,7 +7685,7 @@ $('#searchInp').addEventListener('input', e=>{
     el.querySelector('.s').textContent = '…' + snip + '…';
     el.onclick = ()=>{
       viewDate = k;
-      document.querySelector('nav.bottom button[data-tab=today]').click();
+      switchToTab('today', false);
     };
     res.appendChild(el);
   });
@@ -7757,7 +7761,7 @@ function renderHistory(){
     row.querySelector('.histsnip').textContent = snip || '—';
     row.onclick = ()=>{
       viewDate = k;
-      document.querySelector('nav.bottom button[data-tab=today]').click();
+      switchToTab('today', false);
     };
     list.appendChild(row);
   });
