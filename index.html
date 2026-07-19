@@ -1333,6 +1333,16 @@ nav.bottom button.on{color:var(--gold)}
       <div id="challengesList"></div>
     </div>
 
+    <div class="card todaycard" id="focusCard" data-cid="focus" draggable="false">
+      <div class="carddraghandle" title="اسحب لترتيب الكروت">⠿</div>
+      <h3 class="h3ic"><span>🎯</span> وضع التركيز</h3>
+      <button class="focusopenbtn" id="focusOpenBtn">
+        <span class="fobic">🍅</span>
+        <span class="fobtxt"><b>ابدأ جلسة تركيز</b><small id="focusCardSub">٢٥ دقيقة تركيز · بومودورو</small></span>
+        <span class="fobarrow">←</span>
+      </button>
+    </div>
+
     <div class="card collapsecard todaycard" id="moodCard" data-cid="mood" draggable="false">
       <div class="carddraghandle" title="اسحب لترتيب الكروت">⠿</div>
       <button class="collapsehead" id="moodHead">
@@ -1421,11 +1431,6 @@ nav.bottom button.on{color:var(--gold)}
           </div>
         </div>
       </div>
-      <button class="focusopenbtn" id="focusOpenBtn">
-        <span class="fobic">🎯</span>
-        <span class="fobtxt"><b>وضع التركيز</b><small>٢٥ دقيقة تركيز · بومودورو</small></span>
-        <span class="fobarrow">←</span>
-      </button>
       <div class="addrow">
         <input type="text" id="taskTitle" placeholder="مهمة جديدة..." autocomplete="off" autocapitalize="off" autocorrect="off" data-1p-ignore data-lpignore="true" data-form-type="other">
         <button type="button" class="datebtn" id="taskProjBtn" aria-label="اربط بمشروع"><span data-icon="target"></span></button>
@@ -4008,6 +4013,7 @@ function renderToday(){
   renderStreakBanner();
   renderNextAction();
   manageGlanceCards();
+  renderFocusCard();
   renderDeeds();
   renderChallenges();
   renderTodayTasks();
@@ -4359,6 +4365,15 @@ let focusState = {
 function focusSessionsKey(){ return 'yawmi_focus_' + todayISO(); }
 function getFocusSessions(){ return parseInt(localStorage.getItem(focusSessionsKey()) || '0', 10); }
 function addFocusSession(){ localStorage.setItem(focusSessionsKey(), String(getFocusSessions() + 1)); }
+// تحديث نص كارت التركيز في صفحة اليوم بعدد الجلسات
+function renderFocusCard(){
+  const sub = $('#focusCardSub');
+  if(!sub) return;
+  const n = getFocusSessions();
+  sub.textContent = n > 0
+    ? `خلّصت ${arNum(n)} ${n===1?'جلسة':n===2?'جلستين':'جلسات'} النهارده 🔥`
+    : '٢٥ دقيقة تركيز · بومودورو';
+}
 function openFocus(taskLabel){
   focusState.taskLabel = taskLabel || '';
   $('#focusTaskLabel').textContent = focusState.taskLabel ? `🎯 ${focusState.taskLabel}` : '';
@@ -4399,6 +4414,7 @@ function tickFocus(){
     if(focusState.phase === 'work'){
       addFocusSession();
       updateFocusStats();
+      renderFocusCard();
       if(navigator.vibrate) navigator.vibrate([100,50,100]);
       try{ showLocalNotif('🎉 خلّصت جلسة تركيز!', 'وقت راحة قصيّرة، تستاهل 👏'); }catch(e){}
       focusState.phase = 'break';
