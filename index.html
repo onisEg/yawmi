@@ -7939,17 +7939,26 @@ $('#themeBtn').onclick = ()=>{
 applyTheme(localStorage.getItem('yawmi_theme') || 'light');
 
 /* ================= init ================= */
+// الرسمة الأساسية الأول — قبل أي دالة ممكن ترمي error فتوقف الرسم
+// (ده يمنع ظهور صفحة ناقصة بعد الريفريش لو أي دالة تحت رمت استثناء)
+reloadState();
 applyFontSettings();
 renderIcons();
 updateNavCurr();
-checkOccasionNotifs();
-startPrayerTimer();
-startHero();
+try{ checkOccasionNotifs(); }catch(e){ console.warn('occasion', e); }
+try{ startPrayerTimer(); }catch(e){ console.warn('prayerTimer', e); }
+try{ startHero(); }catch(e){ console.warn('hero', e); }
 if(notifSupported() && Notification.permission === 'granted') startReminderScheduler();
 updateNotifDot();
-// نتأكد إن كل البيانات محمّلة بالكامل قبل أول رسمة (يمنع ظهور كروت فاضية لحظياً بعد الريفريش)
+// إعادة رسم تانية عشان أي بيانات اتأخرت
 reloadState();
 renderGreeting();
+
+// ضمان إضافي: إعادة رسم بعد ما الصفحة تستقر تماماً (يحل مشكلة الكروت الفاضية بعد الريفريش)
+function _ensureRendered(){ try{ reloadState(); }catch(e){} }
+requestAnimationFrame(()=> requestAnimationFrame(_ensureRendered));
+window.addEventListener('load', ()=> setTimeout(_ensureRendered, 50));
+if(document.readyState === 'complete') setTimeout(_ensureRendered, 50);
 
 // استرجاع آخر تبويب كان مفتوح (بعد الريفريش يفضل في نفس المكان)
 (function restoreActiveTab(){
