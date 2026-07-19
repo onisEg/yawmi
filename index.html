@@ -518,8 +518,6 @@ main{padding:0 16px; max-width:560px; margin:0 auto}
 .chalbroke{color:var(--red)}
 .chalbest{color:var(--faint)}
 .chalactions{display:flex; align-items:center; gap:4px; flex-shrink:0}
-.chalcheck{width:30px; height:30px; border-radius:50%; border:1.5px solid var(--teal); background:none; color:var(--teal); font-size:15px; cursor:pointer; display:flex; align-items:center; justify-content:center}
-.chalcheck.on{background:var(--teal); color:#fff}
 .chaldel{background:none; border:none; color:var(--faint); font-size:14px; cursor:pointer; padding:4px 6px}
 #challengeOv{position:fixed; inset:0; background:rgba(0,0,0,.6); display:flex; align-items:flex-end; justify-content:center; z-index:63; opacity:0; visibility:hidden; transition:opacity .25s, visibility .25s}
 #challengeOv.show{opacity:1; visibility:visible}
@@ -7287,21 +7285,8 @@ function renderChallenges(){
         }</div>
       </div>
       <div class="chalactions">
-        ${ch.type === 'manual' && !prog.done ? `<button class="chalcheck ${(ch.manualLog&&ch.manualLog[todayISO()])?'on':''}" aria-label="علّم النهارده">${(ch.manualLog&&ch.manualLog[todayISO()])?'✓':'○'}</button>` : ''}
         <button class="chaldel" aria-label="حذف">✕</button>
       </div>`;
-    if(ch.type === 'manual' && !prog.done){
-      el.querySelector('.chalcheck').onclick = (ev)=>{
-        ev.stopPropagation();
-        ch.manualLog = ch.manualLog || {};
-        ch.manualLog[todayISO()] = !ch.manualLog[todayISO()];
-        saveChallenges(chs);
-        if(navigator.vibrate) navigator.vibrate(10);
-        const p2 = challengeProgress(ch);
-        if(p2.done){ celebrate('كمّلت التحدي! 🎉🔥'); addNotif('🏆','تحدي مكتمل', title + ' — مبروك كمّلته!'); }
-        renderChallenges();
-      };
-    }
     // الضغط على أي يوم في الأسبوع يسجّل/يشيل (للتحديات اليدوية بس)
     if(ch.type === 'manual'){
       el.querySelectorAll('.cwday').forEach((dayEl, i)=>{
@@ -7320,8 +7305,9 @@ function renderChallenges(){
         };
       });
     }
-    // الضغط على جسم التحدي يفتح نافذة التعديل
-    el.querySelector('.chalinfo').onclick = ()=> openChallengeEdit(ch, chs);
+    // الضغط على أي مكان في الكرت (ما عدا الأيام وزر الحذف) يفتح نافذة التعديل
+    el.style.cursor = 'pointer';
+    el.onclick = ()=> openChallengeEdit(ch, chs);
     el.querySelector('.chaldel').onclick = (ev)=>{
       ev.stopPropagation();
       const idx = chs.indexOf(ch);
