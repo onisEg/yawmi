@@ -722,6 +722,30 @@ input[type=number]{color-scheme:dark light}
 /* ===== التبويبين الفرعيين (المهام/الأهداف) ===== */
 .segwrap{display:flex; gap:6px; background:var(--card2); border:1px solid var(--line); border-radius:999px; padding:5px; margin:14px 0 12px}
 .segbtn{flex:1; background:none; border:none; border-radius:999px; padding:11px 8px; font-family:inherit; font-size:14px; font-weight:700; color:var(--muted); cursor:pointer; transition:all .22s}
+/* مصفوفة أيزنهاور */
+.matrixintro{font-size:13px; color:var(--muted); text-align:center; margin:4px 0 14px; line-height:1.6}
+.matrixgrid{display:grid; grid-template-columns:1fr 1fr; gap:10px}
+.matrixquad{background:var(--card2); border:1.5px solid var(--line); border-radius:16px; padding:12px 10px; min-height:150px; display:flex; flex-direction:column}
+.matrixquad.q1{border-color:rgba(224,120,86,.4); background:linear-gradient(160deg, rgba(224,120,86,.08), var(--card2))}
+.matrixquad.q2{border-color:rgba(232,154,68,.4); background:linear-gradient(160deg, rgba(232,154,68,.08), var(--card2))}
+.matrixquad.q3{border-color:rgba(90,150,200,.35); background:linear-gradient(160deg, rgba(90,150,200,.07), var(--card2))}
+.matrixquad.q4{border-color:rgba(107,191,158,.35); background:linear-gradient(160deg, rgba(107,191,158,.07), var(--card2))}
+.mqhead{font-size:12px; font-weight:800; color:var(--text); margin-bottom:10px; display:flex; align-items:center; gap:6px; flex-wrap:wrap; line-height:1.4}
+.mqbadge{display:inline-flex; align-items:center; justify-content:center; width:20px; height:20px; border-radius:50%; font-size:10px; font-weight:800; flex-shrink:0}
+.q1 .mqbadge{background:var(--red); color:#fff}
+.q2 .mqbadge{background:var(--gold); color:#1a150a}
+.q3 .mqbadge{background:#5a96c8; color:#fff}
+.q4 .mqbadge{background:var(--teal); color:#fff}
+.mqhint{font-size:9.5px; font-weight:600; color:var(--faint); background:var(--card); border-radius:6px; padding:2px 6px; margin-right:auto}
+.mqlist{display:flex; flex-direction:column; gap:6px; flex:1}
+.mqitem{display:flex; align-items:center; gap:7px; background:var(--card); border-radius:9px; padding:7px 8px; font-size:12px; color:var(--text); cursor:pointer; transition:all .12s}
+.mqitem:active{transform:scale(.97)}
+.mqitem.done{opacity:.5}
+.mqitem.done .mqtxt{text-decoration:line-through; color:var(--faint)}
+.mqcheck{width:16px; height:16px; border-radius:5px; border:1.5px solid var(--line); flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:10px; color:transparent}
+.mqitem.done .mqcheck{background:var(--teal); border-color:var(--teal); color:#fff}
+.mqtxt{flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.mqempty{font-size:11px; color:var(--faint); text-align:center; padding:16px 4px; opacity:.7}
 .segbtn.on{background:var(--gold); color:#1a150a; box-shadow:0 2px 8px rgba(0,0,0,.12)}
 .setsection{background:var(--card); border:1px solid var(--line); border-radius:18px; margin-bottom:12px; overflow:hidden; box-shadow:0 2px 10px rgba(0,0,0,.03)}
 .setsechead{display:flex; align-items:center; gap:12px; width:100%; background:none; border:none; padding:16px; cursor:pointer; font-family:inherit; text-align:right}
@@ -1418,6 +1442,7 @@ nav.bottom button.on{color:var(--gold)}
     <!-- تبويبين فرعيين: المهام | الأهداف -->
     <div class="segwrap">
       <button class="segbtn on" data-seg="tasks">☑️ المهام</button>
+      <button class="segbtn" data-seg="matrix">◫ المصفوفة</button>
       <button class="segbtn" data-seg="goals">◎ الأهداف</button>
     </div>
 
@@ -1456,6 +1481,28 @@ nav.bottom button.on{color:var(--gold)}
         <button class="addbtn" id="addGoalBtn" aria-label="إضافة هدف">+</button>
       </div>
       <div id="goalList"></div>
+    </div>
+
+    <div id="segMatrix" class="hidden">
+      <p class="matrixintro">رتّب مهامك حسب الأهمية والاستعجال — ركّز على المهم مش بس العاجل 🎯</p>
+      <div class="matrixgrid">
+        <div class="matrixquad q1">
+          <div class="mqhead"><span class="mqbadge">I</span> عاجل ومهم <span class="mqhint">اعمله دلوقتي</span></div>
+          <div class="mqlist" id="mq1"></div>
+        </div>
+        <div class="matrixquad q2">
+          <div class="mqhead"><span class="mqbadge">II</span> مهم مش عاجل <span class="mqhint">خطّط له</span></div>
+          <div class="mqlist" id="mq2"></div>
+        </div>
+        <div class="matrixquad q3">
+          <div class="mqhead"><span class="mqbadge">III</span> عاجل مش مهم <span class="mqhint">فوّضه لو تقدر</span></div>
+          <div class="mqlist" id="mq3"></div>
+        </div>
+        <div class="matrixquad q4">
+          <div class="mqhead"><span class="mqbadge">IV</span> لا عاجل ولا مهم <span class="mqhint">قلّله</span></div>
+          <div class="mqlist" id="mq4"></div>
+        </div>
+      </div>
     </div>
   </section>
 
@@ -5543,13 +5590,57 @@ document.addEventListener('visibilitychange', ()=>{
 
 /* ====== التبويبين الفرعيين: المهام | الأهداف ====== */
 let currentSeg = localStorage.getItem('yawmi_seg') || 'tasks';
+// ===== مصفوفة أيزنهاور: تفرز المهام حسب الأهمية والاستعجال =====
+function renderMatrix(){
+  const quads = { q1: $('#mq1'), q2: $('#mq2'), q3: $('#mq3'), q4: $('#mq4') };
+  if(!quads.q1) return;
+  Object.values(quads).forEach(q=> q.innerHTML = '');
+  // المهام غير المحذوفة (نعرض المفتوحة + المخلّصة النهارده)
+  const active = tasks.filter(t=> !t.del);
+  const buckets = { q1:[], q2:[], q3:[], q4:[] };
+  active.forEach(t=>{
+    const u = !!t.urgent, i = !!t.important;
+    if(u && i) buckets.q1.push(t);
+    else if(!u && i) buckets.q2.push(t);
+    else if(u && !i) buckets.q3.push(t);
+    else buckets.q4.push(t);
+  });
+  Object.keys(buckets).forEach(k=>{
+    const list = buckets[k];
+    // نرتّب: المفتوحة الأول، بعدين المخلّصة
+    list.sort((a,b)=> (a.done?1:0) - (b.done?1:0));
+    if(!list.length){
+      quads[k].innerHTML = '<div class="mqempty">مفيش مهام هنا</div>';
+      return;
+    }
+    list.forEach(t=>{
+      const el = document.createElement('div');
+      el.className = 'mqitem' + (t.done ? ' done' : '');
+      el.innerHTML = `<span class="mqcheck">✓</span><span class="mqtxt"></span>`;
+      el.querySelector('.mqtxt').textContent = t.t;
+      el.onclick = ()=>{
+        t.done = !t.done;
+        if(t.done) t.doneAt = Date.now();
+        t.u = Date.now();
+        store(K.tasks, tasks);
+        renderMatrix();
+        if(navigator.vibrate) navigator.vibrate(6);
+      };
+      quads[k].appendChild(el);
+    });
+  });
+}
+
 function setSeg(seg){
   currentSeg = seg;
   localStorage.setItem('yawmi_seg', seg);
   document.querySelectorAll('.segbtn').forEach(b=> b.classList.toggle('on', b.dataset.seg === seg));
   $('#segTasks').classList.toggle('hidden', seg !== 'tasks');
   $('#segGoals').classList.toggle('hidden', seg !== 'goals');
-  if(seg === 'tasks') renderTasks(); else renderGoals();
+  $('#segMatrix').classList.toggle('hidden', seg !== 'matrix');
+  if(seg === 'tasks') renderTasks();
+  else if(seg === 'goals') renderGoals();
+  else if(seg === 'matrix') renderMatrix();
   window.scrollTo({top:0, behavior:'smooth'});
 }
 document.querySelectorAll('.segbtn').forEach(btn=>{
