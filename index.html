@@ -628,7 +628,6 @@ input[type=time]::-webkit-calendar-picker-indicator, input[type=date]::-webkit-c
 .bhdhead{display:flex; align-items:center; justify-content:space-between; margin-bottom:16px}
 .bhdhead h2{margin:0; font-size:19px}
 .bhdtimerbig{display:flex; justify-content:center; gap:18px; flex-direction:row-reverse; color:var(--red); direction:rtl; font-variant-numeric:tabular-nums; margin-bottom:12px}
-.bhdtimerbig small{font-size:13px; font-weight:400; color:var(--muted); margin:0 1px 0 4px}
 .bhdmsg{font-size:14px; line-height:1.7; color:var(--gold); background:var(--gold-soft); border-radius:12px; padding:12px; text-align:center; margin-bottom:16px}
 .bhdstats{display:flex; gap:10px; margin-bottom:16px}
 .bhdstats .s{flex:1; background:var(--card2); border-radius:12px; padding:12px 8px; text-align:center}
@@ -4005,7 +4004,6 @@ function bhMessage(cleanDays, relapsedToday, target){
 
 /* live timer for bad-habit cards */
 let bhTimerInt = null;
-function startBHTimers(){
 // يبني HTML العداد بتنسيق أعمدة: المسمّى فوق والرقم تحته (أيام · ساعات · دقائق · ثواني)
 function buildTimerHTML(ms){
   const {days,h,m,sec} = fmtDuration(ms);
@@ -4019,7 +4017,7 @@ function buildTimerHTML(ms){
   cols += col('ثواني', p(sec));
   return cols;
 }
-
+function startBHTimers(){
   if(bhTimerInt) clearInterval(bhTimerInt);
   const tick = ()=>{
     document.querySelectorAll('.bhtimer[data-since]').forEach(el=>{
