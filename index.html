@@ -510,6 +510,7 @@ main{padding:0 16px; max-width:560px; margin:0 auto}
 .cwday.today .cwlbl{color:var(--gold); font-weight:700}
 .cwday.today .cwdot{border-color:var(--gold); border-width:2px}
 .cwday.today.met .cwdot{box-shadow:0 0 0 3px var(--gold-soft)}
+.cwday[style*="cursor"]:active .cwdot{transform:scale(.85)}
 .cwday.off .cwdot{opacity:.35}
 .cwday.off .cwlbl{opacity:.5}
 .chalitem.done .cwday.met .cwdot{background:var(--teal); border-color:var(--teal); color:#fff}
@@ -7290,7 +7291,8 @@ function renderChallenges(){
         <button class="chaldel" aria-label="حذف">✕</button>
       </div>`;
     if(ch.type === 'manual' && !prog.done){
-      el.querySelector('.chalcheck').onclick = ()=>{
+      el.querySelector('.chalcheck').onclick = (ev)=>{
+        ev.stopPropagation();
         ch.manualLog = ch.manualLog || {};
         ch.manualLog[todayISO()] = !ch.manualLog[todayISO()];
         saveChallenges(chs);
@@ -7300,7 +7302,28 @@ function renderChallenges(){
         renderChallenges();
       };
     }
-    el.querySelector('.chaldel').onclick = ()=>{
+    // الضغط على أي يوم في الأسبوع يسجّل/يشيل (للتحديات اليدوية بس)
+    if(ch.type === 'manual'){
+      el.querySelectorAll('.cwday').forEach((dayEl, i)=>{
+        const d = week[i];
+        if(d.beforeStart || d.isFuture) return; // ماينفعش نعدّل يوم قبل البداية أو في المستقبل
+        dayEl.style.cursor = 'pointer';
+        dayEl.onclick = (ev)=>{
+          ev.stopPropagation();
+          ch.manualLog = ch.manualLog || {};
+          ch.manualLog[d.k] = !ch.manualLog[d.k];
+          saveChallenges(chs);
+          if(navigator.vibrate) navigator.vibrate(8);
+          const p2 = challengeProgress(ch);
+          if(p2.done && !ch.celebrated){ ch.celebrated = true; saveChallenges(chs); celebrate('كمّلت التحدي! 🎉🔥'); addNotif('🏆','تحدي مكتمل', title + ' — مبروك كمّلته!'); }
+          renderChallenges();
+        };
+      });
+    }
+    // الضغط على جسم التحدي يفتح نافذة التعديل
+    el.querySelector('.chalinfo').onclick = ()=> openChallengeEdit(ch, chs);
+    el.querySelector('.chaldel').onclick = (ev)=>{
+      ev.stopPropagation();
       const idx = chs.indexOf(ch);
       chs.splice(idx, 1);
       saveChallenges(chs);
@@ -7425,6 +7448,41 @@ async function createCustomChallenge(){
     title: title.trim() + ' {n} يوم',
     icon: '⭐', type: 'manual', target, desc: 'تحدي شخصي'
   }, { baseId: null });
+}
+
+// تعديل تحدي موجود (الاسم والمدة)
+async function openChallengeEdit(ch, chs){
+  // نطلّع الاسم النضيف (من غير " {n} يوم")
+  const cleanTitle = (ch.title || 'تحدي {n} يوم').replace(/\{n\}\s*يوم/, '').replace(/\{n\}/, '').trim() || 'تحدي';
+  const newTitle = await askText('✏️ تعديل التحدي', {
+    icon: ch.icon || '🏆',
+    msg: 'اسم التحدي',
+    value: cleanTitle,
+    placeholder: 'اسم التحدي',
+    okText: 'التالي'
+  });
+  if(newTitle === false || newTitle == null) return; // ألغى
+  const finalTitle = (newTitle.trim() || cleanTitle);
+  const targetStr = await askText('📅 مدة التحدي', {
+    icon: '📅',
+    msg: `"${finalTitle}" — كام يوم؟`,
+    type: 'number',
+    value: String(ch.target || 21),
+    placeholder: 'عدد الأيام',
+    okText: 'حفظ'
+  });
+  if(targetStr === false || targetStr == null) return;
+  const target = parseInt(targetStr, 10);
+  if(!target || target < 1){ showAlert('اكتب رقم صحيح أكبر من صفر', {icon:'⚠️'}); return; }
+  // نحدّث التحدي
+  ch.title = finalTitle + ' {n} يوم';
+  ch.target = target;
+  // لو التحدي بقى ناقص، نلغي علامة "اكتمل" عشان يحسب من جديد
+  const p = challengeProgress(ch);
+  if(!p.done) ch.celebrated = false;
+  saveChallenges(chs);
+  renderChallenges();
+  toast('اتحفظ التعديل ✓');
 }
 
 // كارت مهام النهارده (مختصر، في آخر صفحة اليوم)
