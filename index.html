@@ -5487,6 +5487,18 @@ function openOblDetail(o){
         <span style="font-size:11px; color:var(--muted)">يوم الاستحقاق</span>
       </div>
     </div>
+    <div class="obldrow">
+      <label>تذكير مبكّر (تجهّز نفسك)</label>
+      <div class="odremrow">
+        <label class="switch"><input type="checkbox" id="odRemindEarly" ${o.remindEarly?'checked':''}><span class="slider"></span></label>
+        <select id="odRemindDays" ${o.remindEarly?'':'disabled'} style="flex:1; min-width:0">
+          <option value="3" ${o.remindDays==3?'selected':''}>قبلها بـ ٣ أيام</option>
+          <option value="7" ${(o.remindDays==7||!o.remindDays)?'selected':''}>قبلها بأسبوع</option>
+          <option value="14" ${o.remindDays==14?'selected':''}>قبلها بأسبوعين</option>
+          <option value="30" ${o.remindDays==30?'selected':''}>قبلها بشهر</option>
+        </select>
+      </div>
+    </div>
     <button class="btn" id="odSave" style="width:100%; margin-top:8px">حفظ</button>`;
   let selKind = kind, selRec = recType;
   body.querySelectorAll('.odkindbtn').forEach(btn=>{
@@ -5505,6 +5517,7 @@ function openOblDetail(o){
     };
   });
   $('#odRemind').onchange = ()=>{ $('#odRemindTime').disabled = !$('#odRemind').checked; };
+  $('#odRemindEarly').onchange = ()=>{ $('#odRemindDays').disabled = !$('#odRemindEarly').checked; };
   $('#odSave').onclick = ()=>{
     const nm = $('#odName').value.trim();
     if(nm) o.t = nm;
@@ -5532,6 +5545,8 @@ function openOblDetail(o){
     o.due = $('#odDue').value || '';
     o.remind = $('#odRemind').checked;
     o.remindTime = $('#odRemindTime').value;
+    o.remindEarly = $('#odRemindEarly').checked;
+    o.remindDays = parseInt($('#odRemindDays').value, 10) || 7;
     store(K.obl, obls);
     $('#oblDetailOv').classList.remove('show');
     renderObls();
@@ -8195,15 +8210,33 @@ function checkDueReminders(){
       });
     }
   }
-  // تذكير الالتزامات في يوم استحقاقها
+  // تذكير الالتزامات في يوم استحقاقها + تذكير مبكّر قبلها بفترة
   if(typeof obls !== 'undefined'){
     const today = todayISO();
     obls.forEach(o=>{
-      if(o.del || !o.remind || !o.due) return;
-      if(o.due === today && o.remindTime === hhmm && !fired['obl_'+o.id]){
+      if(o.del || !o.due) return;
+      const isPaidNow = o.paid || (o.paidMonths && o.paidMonths[monthKey(0)]);
+      // تذكير يوم الاستحقاق
+      if(o.remind && o.due === today && o.remindTime === hhmm && !fired['obl_'+o.id]){
         showLocalNotif('💰 موعد التزام', `النهارده موعد "${o.t}" — ${arMoney(o.a)} ${settings.currency}`);
         addNotif('💰', 'موعد التزام', `النهارده موعد "${o.t}"`);
         fired['obl_'+o.id] = true;
+      }
+      // تذكير مبكّر: قبل الموعد بعدد أيام محدد (يجهّز نفسه)
+      if(o.remindEarly && !isPaidNow){
+        const days = o.remindDays || 7;
+        const dueDate = new Date(o.due + 'T12:00:00');
+        const earlyDate = new Date(dueDate);
+        earlyDate.setDate(earlyDate.getDate() - days);
+        const earlyISO = iso(earlyDate);
+        // نبعت التذكير المبكّر عند وقت التذكير (أو 10 صباحاً افتراضياً) في اليوم المحسوب
+        const earlyTime = o.remindTime || '10:00';
+        if(earlyISO === today && earlyTime === hhmm && !fired['oblearly_'+o.id]){
+          const daysLabel = days === 7 ? 'أسبوع' : days === 14 ? 'أسبوعين' : days === 30 ? 'شهر' : arNum(days) + ' أيام';
+          showLocalNotif('⏳ موعد التزام قريب', `فاضل ${daysLabel} على موعد "${o.t}" — ${arMoney(o.a)} ${settings.currency}. جهّز نفسك 🤍`);
+          addNotif('⏳', 'التزام قريب', `فاضل ${daysLabel} على "${o.t}"`);
+          fired['oblearly_'+o.id] = true;
+        }
       }
     });
   }
