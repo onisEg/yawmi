@@ -609,7 +609,8 @@ input[type=time]::-webkit-calendar-picker-indicator, input[type=date]::-webkit-c
 .bhringtxt b{font-size:20px; font-weight:700; color:var(--teal)}
 .bhinfo{flex:1; min-width:0}
 .bhnm{font-size:15px; font-weight:600; margin-bottom:3px}
-.bhtimer{font-size:14px; color:var(--teal); font-weight:700; direction:ltr; text-align:right; font-variant-numeric:tabular-nums}
+.bhtimer{font-size:14px; color:var(--teal); font-weight:700; direction:rtl; text-align:center; font-variant-numeric:tabular-nums; unicode-bidi:plaintext}
+.bhclock{unicode-bidi:isolate; font-variant-numeric:tabular-nums}
 .bhsub{font-size:11px; color:var(--muted); margin-top:4px; display:flex; gap:6px; flex-wrap:wrap}
 .bhchip{background:var(--card2); border:1px solid var(--line); border-radius:999px; padding:2px 8px; font-size:10px}
 .bhrelapse{background:none; border:1.5px solid var(--red); color:var(--red); border-radius:999px; padding:8px 14px; font-family:inherit; font-size:13px; font-weight:500; cursor:pointer; flex-shrink:0; white-space:nowrap; transition:all .15s}
@@ -622,7 +623,7 @@ input[type=time]::-webkit-calendar-picker-indicator, input[type=date]::-webkit-c
 #bhOverlay.show #bhModal{transform:translateY(0)}
 .bhdhead{display:flex; align-items:center; justify-content:space-between; margin-bottom:16px}
 .bhdhead h2{margin:0; font-size:19px}
-.bhdtimerbig{text-align:center; font-size:30px; font-weight:700; color:var(--red); direction:ltr; font-variant-numeric:tabular-nums; margin-bottom:12px}
+.bhdtimerbig{text-align:center; font-size:26px; font-weight:700; color:var(--red); direction:rtl; font-variant-numeric:tabular-nums; margin-bottom:12px; unicode-bidi:plaintext}
 .bhdtimerbig small{font-size:13px; font-weight:400; color:var(--muted); margin:0 1px 0 4px}
 .bhdmsg{font-size:14px; line-height:1.7; color:var(--gold); background:var(--gold-soft); border-radius:12px; padding:12px; text-align:center; margin-bottom:16px}
 .bhdstats{display:flex; gap:10px; margin-bottom:16px}
@@ -4007,7 +4008,18 @@ function startBHTimers(){
       const since = parseInt(el.dataset.since, 10);
       const {days,h,m,sec} = fmtDuration(Date.now() - since);
       const p = n => String(n).padStart(2,'0');
-      el.textContent = arNum(`${days}ي ${p(h)}:${p(m)}:${p(sec)}`);
+      // ترتيب طبيعي: يوم (عربي) ثم الساعة (ltr عشان الأرقام تظهر صح)
+      const clock = `<span class="bhclock" dir="ltr">${arNum(p(h))}:${arNum(p(m))}:${arNum(p(sec))}</span>`;
+      if(days > 0){
+        let dayPart;
+        if(days === 1) dayPart = 'يوم';
+        else if(days === 2) dayPart = 'يومين';
+        else if(days <= 10) dayPart = arNum(days) + ' أيام';
+        else dayPart = arNum(days) + ' يوم';
+        el.innerHTML = `${dayPart} · ${clock}`;
+      } else {
+        el.innerHTML = clock;
+      }
     });
   };
   tick();
@@ -4065,7 +4077,17 @@ function startBHDetailTimer(){
     if(!el || !el.dataset.since) return;
     const {days,h,m,sec} = fmtDuration(Date.now() - parseInt(el.dataset.since,10));
     const p = n => arNum(String(n).padStart(2,'0'));
-    el.innerHTML = `${arNum(days)}<small>يوم</small> ${p(h)}<small>س</small> ${p(m)}<small>د</small> ${p(sec)}<small>ث</small>`;
+    const clock = `<span class="bhclock" dir="ltr">${p(h)}:${p(m)}:${p(sec)}</span>`;
+    if(days > 0){
+      let dayPart;
+      if(days === 1) dayPart = 'يوم';
+      else if(days === 2) dayPart = 'يومين';
+      else if(days <= 10) dayPart = arNum(days) + ' أيام';
+      else dayPart = arNum(days) + ' يوم';
+      el.innerHTML = `${dayPart} · ${clock}`;
+    } else {
+      el.innerHTML = clock;
+    }
   };
   tick();
   bhdTimerInt = setInterval(tick, 1000);
