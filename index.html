@@ -7305,9 +7305,13 @@ function renderChallenges(){
         };
       });
     }
-    // الضغط على أي مكان في الكرت (ما عدا الأيام وزر الحذف) يفتح نافذة التعديل
+    // الضغط على الكرت يفتح التعديل — إلا لو الضغطة على يوم أو زر الحذف
     el.style.cursor = 'pointer';
-    el.onclick = ()=> openChallengeEdit(ch, chs);
+    el.onclick = (ev)=>{
+      // لو الضغطة جوه أي يوم (cwday) أو زر الحذف، مانفتحش التعديل
+      if(ev.target.closest('.cwday') || ev.target.closest('.chaldel')) return;
+      openChallengeEdit(ch, chs);
+    };
     el.querySelector('.chaldel').onclick = (ev)=>{
       ev.stopPropagation();
       const idx = chs.indexOf(ch);
