@@ -7947,7 +7947,8 @@ startPrayerTimer();
 startHero();
 if(notifSupported() && Notification.permission === 'granted') startReminderScheduler();
 updateNotifDot();
-renderToday();
+// نتأكد إن كل البيانات محمّلة بالكامل قبل أول رسمة (يمنع ظهور كروت فاضية لحظياً بعد الريفريش)
+reloadState();
 renderGreeting();
 
 // استرجاع آخر تبويب كان مفتوح (بعد الريفريش يفضل في نفس المكان)
