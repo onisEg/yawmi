@@ -256,10 +256,17 @@ main{padding:0 16px; max-width:560px; margin:0 auto}
 .dhikrmenu{background:none; border:none; color:var(--muted); font-size:22px; cursor:pointer; padding:0 8px; line-height:1}
 .dhikrtext{text-align:center; font-size:18px; line-height:1.9; color:var(--gold); padding:10px 6px 4px; font-weight:500}
 .dhikrcounter{display:block; position:relative; width:82px; height:82px; margin:6px auto 5px; background:none; border:none; cursor:pointer; -webkit-tap-highlight-color:transparent; pointer-events:none; transition:transform .1s ease}
+/* السبحة الواقعية (خرز يمين وشمال + خيط منحني) */
+.sebha{position:relative; width:100%; max-width:340px; margin:4px auto 2px; user-select:none; -webkit-user-select:none; touch-action:pan-y}
+.sebhasvg{width:100%; height:auto; display:block; overflow:visible}
+.sebhathread{stroke:var(--gold); stroke-width:2; opacity:.55}
+.sebhabead{cursor:grab; transition:transform .05s}
+.sebhabead:active{cursor:grabbing}
+.sebhacount{position:absolute; top:-4px; left:50%; transform:translateX(-50%); display:flex; flex-direction:column; align-items:center; pointer-events:none}
+.sebhacount b{font-size:26px; font-weight:800; color:var(--gold); line-height:1; font-variant-numeric:tabular-nums}
+.sebhacount small{font-size:11px; color:var(--muted); margin-top:2px}
 .dhikrtapzone{cursor:pointer; -webkit-tap-highlight-color:transparent; border-radius:14px; padding:8px 4px; transition:background .15s, transform .1s ease; user-select:none}
 .dhikrtapzone:active{background:var(--gold-soft); transform:scale(.99)}
-.dhikrring{width:100%; height:100%}
-.dhikrring circle:last-child{transition:stroke-dashoffset .3s ease}
 .dhikrcounter:active{transform:scale(.94)}
 .dhikrnum{position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center}
 .dhikrnum b{font-size:22px; font-weight:700; color:var(--text); line-height:1}
@@ -1323,14 +1330,26 @@ nav.bottom button.on{color:var(--gold)}
       </div>
       <div class="dhikrtapzone" id="dhikrTapZone">
         <div class="dhikrtext" id="dhikrText"></div>
-        <button class="dhikrcounter" id="dhikrCounter">
-          <svg width="96" height="96" viewBox="0 0 96 96" class="dhikrring">
-            <circle cx="48" cy="48" r="42" fill="none" stroke="var(--line)" stroke-width="6"/>
-            <circle cx="48" cy="48" r="42" fill="none" stroke="var(--gold)" stroke-width="6" stroke-linecap="round" id="dhikrProg" stroke-dasharray="263.9" stroke-dashoffset="263.9" transform="rotate(-90 48 48)"/>
+        <div class="sebha" id="sebha">
+          <svg viewBox="0 0 320 120" class="sebhasvg" id="sebhaSvg" preserveAspectRatio="xMidYMid meet">
+            <defs>
+              <radialGradient id="beadGold" cx="35%" cy="30%" r="70%">
+                <stop offset="0%" stop-color="#f0b862"/>
+                <stop offset="60%" stop-color="var(--gold)"/>
+                <stop offset="100%" stop-color="#8a5e18"/>
+              </radialGradient>
+              <radialGradient id="beadDark" cx="35%" cy="30%" r="70%">
+                <stop offset="0%" stop-color="#5a4a35"/>
+                <stop offset="60%" stop-color="#33281c"/>
+                <stop offset="100%" stop-color="#1a1410"/>
+              </radialGradient>
+            </defs>
+            <path class="sebhathread" id="sebhaThread" d="" fill="none"/>
+            <g id="sebhaBeads"></g>
           </svg>
-          <span class="dhikrnum"><b id="dhikrCount">0</b><small id="dhikrTarget">/ 100</small></span>
-        </button>
-        <div class="dhikrhint" id="dhikrHint">دوس في أي حتة في الكارت مع كل مرة</div>
+          <div class="sebhacount"><b id="dhikrCount">0</b><small id="dhikrTarget">/ 100</small></div>
+        </div>
+        <div class="dhikrhint" id="dhikrHint">اسحب الخرزة من ناحية للتانية عشان تسبّح</div>
       </div>
     </div>
 
@@ -3546,12 +3565,55 @@ function renderDhikr(){
   const target = d.target || 33;
   $('#dhikrCount').textContent = arNum(count);
   $('#dhikrTarget').textContent = '/ ' + arNum(target);
-  const C = 2 * Math.PI * 42;
-  const pct = Math.min(count / target, 1);
-  $('#dhikrProg').style.strokeDashoffset = C - pct * C;
   const done = count >= target;
   card.classList.toggle('done', done);
-  $('#dhikrHint').textContent = done ? 'ما شاء الله، كمّلت المطلوب ✓' : 'دوس على الدايرة مع كل مرة';
+  $('#dhikrHint').textContent = done ? 'ما شاء الله، كمّلت المطلوب ✓' : 'اسحب الخرزة من ناحية للتانية عشان تسبّح';
+  renderSebha(count, target);
+}
+
+// ===== رسم السبحة الواقعية: خرز على خيط منحني، معدودة يمين والباقي شمال =====
+function renderSebha(count, target){
+  const g = $('#sebhaBeads');
+  const thread = $('#sebhaThread');
+  if(!g || !thread) return;
+  const W = 320, H = 120;
+  const SHOWN = 11;         // عدد الخرزات الظاهرة على الخيط
+  const half = Math.floor(SHOWN / 2);
+  // الخيط: قوس منحني (منحنى بيزييه) من الشمال لليمين، ينزل في النص
+  const y0 = 46;            // ارتفaع طرفي الخيط
+  const dip = 74;           // أقصى نزول في النص
+  thread.setAttribute('d', `M 8 ${y0} Q ${W/2} ${dip} ${W-8} ${y0}`);
+  // نحسب مواقع الخرزات على المنحنى
+  function pointOnCurve(t){
+    // منحنى بيزييه تربيعي: نقطتين طرفيتين + نقطة تحكّم في النص
+    const x0=8, x1=W/2, x2=W-8;
+    const cy0=y0, cy1=dip, cy2=y0;
+    const mt = 1 - t;
+    const x = mt*mt*x0 + 2*mt*t*x1 + t*t*x2;
+    const y = mt*mt*cy0 + 2*mt*t*cy1 + t*t*cy2;
+    return {x, y};
+  }
+  let html = '';
+  for(let i = 0; i < SHOWN; i++){
+    const pos = count - half + i;               // رقم الخرزة الفعلي
+    const t = i / (SHOWN - 1);                   // 0..1 على المنحنى
+    const p = pointOnCurve(t);
+    const isCurrent = (pos === count);
+    const counted = (pos >= 0 && pos < count);
+    const outOfRange = (pos < 0 || pos > target);
+    const r = isCurrent ? 15 : 11;
+    let fill, stroke;
+    if(counted){ fill = 'url(#beadGold)'; stroke = '#a8721e'; }
+    else { fill = 'url(#beadDark)'; stroke = '#1a1410'; }
+    const op = outOfRange ? 0.12 : 1;
+    const cls = isCurrent ? 'sebhabead current' : 'sebhabead';
+    html += `<circle class="${cls}" cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="${r}" fill="${fill}" stroke="${stroke}" stroke-width="1.5" opacity="${op}"/>`;
+    if(isCurrent){
+      // بريق على الخرزة الحالية
+      html += `<circle cx="${(p.x-4).toFixed(1)}" cy="${(p.y-4).toFixed(1)}" r="3.5" fill="rgba(255,255,255,.5)" opacity="${op}"/>`;
+    }
+  }
+  g.innerHTML = html;
 }
 
 // تنبيه ذكي عن الصلاة الفايتة/اللي قرب وقتها يخلص
@@ -4416,17 +4478,57 @@ $('#journalHead').onclick = ()=> toggleCollapse('journal');
 $('#moodHead').onclick = ()=> toggleCollapse('mood');
 $('#sleepHead').onclick = ()=> toggleCollapse('sleep');
 bindText('#moodNote','mn');
-$('#dhikrTapZone').onclick = ()=>{
+function bumpDhikr(delta){
   const rec = getDay(viewDate);
   const d = dhikrOfDay(viewDate);
   if(!d) return;
   const before = rec.dh[d.text] || 0;
-  rec.dh[d.text] = before + 1;
+  let next = before + delta;
+  if(next < 0) next = 0;
+  if(next === before) return;
+  rec.dh[d.text] = next;
   saveDays();
-  if(navigator.vibrate) navigator.vibrate(15);
+  if(navigator.vibrate) navigator.vibrate(delta > 0 ? 12 : 6);
   renderDhikr();
-  if(before + 1 === (d.target||33)) celebrate('كمّلت ذِكر النهارده! 🌿');
+  if(before < (d.target||33) && next >= (d.target||33)) celebrate('كمّلت ذِكر النهارده! 🌿');
+}
+// الضغط على الكارت يزوّد واحد (لسه شغّال زي ما هو)
+$('#dhikrTapZone').onclick = (e)=>{
+  // لو الضغطة كانت على السبحة نفسها، السحب بيتكفّل بيها — نتجنّب double count
+  if(e.target.closest('.sebha')) return;
+  bumpDhikr(1);
 };
+
+// السحب على السبحة: اسحب لناحية = تسبيح، للناحية التانية = نقصان
+(function enableSebhaSwipe(){
+  const sebha = $('#sebha');
+  if(!sebha) return;
+  let startX = null, accumulated = 0;
+  const STEP = 30; // مسافة السحب لكل خرزة
+  function onStart(x){ startX = x; accumulated = 0; }
+  function onMove(x){
+    if(startX === null) return;
+    const dx = x - startX;
+    const steps = Math.trunc(dx / STEP);
+    if(steps !== accumulated){
+      const diff = steps - accumulated;
+      accumulated = steps;
+      // في RTL: السحب لليسار (dx سالب) = تسبيح للأمام
+      bumpDhikr(diff < 0 ? Math.abs(diff) : -diff);
+    }
+  }
+  function onEnd(){ startX = null; accumulated = 0; }
+  sebha.addEventListener('touchstart', e=>{ onStart(e.touches[0].clientX); }, {passive:true});
+  sebha.addEventListener('touchmove', e=>{ onMove(e.touches[0].clientX); }, {passive:true});
+  sebha.addEventListener('touchend', onEnd, {passive:true});
+  // للماوس (على الكمبيوتر)
+  let mouseDown = false;
+  sebha.addEventListener('mousedown', e=>{ mouseDown = true; onStart(e.clientX); });
+  window.addEventListener('mousemove', e=>{ if(mouseDown) onMove(e.clientX); });
+  window.addEventListener('mouseup', ()=>{ if(mouseDown){ mouseDown = false; onEnd(); } });
+  // ضغطة على السبحة (من غير سحب) تزوّد واحد
+  sebha.addEventListener('click', ()=>{ if(accumulated === 0) bumpDhikr(1); });
+})();
 $('#dhikrMenuBtn').onclick = openDhikrManage;
 $('#dhikrChangeBtn').onclick = openDhikrPicker;
 $('#tasbihBtn').onclick = openTasbih;
