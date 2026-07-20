@@ -358,6 +358,13 @@ main{padding:0 16px; max-width:560px; margin:0 auto}
 #tasbihModal{background:var(--card); border-radius:24px 24px 0 0; width:100%; max-width:560px; padding:20px 20px calc(24px + env(safe-area-inset-bottom)); transform:translateY(100%); transition:transform .3s cubic-bezier(.32,.72,0,1)}
 #tasbihOv.show #tasbihModal{transform:translateY(0)}
 .tasbihpick{display:flex; gap:8px; justify-content:center; flex-wrap:wrap; margin-bottom:16px}
+/* خرز السبحة المتحرك */
+.tasbihbeads{position:relative; height:70px; margin-bottom:14px; overflow:hidden; display:flex; align-items:center; justify-content:center}
+.tasbihbeads .beadtrack{position:absolute; top:50%; left:0; right:0; height:2px; background:var(--line); transform:translateY(-50%)}
+.tbead{width:26px; height:26px; border-radius:50%; flex-shrink:0; margin:0 -2px; position:relative; z-index:1; transition:transform .18s cubic-bezier(.34,1.56,.64,1); background:radial-gradient(circle at 35% 30%, #5a4a35, #2a2018); box-shadow:0 2px 4px rgba(0,0,0,.3), inset -2px -2px 4px rgba(0,0,0,.4), inset 2px 2px 4px rgba(255,255,255,.15)}
+.tbead.counted{background:radial-gradient(circle at 35% 30%, var(--gold), #a8721e)}
+.tbead.active{transform:scale(1.35); box-shadow:0 0 12px var(--gold), 0 2px 4px rgba(0,0,0,.3)}
+.tasbihbeadsrow{display:flex; align-items:center; transition:transform .18s ease}
 .tasbihpick button{background:var(--card2); border:1.5px solid var(--line); color:var(--muted); border-radius:999px; padding:8px 16px; font-family:inherit; font-size:14px; cursor:pointer; transition:all .15s}
 .tasbihpick button.on{border-color:var(--gold); color:var(--gold); background:var(--gold-soft)}
 .tasbihtap{width:100%; background:linear-gradient(135deg, var(--gold-soft), var(--card2)); border:2px solid var(--gold); border-radius:24px; padding:36px 20px; cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:8px; -webkit-tap-highlight-color:transparent; transition:transform .08s ease}
@@ -2007,6 +2014,7 @@ nav.bottom button.on{color:var(--gold)}
       <button class="iconbtn" id="tasbihClose" aria-label="إغلاق">✕</button>
     </div>
     <div class="tasbihpick" id="tasbihPick"></div>
+    <div class="tasbihbeads" id="tasbihBeads"></div>
     <button class="tasbihtap" id="tasbihTap">
       <div class="tasbihbig" id="tasbihBig">0</div>
       <div class="tasbihof" id="tasbihOf">دوس في أي مكان للتسبيح</div>
@@ -3666,6 +3674,27 @@ function updateTasbihUI(){
   $('#tasbihDhikr').textContent = TASBIH_DHIKRS[tasbihDhikrIdx];
   const tot = tasbihTotal();
   $('#tasbihTotal').textContent = tot ? ('إجمالي تسبيحك: ' + arNum(tot)) : '';
+  renderTasbihBeads();
+}
+// خرز السبحة المتحرك — يعرض نافذة من الخرز حوالين العدّاد الحالي
+function renderTasbihBeads(){
+  const wrap = $('#tasbihBeads');
+  if(!wrap) return;
+  const WINDOW = 9; // عدد الخرزات الظاهرة (فردي عشان الحالية في النص)
+  const half = Math.floor(WINDOW / 2);
+  let html = '<div class="beadtrack"></div><div class="tasbihbeadsrow">';
+  for(let i = 0; i < WINDOW; i++){
+    // موقع الخرزة نسبةً للعدّاد الحالي
+    const pos = tasbihCount - half + i;
+    let cls = 'tbead';
+    if(pos >= 0 && pos < tasbihCount) cls += ' counted';       // اتعدّت
+    if(pos === tasbihCount) cls += ' counted active';           // الحالية
+    // خرزات خارج المدى (سالبة أو بعد التارجت) تبقى شفافة شوية
+    const invisible = (pos < 0 || pos > tasbihTargetVal) ? ' style="opacity:.15"' : '';
+    html += `<div class="${cls}"${invisible}></div>`;
+  }
+  html += '</div>';
+  wrap.innerHTML = html;
 }
 function tapTasbih(){
   tasbihCount++;
@@ -4404,6 +4433,34 @@ $('#tasbihBtn').onclick = openTasbih;
 $('#tasbihClose').onclick = ()=> $('#tasbihOv').classList.remove('show');
 $('#tasbihOv').onclick = e=>{ if(e.target.id==='tasbihOv') $('#tasbihOv').classList.remove('show'); };
 $('#tasbihTap').onclick = tapTasbih;
+
+// دعم السحب على الخرز (زي السبحة الحقيقية): اسحب لليسار = زيادة، لليمين = نقصان
+(function enableBeadSwipe(){
+  const beads = $('#tasbihBeads');
+  if(!beads) return;
+  let startX = null, lastStep = 0;
+  const STEP = 26; // مسافة الخرزة الواحدة
+  beads.addEventListener('touchstart', e=>{ startX = e.touches[0].clientX; lastStep = 0; }, {passive:true});
+  beads.addEventListener('touchmove', e=>{
+    if(startX === null) return;
+    const dx = e.touches[0].clientX - startX;
+    const steps = Math.round(dx / STEP);
+    if(steps !== lastStep){
+      const diff = steps - lastStep;
+      lastStep = steps;
+      // في RTL: السحب لليسار (dx سالب) = تسبيح للأمام
+      if(diff < 0){
+        for(let i=0;i<Math.abs(diff);i++) tapTasbih();
+      } else {
+        // سحب لليمين = نقصان
+        for(let i=0;i<diff && tasbihCount>0;i++){ tasbihCount--; updateTasbihUI(); if(navigator.vibrate) navigator.vibrate(5); }
+      }
+    }
+  }, {passive:true});
+  beads.addEventListener('touchend', ()=>{ startX = null; }, {passive:true});
+  // الضغط على الخرز كمان يسبّح
+  beads.addEventListener('click', ()=> tapTasbih());
+})();
 $('#tasbihReset').onclick = ()=>{ tasbihCount = 0; updateTasbihUI(); if(navigator.vibrate) navigator.vibrate(10); };
 
 // ===== مؤقت التركيز (بومودورو) =====
