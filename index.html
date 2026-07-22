@@ -336,6 +336,38 @@ main{padding:0 16px; max-width:560px; margin:0 auto}
 .fobtxt b{font-size:14px; color:var(--text)}
 .fobtxt small{font-size:11px; color:var(--muted); margin-top:1px}
 .fobarrow{font-size:18px; color:var(--gold); opacity:.6}
+/* ===== الملاحظات ===== */
+.noteshead{display:flex; align-items:center; justify-content:space-between; margin-bottom:12px}
+.noteshead h2{margin:0; font-size:20px}
+.notesaddbtn{background:var(--gold); color:#1a150a; border:none; border-radius:999px; padding:9px 16px; font-family:inherit; font-size:13px; font-weight:700; cursor:pointer; -webkit-tap-highlight-color:transparent; transition:transform .12s}
+.notesaddbtn:active{transform:scale(.95)}
+#notesSearch{margin-bottom:14px}
+.notesgrid{column-count:2; column-gap:10px}
+.notecard{break-inside:avoid; margin-bottom:10px; border-radius:14px; padding:12px 13px; cursor:pointer; border:1.5px solid var(--line); background:var(--card); transition:transform .12s, box-shadow .15s; position:relative; -webkit-tap-highlight-color:transparent}
+.notecard:active{transform:scale(.98)}
+.notecard.pinned::after{content:'📌'; position:absolute; top:8px; left:9px; font-size:11px; opacity:.8}
+.nctitle{font-size:14px; font-weight:800; color:var(--text); margin-bottom:5px; line-height:1.4; word-break:break-word}
+.ncbody{font-size:12.5px; color:var(--muted); line-height:1.65; white-space:pre-wrap; word-break:break-word; max-height:150px; overflow:hidden}
+.ncdate{font-size:10px; color:var(--faint); margin-top:7px}
+.notesempty{text-align:center; padding:50px 20px; color:var(--muted)}
+.notesempty .neic{font-size:44px; margin-bottom:12px}
+.notesempty .netitle{font-size:15px; font-weight:700; color:var(--text); margin-bottom:6px}
+.notesempty .nesub{font-size:12.5px; line-height:1.8}
+.notessection{font-size:11px; color:var(--faint); font-weight:700; margin:4px 0 8px; column-span:all}
+/* نافذة تحرير الملاحظة */
+#noteEditOv{position:fixed; inset:0; background:rgba(0,0,0,.6); display:flex; align-items:flex-end; justify-content:center; z-index:60; opacity:0; visibility:hidden; transition:opacity .25s ease, visibility .25s}
+#noteEditOv.show{opacity:1; visibility:visible}
+#noteEditSheet{background:var(--card); border-radius:24px 24px 0 0; padding:20px 20px calc(24px + env(safe-area-inset-bottom)); width:100%; max-width:540px; transform:translateY(100%); transition:transform .3s cubic-bezier(.4,0,.2,1); max-height:92vh; overflow-y:auto}
+#noteEditOv.show #noteEditSheet{transform:translateY(0)}
+#neBody{min-height:160px; margin-top:10px}
+.necolors{display:flex; gap:9px; flex-wrap:wrap; margin-top:6px}
+.necolor{width:34px; height:34px; border-radius:50%; border:2.5px solid transparent; cursor:pointer; -webkit-tap-highlight-color:transparent; transition:transform .12s}
+.necolor:active{transform:scale(.9)}
+.necolor.on{border-color:var(--gold); transform:scale(1.1)}
+.nerow{display:flex; gap:10px; margin-top:14px}
+.nepin, .nedel{flex:1; background:var(--card2); border:1.5px solid var(--line); color:var(--muted); border-radius:999px; padding:11px; font-family:inherit; font-size:13px; font-weight:600; cursor:pointer; transition:all .15s}
+.nepin.on{background:var(--gold-soft); border-color:var(--gold); color:var(--gold)}
+.nedel{color:var(--red); border-color:rgba(224,120,86,.3)}
 /* مؤقت التركيز (بومودورو) */
 #focusOv{position:fixed; inset:0; background:rgba(0,0,0,.6); display:flex; align-items:flex-end; justify-content:center; z-index:60; opacity:0; visibility:hidden; transition:opacity .25s ease, visibility .25s}
 #focusOv.show{opacity:1; visibility:visible}
@@ -919,12 +951,12 @@ nav.bottom{
   overflow:visible;   /* عشان زر الإضافة يطلع فوق */
 }
 nav.bottom button{
-  flex:1; background:none; border:none; color:var(--faint); font-family:inherit;
-  font-size:11px; cursor:pointer; display:flex; flex-direction:column; align-items:center;
-  gap:3px; padding:8px 0; border-radius:14px; transition:color .15s;
+  flex:1; min-width:0; background:none; border:none; color:var(--faint); font-family:inherit;
+  font-size:9.5px; cursor:pointer; display:flex; flex-direction:column; align-items:center;
+  gap:3px; padding:8px 1px; border-radius:14px; transition:color .15s; white-space:nowrap;
 }
 nav.bottom button.on{color:var(--gold)}
-nav.bottom button .ic{font-size:20px; line-height:1; display:flex; align-items:center; justify-content:center}
+nav.bottom button .ic{font-size:18px; line-height:1; display:flex; align-items:center; justify-content:center}
 .ico-svg{display:inline-block; vertical-align:middle}
 nav.bottom button .ic .ico-svg{width:20px; height:20px}
 .iconbtn .ico-svg{width:20px; height:20px}
@@ -1692,10 +1724,25 @@ nav.bottom button.on{color:var(--gold)}
 <nav class="bottom">
   <button data-tab="today" class="on"><span class="ic" data-icon="sun"></span>اليوم</button>
   <button data-tab="tasks"><span class="ic" data-icon="check_square"></span>المهام</button>
+  <button data-tab="notes"><span class="ic" data-icon="pencil"></span>ملاحظات</button>
   <button data-tab="exp"><span class="ic" data-icon="wallet"></span>المصاريف</button>
   <button data-tab="dash"><span class="ic" data-icon="chart"></span>نظرة</button>
   <button data-tab="settings" id="navSettings"><span class="ic" data-icon="settings"></span>الإعدادات</button>
 </nav>
+
+<section id="tab-notes" class="tab">
+  <div class="noteshead">
+    <h2>📝 ملاحظاتي</h2>
+    <button class="notesaddbtn" id="notesAddBtn">＋ ملاحظة</button>
+  </div>
+  <input type="text" id="notesSearch" placeholder="🔍 دوّر في ملاحظاتك..." autocomplete="off" autocapitalize="off" autocorrect="off" data-1p-ignore data-lpignore="true" data-form-type="other">
+  <div class="notesgrid" id="notesGrid"></div>
+  <div class="notesempty hidden" id="notesEmpty">
+    <div class="neic">💡</div>
+    <div class="netitle">مفيش ملاحظات لسه</div>
+    <div class="nesub">اكتب أفكارك، اللينكات، أي حاجة تيجي في بالك<br>ومترجعش تنساها</div>
+  </div>
+</section>
 
 <section id="tab-settings" class="tab">
   <div class="settingsinner">
@@ -2026,6 +2073,24 @@ nav.bottom button.on{color:var(--gold)}
   </div>
 </div>
 
+<div id="noteEditOv">
+  <div id="noteEditSheet">
+    <div class="bhdhead">
+      <h2 id="neHeadTitle">ملاحظة</h2>
+      <button class="iconbtn" id="neClose" aria-label="إغلاق">✕</button>
+    </div>
+    <input type="text" id="neTitle" placeholder="العنوان (اختياري)" autocomplete="off" autocapitalize="off" autocorrect="off" data-1p-ignore data-lpignore="true" data-form-type="other">
+    <textarea id="neBody" placeholder="اكتب ملاحظتك هنا..." autocomplete="off"></textarea>
+    <label style="margin-top:12px">اللون</label>
+    <div class="necolors" id="neColors"></div>
+    <div class="nerow">
+      <button class="nepin" id="nePin">📌 تثبيت</button>
+      <button class="nedel" id="neDel">🗑 حذف</button>
+    </div>
+    <button class="btn" id="neSave" style="width:100%; margin-top:12px">حفظ</button>
+  </div>
+</div>
+
 <div id="tasbihOv">
   <div id="tasbihModal">
     <div class="bhdhead">
@@ -2208,7 +2273,7 @@ nav.bottom button.on{color:var(--gold)}
 
 <script>
 /* ================= state ================= */
-const K = {days:'yawmi_days', tasks:'yawmi_tasks', exp:'yawmi_exp', obl:'yawmi_obl', rev:'yawmi_rev', goals:'yawmi_goals', bh:'yawmi_bhdata', set:'yawmi_settings', notifs:'yawmi_notifs', challenges:'yawmi_challenges'};
+const K = {days:'yawmi_days', tasks:'yawmi_tasks', exp:'yawmi_exp', obl:'yawmi_obl', rev:'yawmi_rev', goals:'yawmi_goals', bh:'yawmi_bhdata', set:'yawmi_settings', notifs:'yawmi_notifs', challenges:'yawmi_challenges', notes:'yawmi_notes'};
 
 // أسئلة المراجعة الأسبوعية الافتراضية — واقعية وتستاهل إجابة
 const DEFAULT_REV_Q = [
@@ -2320,6 +2385,7 @@ function collectAllData(){
     obls: load(K.obl,[]), revs: load(K.rev,{}), goals: load(K.goals,[]),
     bhData: load(K.bh,{}), settings: load(K.set,{}),
     challenges: load(K.challenges,[]),
+    notes: load(K.notes,[]),
     _syncedAt: Date.now()
   };
 }
@@ -2332,6 +2398,7 @@ function applyAllData(d){
   if(d.goals) store(K.goals, d.goals);
   if(d.bhData) store(K.bh, d.bhData);
   if(d.challenges) store(K.challenges, d.challenges);
+  if(d.notes) store(K.notes, d.notes);
   if(d.settings) store(K.set, Object.assign(load(K.set,{}), d.settings));
   // أول ما نطبّق بيانات المزامنة، نعيد تحميل الحالة ونرسم فوراً + نخفي شاشة التحميل
   try{
@@ -2533,6 +2600,7 @@ function mergeData(local, remote){
     goals: mergeGoals(local.goals, remote.goals),
     bhData: Object.assign({}, remote.bhData, local.bhData),
     challenges: mergeChallenges(local.challenges, remote.challenges),
+    notes: mergeById(local.notes, remote.notes),
     settings: mergeSettings(local.settings, remote.settings),
     _syncedAt: Date.now()
   };
@@ -2762,6 +2830,7 @@ let obls = load(K.obl, []);
 let revs = load(K.rev, {});
 let goals = load(K.goals, []);
 let bhData = load(K.bh, {}); // { name: {start, last, relapses:[ts,...]} }
+let notes = load(K.notes, []); // { id, t, body, color, pinned, u, del }
 function getBH(name){
   if(!bhData[name]) bhData[name] = {start:Date.now(), last:Date.now(), relapses:[]};
   return bhData[name];
@@ -2824,6 +2893,7 @@ function reloadState(){
   revs = load(K.rev, {});
   goals = load(K.goals, []);
   bhData = load(K.bh, {});
+  notes = load(K.notes, []);
   settings = Object.assign(
     {habits:['قراءة','رياضة','أذكار الصباح','أذكار المساء'],
      cats:['أكل','مواصلات','اشتراكات','خروجات','تانية'],
@@ -4679,6 +4749,120 @@ document.querySelectorAll('.fdur').forEach(b=>{
 });
 const focusOpenBtn = $('#focusOpenBtn');
 if(focusOpenBtn) focusOpenBtn.onclick = ()=> openFocus();
+
+// ===== الملاحظات =====
+const NOTE_COLORS = [
+  {k:'default', bg:'var(--card)',  br:'var(--line)'},
+  {k:'gold',    bg:'#3d2e1a',      br:'#8a5e18'},
+  {k:'teal',    bg:'#1b3329',      br:'#3d7a5e'},
+  {k:'blue',    bg:'#1c2b3d',      br:'#3a5e88'},
+  {k:'rose',    bg:'#3a2222',      br:'#8a4444'},
+  {k:'purple',  bg:'#2d2340',      br:'#5f4a85'},
+];
+function noteColor(k){ return NOTE_COLORS.find(c=>c.k===k) || NOTE_COLORS[0]; }
+function saveNotes(){ store(K.notes, notes); }
+let neCurrent = null;   // الملاحظة المفتوحة حالياً
+let neColorSel = 'default';
+let nePinned = false;
+
+function renderNotes(){
+  const grid = $('#notesGrid'), empty = $('#notesEmpty');
+  if(!grid) return;
+  const q = ($('#notesSearch') && $('#notesSearch').value || '').trim().toLowerCase();
+  let list = notes.filter(n=> !n.del);
+  if(q) list = list.filter(n=> ((n.t||'') + ' ' + (n.body||'')).toLowerCase().includes(q));
+  // المثبّتة الأول، بعدين الأحدث
+  list.sort((a,b)=>{
+    if(!!b.pinned !== !!a.pinned) return (b.pinned?1:0) - (a.pinned?1:0);
+    return (b.u||0) - (a.u||0);
+  });
+  grid.innerHTML = '';
+  empty.classList.toggle('hidden', list.length > 0);
+  grid.classList.toggle('hidden', list.length === 0);
+  list.forEach(n=>{
+    const c = noteColor(n.color);
+    const el = document.createElement('div');
+    el.className = 'notecard' + (n.pinned ? ' pinned' : '');
+    el.style.background = c.bg;
+    el.style.borderColor = c.br;
+    const title = (n.t || '').trim();
+    const body = (n.body || '').trim();
+    el.innerHTML = `${title ? '<div class="nctitle"></div>' : ''}${body ? '<div class="ncbody"></div>' : ''}<div class="ncdate"></div>`;
+    if(title) el.querySelector('.nctitle').textContent = title;
+    if(body) el.querySelector('.ncbody').textContent = body;
+    el.querySelector('.ncdate').textContent = noteDateLabel(n.u);
+    el.onclick = ()=> openNoteEdit(n);
+    grid.appendChild(el);
+  });
+}
+function noteDateLabel(ts){
+  if(!ts) return '';
+  const d = new Date(ts);
+  const today = todayISO();
+  const dISO = iso(d);
+  if(dISO === today) return 'النهارده';
+  const y = new Date(Date.now() - 86400000);
+  if(dISO === iso(y)) return 'إمبارح';
+  return arDate(d, {day:'numeric', month:'short'});
+}
+function renderNoteColors(){
+  const wrap = $('#neColors');
+  if(!wrap) return;
+  wrap.innerHTML = NOTE_COLORS.map(c=>
+    `<button class="necolor ${c.k===neColorSel?'on':''}" data-c="${c.k}" style="background:${c.bg}; box-shadow:inset 0 0 0 1.5px ${c.br}" aria-label="لون"></button>`
+  ).join('');
+  wrap.querySelectorAll('.necolor').forEach(b=>{
+    b.onclick = ()=>{ neColorSel = b.dataset.c; renderNoteColors(); };
+  });
+}
+function openNoteEdit(note){
+  neCurrent = note || null;
+  const isNew = !note;
+  $('#neHeadTitle').textContent = isNew ? 'ملاحظة جديدة' : 'تعديل الملاحظة';
+  $('#neTitle').value = note ? (note.t || '') : '';
+  $('#neBody').value  = note ? (note.body || '') : '';
+  neColorSel = note ? (note.color || 'default') : 'default';
+  nePinned   = note ? !!note.pinned : false;
+  renderNoteColors();
+  $('#nePin').classList.toggle('on', nePinned);
+  $('#neDel').style.display = isNew ? 'none' : 'block';
+  $('#noteEditOv').classList.add('show');
+  setTimeout(()=>{ if(isNew) $('#neBody').focus(); }, 250);
+}
+function closeNoteEdit(){
+  $('#noteEditOv').classList.remove('show');
+  neCurrent = null;
+}
+function saveNoteEdit(){
+  const t = $('#neTitle').value.trim();
+  const body = $('#neBody').value.trim();
+  if(!t && !body){ closeNoteEdit(); return; }  // فاضية، مانحفظش
+  if(neCurrent){
+    neCurrent.t = t; neCurrent.body = body;
+    neCurrent.color = neColorSel; neCurrent.pinned = nePinned;
+    neCurrent.u = Date.now();
+  } else {
+    notes.unshift({ id:'n'+Date.now()+Math.random().toString(36).slice(2,6), t, body, color:neColorSel, pinned:nePinned, u:Date.now() });
+  }
+  saveNotes();
+  renderNotes();
+  closeNoteEdit();
+  toast('اتحفظت ✓');
+}
+$('#notesAddBtn').onclick = ()=> openNoteEdit(null);
+$('#neClose').onclick = closeNoteEdit;
+$('#noteEditOv').onclick = e=>{ if(e.target.id === 'noteEditOv') closeNoteEdit(); };
+$('#neSave').onclick = saveNoteEdit;
+$('#nePin').onclick = ()=>{ nePinned = !nePinned; $('#nePin').classList.toggle('on', nePinned); if(navigator.vibrate) navigator.vibrate(8); };
+$('#neDel').onclick = async ()=>{
+  if(!neCurrent) return;
+  if(!await askConfirm('تمسح الملاحظة دي؟', {danger:true, title:'مسح ملاحظة', okText:'امسح'})) return;
+  const n = neCurrent;
+  n.del = true; n.u = Date.now();
+  saveNotes(); renderNotes(); closeNoteEdit();
+  undoToast('اتمسحت الملاحظة', ()=>{ n.del = false; n.u = Date.now(); saveNotes(); renderNotes(); });
+};
+$('#notesSearch').oninput = renderNotes;
 function openDhikrPicker(){
   const list = settings.dhikrList || [];
   const cur = dhikrOfDay(viewDate);
@@ -5713,7 +5897,7 @@ document.addEventListener('visibilitychange', ()=>{
 
 /* ====== زر الرجوع (الموبايل) يقفل أي pop-up مفتوح بدل ما يخرج من التطبيق ====== */
 (function backClosesPopups(){
-  const OVERLAYS = ['#dlgOv','#quickOv','#challengeOv','#oblDetailOv','#taskDetailOv','#installGuideOv','#notifOv','#dhikrManageOv','#tasbihOv','#focusOv','#changePassOv','#bhOverlay','#onboardOverlay'];
+  const OVERLAYS = ['#dlgOv','#quickOv','#challengeOv','#oblDetailOv','#taskDetailOv','#installGuideOv','#notifOv','#dhikrManageOv','#tasbihOv','#focusOv','#noteEditOv','#changePassOv','#bhOverlay','#onboardOverlay'];
   function topOpenOverlay(){
     for(const sel of OVERLAYS){
       const el = document.querySelector(sel);
@@ -6940,6 +7124,7 @@ function switchToTab(tabName, isBack){
   if(tabName==='goals') renderGoals();
   if(tabName==='exp') renderExp();
   if(tabName==='dash') renderDash();
+  if(tabName==='notes') renderNotes();
   if(tabName==='settings') populateSettings();
   localStorage.setItem('yawmi_active_tab', tabName);
   // نظهر سهم الرجوع لو فيه history
