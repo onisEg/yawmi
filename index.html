@@ -336,6 +336,16 @@ main{padding:0 16px; max-width:560px; margin:0 auto}
 .fobtxt b{font-size:14px; color:var(--text)}
 .fobtxt small{font-size:11px; color:var(--muted); margin-top:1px}
 .fobarrow{font-size:18px; color:var(--gold); opacity:.6}
+/* ترتيب التبويبات */
+.tabordhint{font-size:12px; color:var(--muted); line-height:1.7; margin:0 0 12px}
+.tabordlist{display:flex; flex-direction:column; gap:8px}
+.tabord{display:flex; align-items:center; gap:10px; background:var(--card2); border:1.5px solid var(--line); border-radius:12px; padding:10px 12px}
+.tabordnum{width:22px; height:22px; border-radius:50%; background:var(--gold-soft); color:var(--gold); font-size:11px; font-weight:800; display:flex; align-items:center; justify-content:center; flex-shrink:0}
+.tabordname{flex:1; font-size:13.5px; color:var(--text); font-weight:600}
+.tabordbtns{display:flex; gap:6px}
+.tabordbtn{width:32px; height:32px; border-radius:9px; border:1.5px solid var(--line); background:var(--card); color:var(--muted); font-size:15px; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all .15s; -webkit-tap-highlight-color:transparent}
+.tabordbtn:active{transform:scale(.92); background:var(--gold-soft)}
+.tabordbtn:disabled{opacity:.25; cursor:default}
 /* ===== الملاحظات ===== */
 #tab-notes{max-width:560px; margin:0 auto; padding:0 16px}
 .noteshead{display:flex; align-items:center; justify-content:space-between; margin-bottom:12px}
@@ -1783,6 +1793,16 @@ nav.bottom button.on{color:var(--gold)}
           <button type="button" class="fsbtn" data-scale="1.15">كبير</button>
           <button type="button" class="fsbtn" data-scale="1.3">أكبر</button>
         </div>
+      </div>
+    </div>
+
+    <!-- ===== ترتيب التبويبات ===== -->
+    <div class="setsection">
+      <button class="setsechead" data-sec="taborder"><span class="ssic">↕️</span><span class="sstitle">ترتيب التبويبات</span><span class="sschev">›</span></button>
+      <div class="setsecbody hidden" id="sec-taborder">
+        <p class="tabordhint">رتّب التبويبات باللي يريحك — اللي فوق يظهر على اليمين في الشريط تحت</p>
+        <div class="tabordlist" id="tabOrderList"></div>
+        <button class="btn ghost" id="tabOrderReset" style="width:100%; margin-top:12px">↺ رجّع الترتيب الأصلي</button>
       </div>
     </div>
 
@@ -4751,6 +4771,14 @@ document.querySelectorAll('.fdur').forEach(b=>{
 const focusOpenBtn = $('#focusOpenBtn');
 if(focusOpenBtn) focusOpenBtn.onclick = ()=> openFocus();
 
+const tabOrderResetBtn = $('#tabOrderReset');
+if(tabOrderResetBtn) tabOrderResetBtn.onclick = ()=>{
+  localStorage.removeItem('yawmi_tabs_order');
+  applyTabsOrder();
+  renderTabOrderList();
+  toast('رجع الترتيب الأصلي ✓');
+};
+
 // ===== الملاحظات =====
 const NOTE_COLORS = [
   {k:'default', bg:'var(--card)',  br:'var(--line)'},
@@ -5164,6 +5192,65 @@ function saveTodayCardsOrder(){
   if(!todayTab) return;
   const order = [...todayTab.querySelectorAll('.todaycard')].map(el=>el.dataset.cid).filter(Boolean);
   try{ localStorage.setItem('yawmi_cards_order', JSON.stringify(order)); }catch(e){}
+}
+
+// ===== ترتيب التبويبات =====
+const TAB_LABELS = {
+  today:'اليوم', tasks:'المهام', notes:'ملاحظات',
+  exp:'المصاريف', dash:'نظرة', settings:'الإعدادات'
+};
+const DEFAULT_TAB_ORDER = ['today','tasks','notes','exp','dash','settings'];
+function getTabOrder(){
+  let saved = [];
+  try{ saved = JSON.parse(localStorage.getItem('yawmi_tabs_order')) || []; }catch(e){ saved = []; }
+  // نتأكد إن كل التبويبات موجودة (لو اتضاف تبويب جديد بعد ما المستخدم رتّب)
+  const valid = saved.filter(t => DEFAULT_TAB_ORDER.includes(t));
+  DEFAULT_TAB_ORDER.forEach(t=>{ if(!valid.includes(t)) valid.push(t); });
+  return valid;
+}
+function saveTabOrder(order){
+  // localStorage مباشر — ده تفضيل واجهة، مش بيانات تتزامن
+  localStorage.setItem('yawmi_tabs_order', JSON.stringify(order));
+}
+function applyTabsOrder(){
+  const nav = document.querySelector('nav.bottom');
+  if(!nav) return;
+  const order = getTabOrder();
+  const btns = Object.fromEntries(
+    [...nav.querySelectorAll('button[data-tab]')].map(b=>[b.dataset.tab, b])
+  );
+  order.forEach(t=>{ if(btns[t]) nav.appendChild(btns[t]); });
+}
+function renderTabOrderList(){
+  const wrap = $('#tabOrderList');
+  if(!wrap) return;
+  const order = getTabOrder();
+  wrap.innerHTML = '';
+  order.forEach((t, i)=>{
+    const row = document.createElement('div');
+    row.className = 'tabord';
+    row.innerHTML = `
+      <span class="tabordnum">${arNum(i+1)}</span>
+      <span class="tabordname"></span>
+      <span class="tabordbtns">
+        <button class="tabordbtn" data-dir="up" ${i===0?'disabled':''} aria-label="فوق">↑</button>
+        <button class="tabordbtn" data-dir="down" ${i===order.length-1?'disabled':''} aria-label="تحت">↓</button>
+      </span>`;
+    row.querySelector('.tabordname').textContent = TAB_LABELS[t] || t;
+    row.querySelectorAll('.tabordbtn').forEach(b=>{
+      b.onclick = ()=>{
+        if(b.disabled) return;
+        const j = b.dataset.dir === 'up' ? i-1 : i+1;
+        if(j < 0 || j >= order.length) return;
+        [order[i], order[j]] = [order[j], order[i]];
+        saveTabOrder(order);
+        applyTabsOrder();
+        renderTabOrderList();
+        if(navigator.vibrate) navigator.vibrate(8);
+      };
+    });
+    wrap.appendChild(row);
+  });
 }
 
 function applySavedCardsOrder(){
@@ -7232,6 +7319,7 @@ function renderJourney(){
 
 function populateSettings(){
   renderJourney();
+  renderTabOrderList();
   $('#setName').value = settings.name || '';
   // زرار التثبيت — نخفيه لو التطبيق متثبّت بالفعل
   const instBtn = $('#installAppBtn');
@@ -8584,6 +8672,7 @@ applyTheme(localStorage.getItem('yawmi_theme') || 'light');
 // الرسمة الأساسية الأول — قبل أي دالة ممكن ترمي error فتوقف الرسم
 // (ده يمنع ظهور صفحة ناقصة بعد الريفريش لو أي دالة تحت رمت استثناء)
 reloadState();
+try{ applyTabsOrder(); }catch(e){ console.warn('tabsOrder', e); }
 applyFontSettings();
 renderIcons();
 updateNavCurr();
