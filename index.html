@@ -4289,30 +4289,6 @@ function streak(test, anchor){
 
 /* ===== bad-habit recovery stats ===== */
 const BH_LADDER = [1, 3, 7, 14, 21, 30, 60, 90, 180, 365];
-function bhClean(k, name){ const r = days[k]; return !!(r && (!r.bh || !r.bh[name])); }
-// أيام النضافة المتواصلة المنتهية عند anchor
-function bhCleanDays(name, anchor){
-  return streak(k => bhClean(k, name), anchor);
-}
-// عدد مرات الانتكاس الكلي (مجموع العدّاد على كل الأيام)
-function bhTotalRelapses(name){
-  let t = 0;
-  for(const k in days){ const r = days[k]; if(r && r.bh && r.bh[name]) t += r.bh[name]; }
-  return t;
-}
-// أطول فترة نضافة وصلتلها (أطول سلسلة أيام نضيفة في التاريخ كله)
-function bhLongestClean(name){
-  const keys = Object.keys(days).filter(k => dayHasContent(days[k])).sort();
-  if(!keys.length) return 0;
-  let best = 0, cur = 0, prev = null;
-  const start = new Date(keys[0] + 'T12:00:00');
-  const end = new Date(iso(new Date()) + 'T12:00:00');
-  for(let d = new Date(start); d <= end; d.setDate(d.getDate()+1)){
-    if(bhClean(iso(d), name)){ cur++; if(cur > best) best = cur; }
-    else cur = 0;
-  }
-  return best;
-}
 // التارجت الحالي: أقرب رقم في السلم أكبر من أيام النضافة الحالية
 function bhTarget(cleanDays){
   for(const t of BH_LADDER){ if(t > cleanDays) return t; }
@@ -5650,7 +5626,8 @@ function updateProjChosen(){
   const found = findProject(pendingProj);
   if(!found){ pendingProj=null; box.classList.add('hidden'); return; }
   box.classList.remove('hidden');
-  box.innerHTML = `<span class="taskprojtag">🎯 ${found.goal.t} · ${found.project.t}<button class="tagx" aria-label="شيل">✕</button></span>`;
+  box.innerHTML = `<span class="taskprojtag">🎯 <span class="tagtxt"></span><button class="tagx" aria-label="شيل">✕</button></span>`;
+  box.querySelector('.tagtxt').textContent = `${found.goal.t} · ${found.project.t}`;
   box.querySelector('.tagx').onclick = ()=>{ pendingProj=null; updateProjChosen(); };
 }
 // منتقي المشروع
