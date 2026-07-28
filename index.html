@@ -1930,6 +1930,9 @@ nav.bottom button.on{color:var(--gold)}
           <button class="btn ghost" id="importBtn">استيراد نسخة استرجاع</button>
         </div>
         <input type="file" id="importFile" accept=".json" class="hidden">
+        <label style="margin-top:18px">حالة المزامنة</label>
+        <button class="btn ghost" id="syncDiagBtn" style="width:100%">🔍 افحص المزامنة الآن</button>
+        <div id="syncDiagResult" style="font-size:12px; line-height:1.8; margin-top:8px; padding:10px; border-radius:10px; background:var(--card2); display:none; white-space:pre-wrap"></div>
       </div>
     </div>
 
@@ -4799,6 +4802,54 @@ if(tabOrderResetBtn) tabOrderResetBtn.onclick = ()=>{
   applyTabsOrder();
   renderTabOrderList();
   toast('رجع الترتيب الأصلي ✓');
+};
+
+const syncDiagBtn = $('#syncDiagBtn');
+if(syncDiagBtn) syncDiagBtn.onclick = async ()=>{
+  const box = $('#syncDiagResult');
+  box.style.display = 'block';
+  box.textContent = '⏳ بنفحص...';
+  const lines = [];
+  // 1. النت
+  lines.push((navigator.onLine ? '✅' : '❌') + ' الاتصال بالنت: ' + (navigator.onLine ? 'متصل' : 'مفصول'));
+  // 2. تحميل Supabase
+  lines.push((sb ? '✅' : '❌') + ' مكتبة Supabase: ' + (sb ? 'محمّلة' : 'مش محمّلة'));
+  // 3. تسجيل الدخول
+  lines.push((isLoggedIn() ? '✅' : '❌') + ' تسجيل الدخول: ' + (isLoggedIn() ? ('داخل (' + (currentUser && currentUser.email || '؟') + ')') : 'مش مسجّل دخول'));
+  box.textContent = lines.join('\n') + '\n⏳ بنجرّب نسحب البيانات...';
+  // 4. جرّب السحب فعلياً
+  if(sb && isLoggedIn() && navigator.onLine){
+    const t0 = Date.now();
+    try{
+      const { data, error } = await withTimeout(
+        sb.from(DATA_TABLE).select('data, updated_at').eq('user_id', currentUser.id).maybeSingle(),
+        10000, 'سحب'
+      );
+      const ms = Date.now() - t0;
+      if(error){
+        lines.push('❌ سحب البيانات فشل (' + ms + 'ms):');
+        lines.push('   الكود: ' + (error.code || '؟'));
+        lines.push('   الرسالة: ' + (error.message || '؟'));
+        if(error.code === '42501' || (error.message||'').includes('policy')){
+          lines.push('   ⚠️ المشكلة في صلاحيات RLS — محتاجة policy في Supabase');
+        }
+      } else if(!data){
+        lines.push('✅ الاتصال شغّال — بس السحابة فاضية (مفيش نسخة محفوظة لسه)');
+        lines.push('   → لما تعدّل أي حاجة هترفع تلقائياً');
+      } else {
+        const size = JSON.stringify(data.data || {}).length;
+        lines.push('✅ الاتصال شغّال! لقينا بياناتك في السحابة (' + ms + 'ms)');
+        lines.push('   آخر تحديث: ' + (data.updated_at || '؟'));
+        lines.push('   حجم البيانات: ~' + Math.round(size/1024) + ' كيلوبايت');
+      }
+    }catch(e){
+      lines.push('❌ السحب اتأخر/فشل: ' + (e.message || e));
+      lines.push('   ⚠️ الاتصال بـ Supabase بطيء جداً أو محجوب');
+    }
+  } else {
+    lines.push('⏭ متقدرش نجرّب السحب (لازم نت + دخول + Supabase)');
+  }
+  box.textContent = lines.join('\n');
 };
 
 // ===== الملاحظات =====
