@@ -1199,6 +1199,15 @@ nav.bottom button.on{color:var(--gold)}
 .emtotal{font-size:13px; font-weight:700; color:var(--red); white-space:nowrap}
 .expmonthhead.open .emtotal{color:var(--gold)}
 .expmonthbody{padding-right:4px}
+/* رأس طي قايمة المصاريف كلها */
+.explisthead{display:flex; align-items:center; gap:9px; width:100%; background:var(--card2); border:1px solid var(--line); border-radius:14px; padding:12px 13px; margin:10px 0 6px; cursor:pointer; font-family:inherit; text-align:right; transition:all .15s; -webkit-tap-highlight-color:transparent}
+.explisthead.open{border-color:var(--gold-soft); background:var(--gold-soft)}
+.elchev{color:var(--muted); font-size:16px; transform:rotate(90deg); transition:transform .22s; flex-shrink:0}
+.explisthead.open .elchev{transform:rotate(-90deg)}
+.elname{flex:1; font-size:13px; font-weight:700; color:var(--text)}
+.elcount{font-size:10px; color:var(--muted); background:var(--card); border-radius:999px; padding:2px 8px; white-space:nowrap}
+#expListWrap{overflow:hidden; transition:max-height .3s cubic-bezier(.4,0,.2,1); max-height:20000px}
+#expListWrap.collapsed{max-height:0}
 /* splash screen */
 #splash{position:fixed; inset:0; z-index:100; background:var(--bg); display:flex; align-items:center; justify-content:center; opacity:1; transition:opacity .5s ease; pointer-events:none}
 #syncStrip{position:sticky; top:0; z-index:40; display:flex; align-items:center; justify-content:center; gap:8px; background:var(--gold-soft); color:var(--gold); font-size:12px; font-weight:600; padding:8px 12px; text-align:center}
@@ -1620,7 +1629,14 @@ nav.bottom button.on{color:var(--gold)}
       <button id="expSearchClear" class="hidden" aria-label="مسح">✕</button>
     </div>
     <div id="expSearchInfo" class="hidden"></div>
-    <div id="expList"></div>
+    <button class="explisthead open" id="expListHead">
+      <span class="elchev">›</span>
+      <span class="elname">قايمة المصاريف</span>
+      <span class="elcount" id="expListCount"></span>
+    </button>
+    <div id="expListWrap">
+      <div id="expList"></div>
+    </div>
     <div class="card">
       <h3 style="display:flex;justify-content:space-between;align-items:center">الالتزامات والديون <span id="oblTotal"></span></h3>
       <div id="oblList"></div>
@@ -5682,6 +5698,14 @@ function renderExp(){
 
   const monthExp = exps.filter(e=>!e.del && e.d.startsWith(mk)).sort((a,b)=> b.d.localeCompare(a.d) || b.id-a.id);
   const total = monthExp.reduce((a,e)=>a+e.a,0);
+  // تحديث عدّاد رأس الطي (يظهر حتى لو القايمة مطوية)
+  const elCount = $('#expListCount');
+  if(elCount){
+    const allActive = exps.filter(e=>!e.del).length;
+    elCount.textContent = expGroupMode
+      ? `${arNum(allActive)} مصروف`
+      : `${arNum(monthExp.length)} الشهر ده`;
+  }
   $('#expTotal').textContent = arMoney(total) + ' ' + settings.currency;
   const rem = $('#expRemain');
   if(settings.income > 0 && expMonthOffset === 0){
@@ -5905,6 +5929,22 @@ $('#expGroupBtn').onclick = ()=>{
 };
 $('#prevMonthBtn').onclick = ()=>{ expMonthOffset--; renderExp(); };
 $('#nextMonthBtn').onclick = ()=>{ if(expMonthOffset<0){ expMonthOffset++; renderExp(); } };
+
+// طي/فتح قايمة المصاريف كلها
+const expListHead = $('#expListHead');
+if(expListHead){
+  // نرجّع آخر حالة (مفتوحة افتراضياً)
+  const collapsed = localStorage.getItem('yawmi_exp_collapsed') === '1';
+  $('#expListWrap').classList.toggle('collapsed', collapsed);
+  expListHead.classList.toggle('open', !collapsed);
+  expListHead.onclick = ()=>{
+    const wrap = $('#expListWrap');
+    const isCollapsed = wrap.classList.toggle('collapsed');
+    expListHead.classList.toggle('open', !isCollapsed);
+    localStorage.setItem('yawmi_exp_collapsed', isCollapsed ? '1' : '0');
+    if(navigator.vibrate) navigator.vibrate(8);
+  };
+}
 
 /* ====== كروت الإلهام (Hero Sliders) — بتتبدّل كل ٣ ثواني ====== */
 const HERO_ITEMS = [
