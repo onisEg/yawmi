@@ -2675,7 +2675,7 @@ async function syncPull(){
   try{
     const { data, error } = await withTimeout(
       sb.from(DATA_TABLE).select('data, updated_at').eq('user_id', currentUser.id).maybeSingle(),
-      12000, 'سحب البيانات'
+      8000, 'سحب البيانات'
     );
     if(error){ lastSyncError = 'سحب: ' + (error.message||error.code||'خطأ'); console.error('syncPull error', error); return {status:'error'}; }
     if(!data) return {status:'empty'};       // مفيش صف فعلاً
@@ -8859,10 +8859,11 @@ if(sessionExpected()){
       return;
     }
     try{ reloadState(); renderCurrentTab(); }catch(e){}
-    // بعد ٦ ثواني: لو عندنا بيانات محلية، نخفي أي شاشة تحميل ونكمّل المزامنة بصمت
-    if(_renderTicks === 12 && hasLocalData()){ hideDataLoading(); }
-    if(_renderTicks === 20){ setSyncStrip(true, 'الاتصال بطيء… بياناتك المحفوظة ظاهرة 🤍'); hideDataLoading(); }
-    if(_renderTicks >= 30){
+    // بعد ٣ ثواني: نخفي شاشة التحميل ونكمّل المزامنة بصمت في الخلفية
+    // (المستخدم مايستناش كتير — بياناته المحلية تكفي والمزامنة تخلص لوحدها)
+    if(_renderTicks === 6){ hideDataLoading(); }
+    if(_renderTicks === 8 && !syncReady){ setSyncStrip(true, 'بنحدّث بياناتك في الخلفية… 🤍'); }
+    if(_renderTicks >= 16){
       hideDataLoading();
       setSyncStrip(false);
       clearInterval(_renderLoop);
