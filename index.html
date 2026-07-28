@@ -1235,7 +1235,7 @@ nav.bottom button.on{color:var(--gold)}
 #dlgOv.show #dlgBox{transform:scale(1) translateY(0)}
 #dlgIcon{font-size:38px; margin-bottom:10px; line-height:1}
 #dlgTitle{margin:0 0 8px; font-size:17px; color:var(--text); font-weight:700}
-#dlgMsg{margin:0 0 18px; font-size:14px; color:var(--muted); line-height:1.7}
+#dlgMsg{margin:0 0 18px; font-size:14px; color:var(--muted); line-height:1.7; white-space:pre-line}
 #dlgInput{width:100%; text-align:center; font-size:15px; margin-bottom:14px}
 #dlgErr{display:none; color:var(--red); font-size:12px; margin-bottom:10px}
 #dlgBtns{display:flex; gap:10px}
@@ -3447,7 +3447,32 @@ async function askRelapseTime(name){
   }
   return ts;
 }
-// نافذة رسالة (بدل alert)
+// نافذة إدخال مبلغ الدفع (للدفع الجزئي للديون) — بترجّع المبلغ أو null لو ألغى
+async function askPayAmount(o, remaining, defaultAmt){
+  const cur = settings.currency || '';
+  const val = await _dlgOpen({
+    icon: '💰',
+    title: 'تسجيل دفعة',
+    msg: `"${o.t}" — المتبقّي ${arMoney(remaining)} ${cur}\nدفعت كام؟`,
+    input: true,
+    type: 'number',
+    value: String(defaultAmt || ''),
+    placeholder: 'المبلغ المدفوع',
+    okText: 'سجّل الدفعة'
+  });
+  if(val === false || val == null || val === '') return null;
+  const amt = parseFloat(val);
+  if(isNaN(amt) || amt <= 0){
+    await showAlert('اكتب مبلغ صحيح أكبر من صفر', {icon:'⚠️'});
+    return null;
+  }
+  // لو دفع أكتر من المتبقّي، نسأل نتأكد
+  if(amt > remaining + 0.001){
+    const ok = await askConfirm(`المبلغ (${arMoney(amt)} ${cur}) أكبر من المتبقّي (${arMoney(remaining)} ${cur}). تأكيد؟`, {title:'مبلغ أكبر من المطلوب', okText:'أيوة سجّل'});
+    if(!ok) return null;
+  }
+  return amt;
+}
 function showAlert(msg, opts){
   opts = opts || {};
   return _dlgOpen({
@@ -6534,8 +6559,20 @@ function buildOblItem(o, t0, isPaid){
   el.querySelector('.odetailbtn').onclick = ()=> openOblDetail(o);
   const payBtn = el.querySelector('.opay');
   if(payBtn){
-    payBtn.onclick = ()=>{
-      const payAmt = kind === 'installment' ? (o.installment || o.a) : o.a;
+    payBtn.onclick = async ()=>{
+      let payAmt;
+      if(kind === 'recurring'){
+        // الاشتراك الشهري: مبلغ ثابت (من غير سؤال)
+        payAmt = o.a;
+      } else {
+        // دين عادي أو قسط: نسأل دفعت كام (دفع جزئي)
+        const remaining = kind === 'installment' ? oblRemaining(o) : (o.a || 0);
+        const defaultAmt = kind === 'installment' ? (o.installment || remaining) : remaining;
+        const entered = await askPayAmount(o, remaining, defaultAmt);
+        if(entered == null) return; // ألغى
+        payAmt = entered;
+      }
+      if(!(payAmt > 0)) return;
       // نسجّل المصروف بنوع الالتزام نفسه (اشتراك/دين/التزام...) بدل "التزامات" لكل حاجة
       const payCat = (o.type && o.type.trim()) ? o.type.trim() : 'التزامات';
       // نضيف النوع لتصنيفات المصاريف لو مش موجود عشان يبان في الرسوم والملخص
@@ -6547,7 +6584,7 @@ function buildOblItem(o, t0, isPaid){
       exps.unshift(expEntry);
       store(K.exp, exps);
       // نحفظ سجل الدفعة عشان نقدر نلغيها بعدين (toggle)
-      const snap = { paidMonths: o.paidMonths ? Object.assign({}, o.paidMonths) : undefined, paid: o.paid, due: o.due, del: o.del };
+      const snap = { paidMonths: o.paidMonths ? Object.assign({}, o.paidMonths) : undefined, paid: o.paid, due: o.due, del: o.del, a: o.a };
       o._lastPay = { expId: expEntry.id, amt: payAmt, prevDue: o.due, prevPaid: o.paid, mk: monthKey(0) };
       if(kind === 'recurring'){
         o.paidMonths = o.paidMonths || {};
@@ -6556,18 +6593,27 @@ function buildOblItem(o, t0, isPaid){
         if(o.due) o.due = addMonthISO(o.due, step);
       } else if(kind === 'installment'){
         o.paid = (o.paid || 0) + payAmt;
-        if(o.due) o.due = addMonthISO(o.due, 1);
+        // لو خلص القسط بالكامل، نتشال
+        if(oblRemaining(o) <= 0){ o.del = true; o.delAt = Date.now(); }
+        else if(o.due) o.due = addMonthISO(o.due, 1);
       } else {
-        o.del = true; o.delAt = Date.now();
+        // دين عادي: نخصم المدفوع من المبلغ. لو خلص، يتشال. لو فاضل، يفضل بالباقي
+        const newRemaining = (o.a || 0) - payAmt;
+        if(newRemaining > 0.001){
+          o.a = newRemaining; // الدين يفضل بالمبلغ الباقي
+        } else {
+          o.del = true; o.delAt = Date.now();
+        }
       }
       store(K.obl, obls);
       expMonthOffset = 0;
       renderExp();
-      undoToast('اتدفع واتسجل ✓', ()=>{
+      const remainMsg = (kind === 'once' && !o.del) ? ` — فاضل ${arMoney(o.a)} ${settings.currency}` : '';
+      undoToast('اتدفع واتسجل ✓' + remainMsg, ()=>{
         exps = exps.filter(e=>e.id !== expEntry.id);
         store(K.exp, exps);
         if(snap.paidMonths !== undefined) o.paidMonths = snap.paidMonths; else delete o.paidMonths;
-        o.paid = snap.paid; o.due = snap.due;
+        o.paid = snap.paid; o.due = snap.due; o.a = snap.a;
         if(snap.del) o.del = snap.del; else { o.del = false; delete o.delAt; }
         delete o._lastPay;
         store(K.obl, obls);
