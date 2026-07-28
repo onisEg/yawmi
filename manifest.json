@@ -11,6 +11,36 @@
   "background_color": "#F5F3EC",
   "theme_color": "#F5F3EC",
   "categories": ["lifestyle", "productivity"],
+  "shortcuts": [
+    {
+      "name": "سجّل صلاة",
+      "short_name": "صلاة",
+      "description": "افتح صفحة اليوم لتسجيل صلاتك",
+      "url": "./?go=today",
+      "icons": [{ "src": "icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "أضف مصروف",
+      "short_name": "مصروف",
+      "description": "سجّل مصروف جديد بسرعة",
+      "url": "./?go=exp",
+      "icons": [{ "src": "icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "ملاحظة جديدة",
+      "short_name": "ملاحظة",
+      "description": "اكتب ملاحظة سريعة",
+      "url": "./?go=notes",
+      "icons": [{ "src": "icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "مهامي",
+      "short_name": "مهام",
+      "description": "شوف مهامك",
+      "url": "./?go=tasks",
+      "icons": [{ "src": "icon-192.png", "sizes": "192x192" }]
+    }
+  ],
   "icons": [
     { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
     { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },

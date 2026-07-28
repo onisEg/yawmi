@@ -8829,6 +8829,16 @@ if(document.readyState === 'complete') setTimeout(_ensureRendered, 50);
 
 // استرجاع آخر تبويب كان مفتوح (بعد الريفريش يفضل في نفس المكان)
 (function restoreActiveTab(){
+  // أولوية للاختصار (لما تضغط مطوّل على الأيقونة وتختار اختصار)
+  const params = new URLSearchParams(location.search);
+  const go = params.get('go');
+  const validTabs = ['today','tasks','notes','exp','dash','settings'];
+  if(go && validTabs.includes(go)){
+    switchToTab(go, true);
+    // ننضّف الـ URL عشان الاختصار مايفضلش لو عمل ريفريش
+    if(history.replaceState) history.replaceState(null, '', location.pathname);
+    return;
+  }
   const savedTab = localStorage.getItem('yawmi_active_tab');
   if(savedTab && savedTab !== 'today'){
     switchToTab(savedTab, true); // بدون history عشان مايظهرش سهم رجوع أول ما يفتح
