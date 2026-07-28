@@ -1213,7 +1213,9 @@ nav.bottom button.on{color:var(--gold)}
 #dataLoadingOverlay .dlo-sub{font-size:13px; color:var(--muted)}
 #splash.hide{opacity:0}
 .splashinner{text-align:center; animation:splashfade .6s ease}
-.splashlogo{font-size:56px; margin-bottom:12px}
+.splashlogo{margin-bottom:14px; display:flex; justify-content:center; animation:splashpop .6s cubic-bezier(.34,1.56,.64,1)}
+.splashlogo svg{filter:drop-shadow(0 4px 16px rgba(232,154,68,.3))}
+@keyframes splashpop{0%{transform:scale(.5); opacity:0}100%{transform:scale(1); opacity:1}}
 .splashname{font-size:32px; font-weight:700; color:var(--gold); margin-bottom:16px}
 .splashsig{font-size:13px; color:var(--muted); line-height:1.7; max-width:260px; margin:0 auto}
 @keyframes splashfade{from{opacity:0; transform:translateY(10px)} to{opacity:1; transform:translateY(0)}}
@@ -2204,7 +2206,27 @@ nav.bottom button.on{color:var(--gold)}
 
 <div id="splash">
   <div class="splashinner">
-    <div class="splashlogo">📿</div>
+    <div class="splashlogo"><svg width="96" height="96" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="spSky" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#2E2016"/><stop offset="100%" stop-color="#1A1410"/></linearGradient>
+        <linearGradient id="spSun" x1="0" y1="1" x2="0" y2="0"><stop offset="0%" stop-color="#E07856"/><stop offset="50%" stop-color="#E89A44"/><stop offset="100%" stop-color="#F5C878"/></linearGradient>
+        <linearGradient id="spCr" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#F5C878"/><stop offset="50%" stop-color="#E89A44"/><stop offset="100%" stop-color="#E07856"/></linearGradient>
+        <radialGradient id="spGlow" cx="50%" cy="100%" r="75%"><stop offset="0%" stop-color="#E89A44" stop-opacity="0.45"/><stop offset="100%" stop-color="#E89A44" stop-opacity="0"/></radialGradient>
+        <clipPath id="spClip"><circle cx="256" cy="256" r="240"/></clipPath>
+      </defs>
+      <circle cx="256" cy="256" r="240" fill="url(#spSky)"/>
+      <g clip-path="url(#spClip)">
+        <rect x="0" y="140" width="512" height="372" fill="url(#spGlow)"/>
+        <g stroke="url(#spSun)" stroke-width="8" stroke-linecap="round" opacity="0.8">
+          <line x1="256" y1="322" x2="256" y2="196"/><line x1="196" y1="330" x2="168" y2="238"/><line x1="316" y1="330" x2="344" y2="238"/><line x1="150" y1="350" x2="94" y2="288"/><line x1="362" y1="350" x2="418" y2="288"/>
+        </g>
+        <path d="M 152 366 A 104 104 0 0 1 360 366 Z" fill="url(#spSun)"/>
+        <line x1="76" y1="366" x2="436" y2="366" stroke="#F5C878" stroke-width="7" stroke-linecap="round" opacity="0.95"/>
+        <g transform="translate(298, 158) rotate(20)"><path d="M 0 -70 A 70 70 0 1 0 30 58 A 56 56 0 1 1 0 -70 Z" fill="url(#spCr)"/></g>
+        <g transform="translate(198, 148)" fill="#F5C878"><path d="M 0 -16 L 4.5 -5 L 16 0 L 4.5 5 L 0 16 L -4.5 5 L -16 0 L -4.5 -5 Z"/></g>
+      </g>
+      <circle cx="256" cy="256" r="240" fill="none" stroke="#E89A44" stroke-width="7" opacity="0.55"/>
+    </svg></div>
     <div class="splashname">يومي</div>
     <div class="splashsig">صنعه أنس بحب — ادعيله ربنا يصلح حاله 🤍</div>
   </div>
