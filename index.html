@@ -346,6 +346,35 @@ main{padding:0 16px; max-width:560px; margin:0 auto}
 .tabordbtn{width:32px; height:32px; border-radius:9px; border:1.5px solid var(--line); background:var(--card); color:var(--muted); font-size:15px; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all .15s; -webkit-tap-highlight-color:transparent}
 .tabordbtn:active{transform:scale(.92); background:var(--gold-soft)}
 .tabordbtn:disabled{opacity:.25; cursor:default}
+/* ===== تفاصيل العادة ===== */
+#habitDetailOv{position:fixed; inset:0; background:rgba(0,0,0,.6); display:flex; align-items:flex-end; justify-content:center; z-index:60; opacity:0; visibility:hidden; transition:opacity .25s ease, visibility .25s}
+#habitDetailOv.show{opacity:1; visibility:visible}
+#habitDetailModal{background:var(--card); border-radius:24px 24px 0 0; padding:20px 20px calc(24px + env(safe-area-inset-bottom)); width:100%; max-width:540px; transform:translateY(100%); transition:transform .3s cubic-bezier(.4,0,.2,1); max-height:92vh; overflow-y:auto}
+#habitDetailOv.show #habitDetailModal{transform:translateY(0)}
+.hdstats{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:8px}
+.hdstat{background:var(--card2); border:1.5px solid var(--line); border-radius:14px; padding:14px 12px; display:flex; flex-direction:column; align-items:center; gap:4px}
+.hdn{font-size:26px; font-weight:800; color:var(--gold); font-variant-numeric:tabular-nums; line-height:1}
+.hdl{font-size:11px; color:var(--muted); text-align:center}
+.hdsectitle{font-size:13px; color:var(--muted); margin:18px 0 10px; font-weight:700}
+.hdweek{display:flex; justify-content:space-between; gap:5px}
+.hdwday{flex:1; display:flex; flex-direction:column; align-items:center; gap:5px}
+.hdwlbl{font-size:10px; color:var(--faint)}
+.hdwdot{width:100%; aspect-ratio:1; max-width:38px; border-radius:10px; background:var(--card2); border:1.5px solid var(--line); display:flex; align-items:center; justify-content:center; font-size:14px; color:transparent}
+.hdwdot.met{background:var(--gold); border-color:var(--gold); color:#1a150a}
+.hdwday.today .hdwdot{border-color:var(--gold); border-width:2px}
+.hdheat{display:grid; grid-template-columns:repeat(9, 1fr); gap:4px}
+.hdheatcell{aspect-ratio:1; border-radius:4px; background:var(--card2)}
+.hdheatcell.b0{background:var(--card2)}
+.hdheatcell.b1{background:rgba(232,154,68,.35)}
+.hdheatcell.b2{background:rgba(232,154,68,.65)}
+.hdheatcell.b3{background:var(--gold)}
+.hdheatcell.future{opacity:.2}
+.hdheatlegend{display:flex; align-items:center; justify-content:flex-end; gap:5px; margin-top:8px; font-size:10px; color:var(--faint)}
+.hdlegbox{width:12px; height:12px; border-radius:3px}
+.hdlegbox.b0{background:var(--card2)}
+.hdlegbox.b1{background:rgba(232,154,68,.35)}
+.hdlegbox.b2{background:var(--gold)}
+/* ===== تفاصيل العادة END ===== */
 /* ===== الملاحظات ===== */
 #tab-notes{max-width:560px; margin:0 auto; padding:0 16px}
 .noteshead{display:flex; align-items:center; justify-content:space-between; margin-bottom:12px}
@@ -2003,6 +2032,27 @@ nav.bottom button.on{color:var(--gold)}
   </div>
 </div>
 
+<div id="habitDetailOv">
+  <div id="habitDetailModal">
+    <div class="bhdhead">
+      <h2 id="hdTitle">تفاصيل العادة</h2>
+      <button class="iconbtn" id="hdClose" aria-label="إغلاق">✕</button>
+    </div>
+    <div class="hdstats">
+      <div class="hdstat"><span class="hdn" id="hdStreak">0</span><span class="hdl">🔥 السلسلة الحالية</span></div>
+      <div class="hdstat"><span class="hdn" id="hdBest">0</span><span class="hdl">🏆 أطول سلسلة</span></div>
+      <div class="hdstat"><span class="hdn" id="hdRate">0%</span><span class="hdl">✓ نسبة الالتزام</span></div>
+      <div class="hdstat"><span class="hdn" id="hdTotal">0</span><span class="hdl">📅 إجمالي الأيام</span></div>
+    </div>
+    <h3 class="hdsectitle">آخر أسبوع</h3>
+    <div class="hdweek" id="hdWeek"></div>
+    <h3 class="hdsectitle">آخر ٩ أسابيع</h3>
+    <div class="hdheat" id="hdHeat"></div>
+    <div class="hdheatlegend"><span>أقل</span><span class="hdlegbox b0"></span><span class="hdlegbox b1"></span><span class="hdlegbox b2"></span><span>أكتر</span></div>
+    <button class="btn ghost" id="hdDelete" style="width:100%; margin-top:18px; border-color:var(--red); color:var(--red)">🗑 احذف العادة دي</button>
+  </div>
+</div>
+
 <div id="prayerPicker" class="pickerov">
   <div class="pickerbox">
     <h3 id="ppTitle"></h3>
@@ -3577,6 +3627,70 @@ function encourageToast(streakN){
   else toast(ENCOURAGE_MSGS[Math.floor(Math.random() * ENCOURAGE_MSGS.length)]);
 }
 
+// ===== تفاصيل العادة (إحصائيات + أسبوع + خريطة حرارية) =====
+let hdCurrentHabit = null;
+function habitMetOn(name, dISO){
+  const r = days[dISO];
+  return !!(r && r.h && r.h[name]);
+}
+function openHabitDetail(name){
+  hdCurrentHabit = name;
+  $('#hdTitle').textContent = name;
+  const today = new Date(todayISO() + 'T12:00:00');
+  // 1. السلسلة الحالية
+  const curStreak = streak(k=> habitMetOn(name, k), todayISO());
+  // 2-4. نمشي على كل الأيام اللي فيها العادة اتعملت + نحسب أطول سلسلة والإجمالي
+  const metDays = Object.keys(days).filter(k=> habitMetOn(name, k)).sort();
+  const totalMet = metDays.length;
+  // أطول سلسلة: نمشي من أول يوم فيه بيانات للنهارده
+  let best = 0, cur = 0;
+  let firstDay = metDays.length ? new Date(metDays[0] + 'T12:00:00') : today;
+  for(let d = new Date(firstDay); d <= today; d.setDate(d.getDate()+1)){
+    if(habitMetOn(name, iso(d))){ cur++; if(cur > best) best = cur; }
+    else cur = 0;
+  }
+  // نسبة الالتزام: من أول يوم ظهرت فيه العادة للنهارده
+  let rate = 0;
+  if(metDays.length){
+    const daysSinceStart = Math.floor((today - firstDay) / 86400000) + 1;
+    rate = Math.round((totalMet / Math.max(daysSinceStart, 1)) * 100);
+    if(rate > 100) rate = 100;
+  }
+  $('#hdStreak').textContent = arNum(curStreak);
+  $('#hdBest').textContent = arNum(best);
+  $('#hdRate').textContent = arNum(rate) + '%';
+  $('#hdTotal').textContent = arNum(totalMet);
+  // العرض الأسبوعي (آخر ٧ أيام)
+  const WD = ['أحد','اثنين','ثلاثاء','أربعاء','خميس','جمعة','سبت'];
+  let weekHtml = '';
+  for(let i = 6; i >= 0; i--){
+    const d = new Date(today); d.setDate(d.getDate() - i);
+    const dISO = iso(d);
+    const met = habitMetOn(name, dISO);
+    const isToday = dISO === todayISO();
+    weekHtml += `<div class="hdwday${isToday?' today':''}"><span class="hdwlbl">${WD[d.getDay()]}</span><span class="hdwdot${met?' met':''}">✓</span></div>`;
+  }
+  $('#hdWeek').innerHTML = weekHtml;
+  // الخريطة الحرارية (آخر ٩ أسابيع × ٧ أيام = ٦٣ يوم)
+  let heatHtml = '';
+  const WEEKS = 9;
+  // نبدأ من بداية الأسبوع اللي فيه أقدم يوم في النطاق
+  const startHeat = new Date(today); startHeat.setDate(startHeat.getDate() - (WEEKS*7 - 1));
+  for(let i = 0; i < WEEKS*7; i++){
+    const d = new Date(startHeat); d.setDate(d.getDate() + i);
+    const dISO = iso(d);
+    const future = d > today;
+    let cls = 'hdheatcell';
+    if(future){ cls += ' future b0'; }
+    else if(habitMetOn(name, dISO)){ cls += ' b3'; }
+    else { cls += ' b0'; }
+    heatHtml += `<div class="${cls}" title="${dISO}"></div>`;
+  }
+  $('#hdHeat').innerHTML = heatHtml;
+  $('#habitDetailOv').classList.add('show');
+}
+function closeHabitDetail(){ $('#habitDetailOv').classList.remove('show'); hdCurrentHabit = null; }
+
 function renderChipList(container, listArr, recObj, field, kindLabel){
   container.innerHTML = '';
   listArr.forEach(name=>{
@@ -3596,9 +3710,13 @@ function renderChipList(container, listArr, recObj, field, kindLabel){
         encourageToast(newStreak);
       }
     };
-    // ضغطة مطوّلة = حذف
+    // ضغطة مطوّلة: للعادات تفتح التفاصيل، لغيرها تحذف
     let lpTimer = null;
-    const startLP = ()=>{ lpTimer = setTimeout(()=> confirmDeleteChip(name, listArr, field), 550); };
+    const longPressAction = ()=>{
+      if(field === 'h'){ if(navigator.vibrate) navigator.vibrate(12); openHabitDetail(name); }
+      else confirmDeleteChip(name, listArr, field);
+    };
+    const startLP = ()=>{ lpTimer = setTimeout(longPressAction, 550); };
     const cancelLP = ()=>{ clearTimeout(lpTimer); };
     c.addEventListener('touchstart', startLP, {passive:true});
     c.addEventListener('touchend', cancelLP);
@@ -4819,6 +4937,22 @@ if(tabOrderResetBtn) tabOrderResetBtn.onclick = ()=>{
   applyTabsOrder();
   renderTabOrderList();
   toast('رجع الترتيب الأصلي ✓');
+};
+
+// أزرار نافذة تفاصيل العادة
+const hdCloseBtn = $('#hdClose');
+if(hdCloseBtn) hdCloseBtn.onclick = closeHabitDetail;
+$('#habitDetailOv').onclick = e=>{ if(e.target.id === 'habitDetailOv') closeHabitDetail(); };
+const hdDeleteBtn = $('#hdDelete');
+if(hdDeleteBtn) hdDeleteBtn.onclick = async ()=>{
+  if(!hdCurrentHabit) return;
+  const name = hdCurrentHabit;
+  if(!await askConfirm(`تحذف عادة "${name}"؟ سجلّها هيفضل محفوظ في الأيام القديمة.`, {danger:true, title:'حذف عادة', okText:'احذف'})) return;
+  settings.habits = (settings.habits || []).filter(h => h !== name);
+  store(K.set, settings);
+  closeHabitDetail();
+  renderToday();
+  toast('اتحذفت العادة ✓');
 };
 
 const syncDiagBtn = $('#syncDiagBtn');
@@ -6100,7 +6234,7 @@ document.addEventListener('visibilitychange', ()=>{
 
 /* ====== زر الرجوع (الموبايل) يقفل أي pop-up مفتوح بدل ما يخرج من التطبيق ====== */
 (function backClosesPopups(){
-  const OVERLAYS = ['#dlgOv','#quickOv','#challengeOv','#oblDetailOv','#taskDetailOv','#installGuideOv','#notifOv','#dhikrManageOv','#tasbihOv','#focusOv','#noteEditOv','#changePassOv','#bhOverlay','#onboardOverlay'];
+  const OVERLAYS = ['#dlgOv','#quickOv','#challengeOv','#oblDetailOv','#taskDetailOv','#installGuideOv','#notifOv','#dhikrManageOv','#tasbihOv','#focusOv','#noteEditOv','#habitDetailOv','#changePassOv','#bhOverlay','#onboardOverlay'];
   function topOpenOverlay(){
     for(const sel of OVERLAYS){
       const el = document.querySelector(sel);
