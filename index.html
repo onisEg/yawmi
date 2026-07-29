@@ -3699,11 +3699,11 @@ function renderChipList(container, listArr, recObj, field, kindLabel){
     const n = streak(k=>{ const r = days[k]; return !!(r && r[field] && r[field][name]); }, viewDate);
     c.textContent = n >= 2 ? `${name} 🔥${arNum(n)}` : name;
     c.onclick = ()=>{
+      if(c._lpFired){ c._lpFired = false; return; } // لو فتحنا التفاصيل، منفعّلش
       const wasOn = recObj[name];
       recObj[name] = !recObj[name];
       saveDays();
       renderToday();
-      // تغذية راجعة فورية محفّزة عند التفعيل (مش عند الإلغاء)
       if(!wasOn && recObj[name]){
         if(navigator.vibrate) navigator.vibrate(8);
         const newStreak = streak(k=>{ const r = days[k]; return !!(r && r[field] && r[field][name]); }, viewDate);
@@ -3711,16 +3711,29 @@ function renderChipList(container, listArr, recObj, field, kindLabel){
       }
     };
     // ضغطة مطوّلة: للعادات تفتح التفاصيل، لغيرها تحذف
-    let lpTimer = null;
+    let lpTimer = null, lpStartXY = null;
     const longPressAction = ()=>{
-      if(field === 'h'){ if(navigator.vibrate) navigator.vibrate(12); openHabitDetail(name); }
+      c._lpFired = true;
+      if(navigator.vibrate) navigator.vibrate(12);
+      if(field === 'h') openHabitDetail(name);
       else confirmDeleteChip(name, listArr, field);
     };
-    const startLP = ()=>{ lpTimer = setTimeout(longPressAction, 550); };
-    const cancelLP = ()=>{ clearTimeout(lpTimer); };
+    const startLP = (e)=>{
+      const t = e.touches ? e.touches[0] : e;
+      lpStartXY = { x: t.clientX, y: t.clientY };
+      lpTimer = setTimeout(longPressAction, 500);
+    };
+    const moveLP = (e)=>{
+      // نلغي بس لو الصبع اتحرك مسافة كبيرة (مش اهتزاز بسيط)
+      if(!lpStartXY) return;
+      const t = e.touches ? e.touches[0] : e;
+      const dx = Math.abs(t.clientX - lpStartXY.x), dy = Math.abs(t.clientY - lpStartXY.y);
+      if(dx > 12 || dy > 12) clearTimeout(lpTimer);
+    };
+    const cancelLP = ()=>{ clearTimeout(lpTimer); lpStartXY = null; };
     c.addEventListener('touchstart', startLP, {passive:true});
     c.addEventListener('touchend', cancelLP);
-    c.addEventListener('touchmove', cancelLP, {passive:true});
+    c.addEventListener('touchmove', moveLP, {passive:true});
     c.addEventListener('mousedown', startLP);
     c.addEventListener('mouseup', cancelLP);
     c.addEventListener('mouseleave', cancelLP);
