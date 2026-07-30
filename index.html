@@ -965,6 +965,8 @@ input[type=number]{color-scheme:dark light}
 .odkindbtn{flex:1; background:var(--card2); border:1.5px solid var(--line); border-radius:999px; padding:9px 6px; font-family:inherit; font-size:11px; font-weight:600; color:var(--text); cursor:pointer; transition:all .15s}
 .odkindbtn.on{border-color:var(--gold); background:var(--gold-soft); color:var(--gold)}
 .oitem.late{border-color:var(--red)}
+.oitem.oduesoon{border-color:var(--gold); background:linear-gradient(120deg, var(--gold-soft), var(--card))}
+.oduesoontag{color:var(--gold); font-weight:700; font-size:11px}
 .ottl{flex:1; font-size:14px; min-width:0; line-height:1.5}
 .ottl .sub{color:var(--muted); font-size:12px}
 .ottl .sub .amt{color:var(--gold); font-weight:700}
@@ -6620,6 +6622,16 @@ function oblPaidThisMonth(o){
   const mk = monthKey(0);
   return !!(o.paidMonths && o.paidMonths[mk]);
 }
+// هل الالتزام المتكرر (المدفوع) قرب موعده الجاي؟ (بالمدة اللي حددها المستخدم)
+// عشان يرجع يظهر في المستحقة قبل الموعد بفترة فالمستخدم يعمل حسابه
+function oblDueSoon(o){
+  if(!o.due) return false;
+  const days = o.remindEarly ? (o.remindDays || 7) : 7; // افتراضي أسبوع حتى لو مفعّلش التذكير
+  const dueDate = new Date(o.due + 'T12:00:00');
+  const today = new Date(todayISO() + 'T12:00:00');
+  const daysLeft = Math.floor((dueDate - today) / 86400000);
+  return daysLeft >= 0 && daysLeft <= days;
+}
 // المبلغ المتبقّي على الالتزام (للأقساط: الإجمالي ناقص المدفوع)
 function oblRemaining(o){
   if(o.kind === 'installment'){
@@ -6650,7 +6662,11 @@ function renderObls(){
   const paidNow = [], due = [];
   active.forEach(o=>{
     const kind = oblKind(o);
-    if(kind === 'recurring' && oblPaidThisMonth(o)) paidNow.push(o);
+    if(kind === 'recurring' && oblPaidThisMonth(o)){
+      // مدفوع الشهر ده — بس لو موعده الجاي قرب، يرجع للمستحقة عشان تعمل حسابك
+      if(oblDueSoon(o)) due.push(o);
+      else paidNow.push(o);
+    }
     else if(kind === 'installment' && oblRemaining(o) <= 0) paidNow.push(o);
     else due.push(o);
   });
@@ -6729,8 +6745,10 @@ function renderObls(){
 function buildOblItem(o, t0, isPaid){
   const kind = oblKind(o);
   const late = !isPaid && o.due && o.due < t0;
+  // اشتراك مدفوع الشهر ده بس رجع للمستحقة لأن موعده الجاي قرب
+  const dueSoonPaid = !isPaid && kind === 'recurring' && oblPaidThisMonth(o) && oblDueSoon(o);
   const el = document.createElement('div');
-  el.className = 'oitem' + (late ? ' late' : '') + (isPaid ? ' opaid' : '');
+  el.className = 'oitem' + (late ? ' late' : '') + (isPaid ? ' opaid' : '') + (dueSoonPaid ? ' oduesoon' : '');
   const typeTag = `<span class="otype otypeedit">${o.type || 'حدد النوع'}</span>`;
   let recLabel = '';
   if(kind === 'recurring') recLabel = o.recType === 'quarterly' ? '↻ كل ٣ شهور' : '↻ شهري';
@@ -6748,10 +6766,10 @@ function buildOblItem(o, t0, isPaid){
   el.innerHTML = `
     <div class="ottl">
       <div class="tname"></div>
-      <div class="sub">${typeTag}${amtHTML} ${o.due && !isPaid ? '· ' + dueLabel(o.due) : ''} ${recLabel ? '· <span class="orec">'+recLabel+'</span>' : ''}</div>
+      <div class="sub">${typeTag}${amtHTML} ${o.due && !isPaid ? '· ' + dueLabel(o.due) : ''} ${recLabel ? '· <span class="orec">'+recLabel+'</span>' : ''}${dueSoonPaid ? ' · <span class="oduesoontag">🔔 جاي قريب</span>' : ''}</div>
       ${kind === 'installment' ? `<div class="instbar"><div class="instfill" style="width:${o.total ? Math.min((o.paid||0)/o.total*100,100) : 0}%"></div></div>` : ''}
     </div>
-    ${isPaid ? '<button class="opaidtag ounpay" aria-label="إلغاء الدفع">✓ اتدفع</button>' : '<button class="opay">اتدفع</button>'}
+    ${isPaid ? '<button class="opaidtag ounpay" aria-label="إلغاء الدفع">✓ اتدفع</button>' : `<button class="opay">${dueSoonPaid ? 'ادفع مقدّم' : 'اتدفع'}</button>`}
     <button class="odetailbtn" aria-label="تفاصيل">⋯</button>
     <button class="delbtn" aria-label="حذف">${icon("trash",16)}</button>`;
   el.querySelector('.tname').textContent = o.t;
@@ -6794,7 +6812,9 @@ function buildOblItem(o, t0, isPaid){
       o._lastPay = { expId: expEntry.id, amt: payAmt, prevDue: o.due, prevPaid: o.paid, mk: monthKey(0) };
       if(kind === 'recurring'){
         o.paidMonths = o.paidMonths || {};
-        o.paidMonths[monthKey(0)] = true;
+        // لو الشهر الحالي مدفوع بالفعل (دفع مقدّم للجاي)، نعلّم الشهر الجاي
+        const alreadyPaidThisMonth = !!o.paidMonths[monthKey(0)];
+        o.paidMonths[alreadyPaidThisMonth ? monthKey(1) : monthKey(0)] = true;
         const step = o.recType === 'quarterly' ? 3 : 1;
         if(o.due) o.due = addMonthISO(o.due, step);
       } else if(kind === 'installment'){
