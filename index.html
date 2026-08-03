@@ -346,6 +346,45 @@ main{padding:0 16px; max-width:560px; margin:0 auto}
 .tabordbtn{width:32px; height:32px; border-radius:9px; border:1.5px solid var(--line); background:var(--card); color:var(--muted); font-size:15px; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all .15s; -webkit-tap-highlight-color:transparent}
 .tabordbtn:active{transform:scale(.92); background:var(--gold-soft)}
 .tabordbtn:disabled{opacity:.25; cursor:default}
+/* ===== التقويم الشهري ===== */
+.calhead{display:flex; align-items:center; justify-content:space-between; margin-bottom:14px}
+.calmonthlbl{margin:0; font-size:17px; font-weight:700; color:var(--text)}
+.calnav{width:38px; height:38px; border-radius:12px; border:1.5px solid var(--line); background:var(--card2); color:var(--gold); font-size:20px; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all .15s; -webkit-tap-highlight-color:transparent}
+.calnav:active{transform:scale(.9); background:var(--gold-soft)}
+.calweekdays{display:grid; grid-template-columns:repeat(7,1fr); gap:4px; margin-bottom:6px}
+.calweekdays span{text-align:center; font-size:10px; color:var(--faint); font-weight:700; padding:4px 0}
+.calgrid{display:grid; grid-template-columns:repeat(7,1fr); gap:4px}
+.calcell{aspect-ratio:1; border-radius:11px; background:var(--card2); border:1.5px solid transparent; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; cursor:pointer; position:relative; transition:all .13s; -webkit-tap-highlight-color:transparent; padding:2px}
+.calcell:active{transform:scale(.93)}
+.calcell.empty{background:transparent; cursor:default; pointer-events:none}
+.calcell.today{border-color:var(--gold); background:var(--gold-soft)}
+.calcell.selected{border-color:var(--gold); background:var(--gold); }
+.calcell.selected .caldaynum{color:#1a150a; font-weight:800}
+.calcell.othermonth{opacity:.35}
+.caldaynum{font-size:13px; color:var(--text); font-weight:600; line-height:1}
+.caldots{display:flex; gap:2px; align-items:center; min-height:5px}
+.caldotm{width:5px; height:5px; border-radius:50%}
+.caldotm.task{background:#5a96c8}
+.caldotm.due{background:var(--red)}
+.caldotm.exp{background:var(--gold)}
+.caldotm.pray{background:var(--teal)}
+.callegend{display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin-top:14px; padding:12px; background:var(--card2); border-radius:12px}
+.cllg{display:flex; align-items:center; gap:5px; font-size:11px; color:var(--muted)}
+.cldot{width:8px; height:8px; border-radius:50%}
+.cldot.task{background:#5a96c8}
+.cldot.due{background:var(--red)}
+.cldot.exp{background:var(--gold)}
+.cldot.pray{background:var(--teal)}
+.caldaydetail{margin-top:16px}
+.cdd-card{background:var(--card2); border:1.5px solid var(--line); border-radius:16px; padding:16px}
+.cdd-date{font-size:15px; font-weight:700; color:var(--gold); margin-bottom:12px}
+.cdd-section{margin-bottom:12px}
+.cdd-section:last-child{margin-bottom:0}
+.cdd-sectitle{font-size:12px; color:var(--faint); font-weight:700; margin-bottom:6px}
+.cdd-item{display:flex; align-items:center; gap:8px; font-size:13px; color:var(--text); padding:5px 0}
+.cdd-item .cdd-ic{flex-shrink:0}
+.cdd-empty{font-size:13px; color:var(--faint); text-align:center; padding:20px}
+/* ===== التقويم END ===== */
 /* ===== تفاصيل التحدي ===== */
 #challengeDetailOv{position:fixed; inset:0; background:rgba(0,0,0,.6); display:flex; align-items:flex-end; justify-content:center; z-index:60; opacity:0; visibility:hidden; transition:opacity .25s ease, visibility .25s}
 #challengeDetailOv.show{opacity:1; visibility:visible}
@@ -1699,6 +1738,12 @@ nav.bottom button.on{color:var(--gold)}
   <!-- ============ نظرة ============ -->
   <section id="tab-dash" class="tab">
     <div style="height:14px"></div>
+    <div class="segwrap" style="margin-top:0">
+      <button class="segbtn on" data-dashseg="stats">📊 الإحصائيات</button>
+      <button class="segbtn" data-dashseg="calendar">🗓️ التقويم</button>
+    </div>
+
+    <div id="dashStats">
     <div class="card weekreportcard hidden" id="weekReportCard">
       <div class="wrhead">
         <h3>📋 تقرير أسبوعك</h3>
@@ -1761,6 +1806,26 @@ nav.bottom button.on{color:var(--gold)}
         <select id="histMonth"></select>
       </div>
       <div id="histList"></div>
+    </div>
+    </div>
+
+    <div id="dashCalendar" class="hidden">
+      <div class="calhead">
+        <button class="calnav" id="calPrev" aria-label="الشهر السابق">‹</button>
+        <h3 class="calmonthlbl" id="calMonthLbl"></h3>
+        <button class="calnav" id="calNext" aria-label="الشهر التالي">›</button>
+      </div>
+      <div class="calweekdays">
+        <span>أحد</span><span>اثنين</span><span>ثلاثاء</span><span>أربعاء</span><span>خميس</span><span>جمعة</span><span>سبت</span>
+      </div>
+      <div class="calgrid" id="calGrid"></div>
+      <div class="callegend">
+        <span class="cllg"><span class="cldot task"></span> مهمة</span>
+        <span class="cllg"><span class="cldot due"></span> دَين مستحق</span>
+        <span class="cllg"><span class="cldot exp"></span> مصروف</span>
+        <span class="cllg"><span class="cldot pray"></span> صلوات كاملة</span>
+      </div>
+      <div class="caldaydetail" id="calDayDetail"></div>
     </div>
   </section>
 </main>
@@ -4981,6 +5046,15 @@ document.querySelectorAll('.fdur').forEach(b=>{
 const focusOpenBtn = $('#focusOpenBtn');
 if(focusOpenBtn) focusOpenBtn.onclick = ()=> openFocus();
 
+// أزرار تبويب نظرة الفرعي (إحصائيات | تقويم)
+document.querySelectorAll('[data-dashseg]').forEach(btn=>{
+  btn.onclick = ()=> dashSetSeg(btn.dataset.dashseg);
+});
+// التنقل بين شهور التقويم
+const calPrevBtn = $('#calPrev'), calNextBtn = $('#calNext');
+if(calPrevBtn) calPrevBtn.onclick = ()=>{ calMonthOffset--; renderCalendar(); };
+if(calNextBtn) calNextBtn.onclick = ()=>{ calMonthOffset++; renderCalendar(); };
+
 const tabOrderResetBtn = $('#tabOrderReset');
 if(tabOrderResetBtn) tabOrderResetBtn.onclick = ()=>{
   localStorage.removeItem('yawmi_tabs_order');
@@ -6408,7 +6482,7 @@ function renderMatrix(){
 function setSeg(seg){
   currentSeg = seg;
   localStorage.setItem('yawmi_seg', seg);
-  document.querySelectorAll('.segbtn').forEach(b=> b.classList.toggle('on', b.dataset.seg === seg));
+  document.querySelectorAll('[data-seg]').forEach(b=> b.classList.toggle('on', b.dataset.seg === seg));
   $('#segTasks').classList.toggle('hidden', seg !== 'tasks');
   $('#segGoals').classList.toggle('hidden', seg !== 'goals');
   $('#segMatrix').classList.toggle('hidden', seg !== 'matrix');
@@ -6417,7 +6491,7 @@ function setSeg(seg){
   else if(seg === 'matrix') renderMatrix();
   window.scrollTo({top:0, behavior:'smooth'});
 }
-document.querySelectorAll('.segbtn').forEach(btn=>{
+document.querySelectorAll('[data-seg]').forEach(btn=>{
   btn.onclick = ()=> setSeg(btn.dataset.seg);
 });
 // نرجّع آخر تبويب فرعي كان مفتوح
@@ -7369,6 +7443,125 @@ function renderWeekReport(){
 }
 
 /* ================= dashboard ================= */
+// ===== التقويم الشهري =====
+let calMonthOffset = 0;   // 0 = الشهر الحالي
+let calSelectedISO = null;
+function dashSetSeg(seg){
+  document.querySelectorAll('[data-dashseg]').forEach(b=> b.classList.toggle('on', b.dataset.dashseg === seg));
+  $('#dashStats').classList.toggle('hidden', seg !== 'stats');
+  $('#dashCalendar').classList.toggle('hidden', seg !== 'calendar');
+  if(seg === 'calendar') renderCalendar();
+  else renderDash();
+}
+// نجمع كل "أحداث" اليوم: مهام، ديون مستحقة، مصاريف، صلوات
+function calDayEvents(dISO){
+  const ev = { task:false, due:false, exp:false, pray:false };
+  // مهام ليها ميعاد في اليوم ده
+  ev.task = tasks.some(t=> !t.del && t.due === dISO);
+  // ديون مستحقة في اليوم ده
+  ev.due = obls.some(o=> !o.del && o.due === dISO);
+  // مصاريف في اليوم ده
+  ev.exp = exps.some(e=> !e.del && e.d === dISO);
+  // صلوات كاملة (٥ صلوات) في اليوم ده
+  const r = days[dISO];
+  if(r && r.p){ ev.pray = r.p.filter(x=> x > 0).length === 5; }
+  return ev;
+}
+function renderCalendar(){
+  const grid = $('#calGrid');
+  if(!grid) return;
+  const base = new Date();
+  base.setDate(1);
+  base.setMonth(base.getMonth() + calMonthOffset);
+  const year = base.getFullYear(), month = base.getMonth();
+  $('#calMonthLbl').textContent = arDate(base, {month:'long', year:'numeric'});
+  const firstDay = new Date(year, month, 1).getDay(); // 0=أحد
+  const daysInMonth = new Date(year, month+1, 0).getDate();
+  const todayIso = todayISO();
+  let html = '';
+  // خلايا فاضية قبل أول يوم
+  for(let i = 0; i < firstDay; i++) html += '<div class="calcell empty"></div>';
+  for(let d = 1; d <= daysInMonth; d++){
+    const dISO = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const ev = calDayEvents(dISO);
+    const isToday = dISO === todayIso;
+    const isSelected = dISO === calSelectedISO;
+    let dots = '';
+    if(ev.task) dots += '<span class="caldotm task"></span>';
+    if(ev.due) dots += '<span class="caldotm due"></span>';
+    if(ev.exp) dots += '<span class="caldotm exp"></span>';
+    if(ev.pray) dots += '<span class="caldotm pray"></span>';
+    html += `<div class="calcell${isToday?' today':''}${isSelected?' selected':''}" data-iso="${dISO}">
+      <span class="caldaynum">${arNum(d)}</span>
+      <span class="caldots">${dots}</span>
+    </div>`;
+  }
+  grid.innerHTML = html;
+  grid.querySelectorAll('.calcell:not(.empty)').forEach(c=>{
+    c.onclick = ()=>{ calSelectedISO = c.dataset.iso; renderCalendar(); showCalDay(c.dataset.iso); };
+  });
+  // لو فيه يوم مختار، نعرض تفاصيله
+  if(calSelectedISO && calSelectedISO.startsWith(`${year}-${String(month+1).padStart(2,'0')}`)){
+    showCalDay(calSelectedISO);
+  } else {
+    $('#calDayDetail').innerHTML = '';
+  }
+}
+function showCalDay(dISO){
+  const box = $('#calDayDetail');
+  if(!box) return;
+  const d = new Date(dISO + 'T12:00:00');
+  const dayTasks = tasks.filter(t=> !t.del && t.due === dISO);
+  const dayDues = obls.filter(o=> !o.del && o.due === dISO);
+  const dayExps = exps.filter(e=> !e.del && e.d === dISO);
+  const r = days[dISO];
+  const prayCount = (r && r.p) ? r.p.filter(x=> x > 0).length : 0;
+  const cur = settings.currency || '';
+  // نبني العناصر بأمان (textContent لنصوص المستخدم)
+  const card = document.createElement('div');
+  card.className = 'cdd-card';
+  const dateEl = document.createElement('div');
+  dateEl.className = 'cdd-date';
+  dateEl.textContent = arDate(d, {weekday:'long', day:'numeric', month:'long'});
+  card.appendChild(dateEl);
+  let hasContent = false;
+  function addSection(title, items){
+    if(!items.length) return;
+    hasContent = true;
+    const sec = document.createElement('div'); sec.className = 'cdd-section';
+    const st = document.createElement('div'); st.className = 'cdd-sectitle'; st.textContent = title;
+    sec.appendChild(st);
+    items.forEach(it=>{
+      const row = document.createElement('div'); row.className = 'cdd-item';
+      const ic = document.createElement('span'); ic.className = 'cdd-ic'; ic.textContent = it.ic;
+      const tx = document.createElement('span'); tx.textContent = it.text;
+      row.appendChild(ic); row.appendChild(tx);
+      if(it.bold) tx.style.fontWeight = '700';
+      sec.appendChild(row);
+    });
+    card.appendChild(sec);
+  }
+  addSection('📋 مهام', dayTasks.map(t=> ({ic: t.done?'✅':'⬜', text: t.t})));
+  addSection('💰 ديون مستحقة', dayDues.map(o=> ({ic:'🔴', text: `${o.t} — ${arMoney(oblRemaining(o))} ${cur}`})));
+  if(dayExps.length){
+    const total = dayExps.reduce((a,e)=>a+e.a,0);
+    const items = dayExps.map(e=> ({ic:'•', text: `${e.n||e.c} — ${arMoney(e.a)} ${cur}`}));
+    items.push({ic:'∑', text: `الإجمالي: ${arMoney(total)} ${cur}`, bold:true});
+    addSection('🧾 مصاريف', items);
+  }
+  if(prayCount > 0){
+    addSection('🕌 الصلوات', [{ic: prayCount===5?'✅':'📿', text: `صلّيت ${arNum(prayCount)} من ٥ صلوات`}]);
+  }
+  if(!hasContent){
+    const empty = document.createElement('div');
+    empty.className = 'cdd-empty';
+    empty.textContent = 'مفيش حاجة مسجّلة في اليوم ده';
+    card.appendChild(empty);
+  }
+  box.innerHTML = '';
+  box.appendChild(card);
+}
+
 function renderDash(){
   renderWeekReport();
   renderBadges();
