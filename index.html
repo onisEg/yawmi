@@ -2046,6 +2046,10 @@ nav.bottom button.on{color:var(--gold)}
         <div class="btnrow" style="margin-top:8px">
           <button class="btn ghost" id="exportJsonBtn">💾 نسخة للاسترجاع</button>
         </div>
+        <div class="btnrow" style="margin-top:8px">
+          <button class="btn ghost" id="exportIcsBtn" style="width:100%">📅 صدّر مواعيدك لتقويم (جوجل/آيفون)</button>
+        </div>
+        <div style="font-size:12px; color:var(--faint); margin-top:2px">ملف تقويم فيه مهامك اللي ليها مواعيد + الديون المستحقة — تستورده في جوجل كاليندر أو أي تقويم</div>
         <div style="font-size:12px; color:var(--faint); margin-top:2px">Excel و PDF لعرض بياناتك · نسخة الاسترجاع لو حبيت ترجّعها للتطبيق تاني</div>
         <div class="btnrow" style="margin-top:8px">
           <button class="btn ghost" id="importBtn">استيراد نسخة استرجاع</button>
@@ -2340,6 +2344,7 @@ nav.bottom button.on{color:var(--gold)}
       <button class="addbtn" id="tdSubAddBtn" aria-label="إضافة">+</button>
     </div>
     <button class="btn primary" id="tdSave" style="width:100%; margin-top:16px">حفظ</button>
+    <button class="btn ghost" id="tdGCal" style="width:100%; margin-top:8px">📅 ضيفه لجوجل كاليندر</button>
   </div>
 </div>
 
@@ -5486,6 +5491,48 @@ $('#tdSave').onclick = ()=>{
   toast('اتحفظت التفاصيل ✓');
 };
 
+// تصدير المهمة لجوجل كاليندر (يفتح جوجل بالحدث جاهز)
+function gcalDateFmt(dISO, time){
+  // صيغة جوجل: YYYYMMDDTHHMMSS (لو فيه وقت) أو YYYYMMDD (يوم كامل)
+  const clean = dISO.replace(/-/g, '');
+  if(time && /^\d{1,2}:\d{2}$/.test(time)){
+    const [h, m] = time.split(':');
+    return clean + 'T' + h.padStart(2,'0') + m + '00';
+  }
+  return clean;
+}
+function taskToGCalUrl(t){
+  const base = 'https://calendar.google.com/calendar/render?action=TEMPLATE';
+  const title = encodeURIComponent(t.t || 'مهمة');
+  let dates = '';
+  if(t.due){
+    if(t.time && /^\d{1,2}:\d{2}$/.test(t.time)){
+      // حدث بوقت: ساعة واحدة افتراضياً
+      const start = gcalDateFmt(t.due, t.time);
+      const [h, m] = t.time.split(':');
+      const endH = (parseInt(h,10) + 1) % 24;
+      const end = gcalDateFmt(t.due, `${endH}:${m}`);
+      dates = `&dates=${start}/${end}`;
+    } else {
+      // يوم كامل: جوجل عايز اليوم التالي كنهاية
+      const d = new Date(t.due + 'T12:00:00');
+      const next = new Date(d); next.setDate(next.getDate()+1);
+      dates = `&dates=${gcalDateFmt(t.due)}/${gcalDateFmt(iso(next))}`;
+    }
+  }
+  const details = t.desc ? `&details=${encodeURIComponent(t.desc)}` : '';
+  return base + '&text=' + title + dates + details;
+}
+const tdGCalBtn = $('#tdGCal');
+if(tdGCalBtn) tdGCalBtn.onclick = ()=>{
+  if(!tdCurrentTask) return;
+  if(!tdCurrentTask.due){
+    toast('حدّد تاريخ للمهمة الأول عشان تضيفها للتقويم');
+    return;
+  }
+  window.open(taskToGCalUrl(tdCurrentTask), '_blank');
+};
+
 // سحب المهام لإعادة الترتيب — يشتغل باللمس والماوس، جوّه نفس المجموعة بس
 function attachDragHandle(handle, item, container, groupItems){
   handle.style.touchAction = 'none';
@@ -8142,6 +8189,65 @@ function doExportCSV(){
 function doExport(){ doExportCSV(); }
 $('#exportBtn').onclick = doExportCSV;
 $('#exportJsonBtn').onclick = doExportJSON;
+
+// تصدير المواعيد كملف iCalendar (.ics) — يستورده جوجل/آيفون/أي تقويم
+function icsDate(dISO, time){
+  const clean = dISO.replace(/-/g, '');
+  if(time && /^\d{1,2}:\d{2}$/.test(time)){
+    const [h,m] = time.split(':');
+    return clean + 'T' + h.padStart(2,'0') + m + '00';
+  }
+  return clean;
+}
+function icsEscape(s){
+  return String(s||'').replace(/\\/g,'\\\\').replace(/;/g,'\\;').replace(/,/g,'\\,').replace(/\n/g,'\\n');
+}
+function buildICS(){
+  const lines = ['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//yawmi.in//Yawmi//AR','CALSCALE:GREGORIAN'];
+  const stamp = new Date().toISOString().replace(/[-:]/g,'').split('.')[0] + 'Z';
+  let count = 0;
+  // المهام اللي ليها مواعيد
+  tasks.filter(t=> !t.del && t.due).forEach(t=>{
+    lines.push('BEGIN:VEVENT');
+    lines.push('UID:task-' + t.id + '@yawmi.in');
+    lines.push('DTSTAMP:' + stamp);
+    if(t.time && /^\d{1,2}:\d{2}$/.test(t.time)){
+      lines.push('DTSTART:' + icsDate(t.due, t.time));
+    } else {
+      lines.push('DTSTART;VALUE=DATE:' + icsDate(t.due));
+    }
+    lines.push('SUMMARY:' + icsEscape(t.t));
+    if(t.desc) lines.push('DESCRIPTION:' + icsEscape(t.desc));
+    lines.push('END:VEVENT');
+    count++;
+  });
+  // الديون المستحقة اللي ليها مواعيد
+  obls.filter(o=> !o.del && o.due).forEach(o=>{
+    lines.push('BEGIN:VEVENT');
+    lines.push('UID:obl-' + o.id + '@yawmi.in');
+    lines.push('DTSTAMP:' + stamp);
+    lines.push('DTSTART;VALUE=DATE:' + icsDate(o.due));
+    lines.push('SUMMARY:' + icsEscape('💰 ' + (o.t||'دين') + ' — ' + arMoney(oblRemaining(o)) + ' ' + (settings.currency||'')));
+    lines.push('END:VEVENT');
+    count++;
+  });
+  lines.push('END:VCALENDAR');
+  return { ics: lines.join('\r\n'), count };
+}
+const exportIcsBtn = $('#exportIcsBtn');
+if(exportIcsBtn) exportIcsBtn.onclick = ()=>{
+  const { ics, count } = buildICS();
+  if(count === 0){ toast('مفيش مواعيد ليها تاريخ عشان تصدّرها'); return; }
+  const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'yawmi-calendar.ics';
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a);
+  setTimeout(()=> URL.revokeObjectURL(url), 1000);
+  toast(`اتصدّر ${arNum(count)} موعد ✓ — استورده في تقويمك`);
+};
 $('#exportPdfBtn').onclick = doExportPDF;
 
 /* sync UI */
