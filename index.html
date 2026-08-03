@@ -5222,9 +5222,10 @@ function renderDhikrManageList(){
       <button class="dmdel" data-i="${i}" aria-label="حذف">${icon('trash',16)}</button>
     </div>`).join('') || '<div class="empty" style="padding:12px 0">مفيش أذكار — ضيف واحد تحت</div>';
   list.querySelectorAll('.dmdel').forEach(btn=>{
-    btn.onclick = ()=>{
+    btn.onclick = async ()=>{
       const i = +btn.dataset.i;
       const removed = settings.dhikrList[i];
+      if(!await askConfirm(`تشيل ذِكر "${removed.text}"؟`, {danger:true, title:'شيل ذِكر', okText:'شيل'})) return;
       settings.dhikrList.splice(i,1);
       store(K.set, settings);
       renderDhikrManageList(); renderDhikr();
@@ -5336,7 +5337,9 @@ function renderSubtasks(){
       renderSubtasks();
       if(navigator.vibrate) navigator.vibrate(8);
     };
-    el.querySelector('.tdsubdel').onclick = ()=>{
+    el.querySelector('.tdsubdel').onclick = async ()=>{
+      const subName = subs[i].t || 'الخطوة دي';
+      if(!await askConfirm(`تمسح "${subName}"؟`, {danger:true, title:'مسح خطوة', okText:'امسح'})) return;
       subs.splice(i, 1);
       tdCurrentTask.subs = subs.length ? subs : undefined;
       store(K.tasks, tasks);
@@ -7024,7 +7027,10 @@ function renderGoals(){
       </div>`;
     card.querySelector('.goaltitle').textContent = g.t;
     makeEditable(card.querySelector('.goaltitle'), g.t, v=>{ if(v){ g.t = v; store(K.goals,goals); } renderGoals(); }, {rerender:renderGoals});
-    card.querySelector('.goaldel').onclick = ()=>{
+    card.querySelector('.goaldel').onclick = async ()=>{
+      const projCount = (g.projects || []).length;
+      const extra = projCount ? ` (وجوّاه ${arNum(projCount)} مشروع)` : '';
+      if(!await askConfirm(`تحذف هدف "${g.t}"${extra}؟`, {danger:true, title:'حذف هدف', okText:'احذف'})) return;
       const idx = goals.indexOf(g);
       const snapshot = g;
       goals = goals.filter(x=>x.id !== g.id);
@@ -7071,7 +7077,8 @@ function renderGoals(){
       if(row.querySelector('.pminus')) row.querySelector('.pminus').onclick = ()=> bump(-25);
       if(row.querySelector('.pplus')) row.querySelector('.pplus').onclick = ()=> bump(25);
       if(row.querySelector('.pstate')) row.querySelector('.pstate').onclick = ()=>{ p.pct = done ? 75 : 100; store(K.goals, goals); renderGoals(); };
-      row.querySelector('.projdel').onclick = ()=>{
+      row.querySelector('.projdel').onclick = async ()=>{
+        if(!await askConfirm(`تحذف مشروع "${p.t}"؟`, {danger:true, title:'حذف مشروع', okText:'احذف'})) return;
         const idx = g.projects.indexOf(p);
         const snapshot = p;
         g.projects = g.projects.filter(x=>x.id !== p.id);
@@ -8413,8 +8420,10 @@ function renderChallenges(){
       if(ev.target.closest('.cwday') || ev.target.closest('.chaldel')) return;
       openChallengeDetail(ch, chs);
     };
-    el.querySelector('.chaldel').onclick = (ev)=>{
+    el.querySelector('.chaldel').onclick = async (ev)=>{
       ev.stopPropagation();
+      const cleanT = (ch.title||'').replace(/\{n\}\s*يوم/,'').replace(/\{n\}/,'').trim() || 'التحدي';
+      if(!await askConfirm(`تشيل تحدي "${cleanT}"؟`, {danger:true, title:'شيل تحدي', okText:'شيل'})) return;
       const idx = chs.indexOf(ch);
       chs.splice(idx, 1);
       saveChallenges(chs);
