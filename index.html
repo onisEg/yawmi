@@ -5807,18 +5807,24 @@ function renderTasks(){
       list.appendChild(body);
       container = body;
     }
-    // الترتيب: لو المستخدم رتّب بإيده (order موجود) نستخدمه، وإلا حسب الأولوية
+    // الترتيب: لو المستخدم رتّب بإيده (order موجود) نستخدمه، وإلا حسب الأولوية ثم الأحدث إضافةً
     const priScore = t => (t.urgent?2:0) + (t.important?1:0);
+    // id = وقت الإضافة (Date.now)، فالأكبر = الأحدث
+    const addedTime = t => (typeof t.id === 'number' ? t.id : 0);
     const anyManual = g.items.some(t=> typeof t.order === 'number');
     if(anyManual){
       g.items.sort((a,b)=>{
         const ao = typeof a.order === 'number' ? a.order : 9999;
         const bo = typeof b.order === 'number' ? b.order : 9999;
         if(ao !== bo) return ao - bo;
-        return priScore(b) - priScore(a);
+        if(priScore(b) !== priScore(a)) return priScore(b) - priScore(a);
+        return addedTime(b) - addedTime(a);
       });
     } else {
-      g.items.sort((a,b)=> priScore(b) - priScore(a));
+      g.items.sort((a,b)=>{
+        if(priScore(b) !== priScore(a)) return priScore(b) - priScore(a);
+        return addedTime(b) - addedTime(a);  // الأحدث إضافةً فوق
+      });
     }
     g.items.forEach(t=>{
       const el = document.createElement('div');
