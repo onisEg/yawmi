@@ -2873,6 +2873,31 @@ function mergeSettings(localS, remoteS){
   out.budgets = Object.assign({}, remoteS.budgets, localS.budgets);
   return out;
 }
+// دمج ذكي للعادات السيئة (العدّاد): لكل عادة ناخد النسخة الأحدث
+// المعيار: أكبر عدد انتكاسات، وبعدين أحدث last — عشان التحديث من أي جهاز يوصل
+function mergeBHData(localBH, remoteBH){
+  localBH = localBH || {};
+  remoteBH = remoteBH || {};
+  const out = {};
+  const names = new Set([...Object.keys(localBH), ...Object.keys(remoteBH)]);
+  names.forEach(name=>{
+    const l = localBH[name], r = remoteBH[name];
+    if(!l){ out[name] = r; return; }
+    if(!r){ out[name] = l; return; }
+    // الاتنين موجودين — ناخد الأحدث
+    const lRelapses = (l.relapses || []).length;
+    const rRelapses = (r.relapses || []).length;
+    // نجمّع كل الانتكاسات من الجهتين (بدون تكرار) عشان مانفقدش أي انتكاسة
+    const allRelapses = Array.from(new Set([...(l.relapses||[]), ...(r.relapses||[])])).sort((a,b)=>a-b);
+    // آخر تحديث = الأحدث بين الجهتين
+    const last = Math.max(l.last || 0, r.last || 0);
+    // البداية = الأقدم (عشان أطول فترة تتحسب صح)
+    const start = Math.min(l.start || Date.now(), r.start || Date.now());
+    out[name] = { start, last, relapses: allRelapses };
+  });
+  return out;
+}
+
 function mergeData(local, remote){
   local = local || {}; remote = remote || {};
   return {
@@ -2882,7 +2907,7 @@ function mergeData(local, remote){
     obls: mergeById(local.obls, remote.obls),
     revs: mergeRevs(local.revs, remote.revs),
     goals: mergeGoals(local.goals, remote.goals),
-    bhData: Object.assign({}, remote.bhData, local.bhData),
+    bhData: mergeBHData(local.bhData, remote.bhData),
     challenges: mergeChallenges(local.challenges, remote.challenges),
     notes: mergeById(local.notes, remote.notes),
     settings: mergeSettings(local.settings, remote.settings),
