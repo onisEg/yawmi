@@ -122,8 +122,10 @@ main{padding:0 16px; max-width:560px; margin:0 auto}
   .notesgrid{ column-count: 3; }
   /* المصفوفة: أكبر وأوضح */
   .matrixquad{ height: 300px; }
-  /* الإعدادات: عمودين على الديسكتوب */
-  #tab-settings .settingsinner{ max-width: 900px; margin: 0 auto; }
+  /* الإعدادات: أقسام masonry بعمودين على الديسكتوب */
+  #tab-settings .settingsinner{ max-width: 1000px; margin: 0 auto; column-count: 2; column-gap: 20px; }
+  #tab-settings .settingsinner > h2{ column-span: all; }
+  #tab-settings .setsection{ break-inside: avoid; margin-bottom: 14px; }
   /* النافبار يبقى أعرض شوية ومتوسّط */
   nav.bottom{ max-width: 640px; }
 }
