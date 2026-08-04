@@ -102,16 +102,28 @@ main{padding:0 16px; max-width:560px; margin:0 auto}
   #tab-today > #heroCard{ column-span: all; }
   /* صفحات المهام/المصاريف/الملاحظات/نظرة: أوسع */
   #tab-tasks, #tab-notes{ max-width: 900px; margin: 0 auto; }
-  #tab-settings .settingsinner{ max-width: 820px; margin: 0 auto; }
   /* نظرة: كروت الإحصائيات masonry */
   #tab-dash #dashStats{ column-count: 2; column-gap: 18px; }
   #tab-dash #dashStats > .card{ break-inside: avoid; margin-bottom: 18px; width: 100%; }
-  /* المصاريف: أوسع */
-  #tab-exp{ max-width: 1000px; margin: 0 auto; }
+  /* التقويم: عرض ثنائي — التقويم ناحية والتفاصيل ناحية */
+  #tab-dash{ max-width: 1100px; margin: 0 auto; }
+  .calsplit{ display: grid; grid-template-columns: 1.3fr 1fr; gap: 24px; align-items: start; }
+  .calside .caldaydetail{ margin-top: 0; position: sticky; top: 20px; }
+  .calcell{ min-height: 60px; }
+  /* المصاريف: masonry بعمودين — كل الكروت تتوزّع بدون فراغات */
+  #tab-exp{ max-width: 1100px; margin: 0 auto; }
+  #tab-exp.active{ column-count: 2; column-gap: 24px; }
+  #tab-exp.active > .card, #tab-exp.active > .exptotal, #tab-exp.active > #catBarsCard,
+  #tab-exp.active > .expsearchwrap, #tab-exp.active > #expListHead, #tab-exp.active > #expListWrap{ break-inside: avoid; margin-bottom: 16px; }
+  /* الكارت البطل وشريط الشهر والإدخال ياخدوا العرض الكامل فوق */
+  #tab-exp.active > #heroExpCard, #tab-exp.active > .monthnav,
+  #tab-exp.active > #expGroupBtn, #tab-exp.active > .addrow{ column-span: all; }
   /* الملاحظات: 3 أعمدة على الشاشة الكبيرة */
   .notesgrid{ column-count: 3; }
   /* المصفوفة: أكبر وأوضح */
   .matrixquad{ height: 300px; }
+  /* الإعدادات: عمودين على الديسكتوب */
+  #tab-settings .settingsinner{ max-width: 900px; margin: 0 auto; }
   /* النافبار يبقى أعرض شوية ومتوسّط */
   nav.bottom{ max-width: 640px; }
 }
@@ -418,6 +430,9 @@ main{padding:0 16px; max-width:560px; margin:0 auto}
 .cldot.exp{background:var(--gold)}
 .cldot.pray{background:var(--teal)}
 .caldaydetail{margin-top:16px}
+/* عرض التقويم الثنائي — عمود واحد على الموبايل */
+.calsplit{display:block}
+.calside{margin-top:0}
 .cdd-card{background:var(--card2); border:1.5px solid var(--line); border-radius:16px; padding:16px}
 .cdd-date{font-size:15px; font-weight:700; color:var(--gold); margin-bottom:12px}
 .cdd-section{margin-bottom:12px}
@@ -1852,22 +1867,28 @@ nav.bottom button.on{color:var(--gold)}
     </div>
 
     <div id="dashCalendar" class="hidden">
-      <div class="calhead">
-        <button class="calnav" id="calPrev" aria-label="الشهر السابق">‹</button>
-        <h3 class="calmonthlbl" id="calMonthLbl"></h3>
-        <button class="calnav" id="calNext" aria-label="الشهر التالي">›</button>
+      <div class="calsplit">
+        <div class="calmain">
+          <div class="calhead">
+            <button class="calnav" id="calPrev" aria-label="الشهر السابق">‹</button>
+            <h3 class="calmonthlbl" id="calMonthLbl"></h3>
+            <button class="calnav" id="calNext" aria-label="الشهر التالي">›</button>
+          </div>
+          <div class="calweekdays">
+            <span>أحد</span><span>اثنين</span><span>ثلاثاء</span><span>أربعاء</span><span>خميس</span><span>جمعة</span><span>سبت</span>
+          </div>
+          <div class="calgrid" id="calGrid"></div>
+          <div class="callegend">
+            <span class="cllg"><span class="cldot task"></span> مهمة</span>
+            <span class="cllg"><span class="cldot due"></span> دَين مستحق</span>
+            <span class="cllg"><span class="cldot exp"></span> مصروف</span>
+            <span class="cllg"><span class="cldot pray"></span> صلوات كاملة</span>
+          </div>
+        </div>
+        <div class="calside">
+          <div class="caldaydetail" id="calDayDetail"></div>
+        </div>
       </div>
-      <div class="calweekdays">
-        <span>أحد</span><span>اثنين</span><span>ثلاثاء</span><span>أربعاء</span><span>خميس</span><span>جمعة</span><span>سبت</span>
-      </div>
-      <div class="calgrid" id="calGrid"></div>
-      <div class="callegend">
-        <span class="cllg"><span class="cldot task"></span> مهمة</span>
-        <span class="cllg"><span class="cldot due"></span> دَين مستحق</span>
-        <span class="cllg"><span class="cldot exp"></span> مصروف</span>
-        <span class="cllg"><span class="cldot pray"></span> صلوات كاملة</span>
-      </div>
-      <div class="caldaydetail" id="calDayDetail"></div>
     </div>
   </section>
 </main>
@@ -7595,12 +7616,20 @@ function renderCalendar(){
   grid.querySelectorAll('.calcell:not(.empty)').forEach(c=>{
     c.onclick = ()=>{ calSelectedISO = c.dataset.iso; renderCalendar(); showCalDay(c.dataset.iso); };
   });
-  // لو فيه يوم مختار، نعرض تفاصيله
-  if(calSelectedISO && calSelectedISO.startsWith(`${year}-${String(month+1).padStart(2,'0')}`)){
-    showCalDay(calSelectedISO);
-  } else {
-    $('#calDayDetail').innerHTML = '';
+  const monthPrefix = `${year}-${String(month+1).padStart(2,'0')}`;
+  // لو مفيش يوم مختار في الشهر المعروض، نختار النهارده (لو في نفس الشهر) أو أول يوم
+  if(!calSelectedISO || !calSelectedISO.startsWith(monthPrefix)){
+    if(todayIso.startsWith(monthPrefix)){
+      calSelectedISO = todayIso;
+    } else {
+      calSelectedISO = `${monthPrefix}-01`;
+    }
+    // نحدّث الخلية المختارة بصرياً
+    grid.querySelectorAll('.calcell').forEach(c=>{
+      c.classList.toggle('selected', c.dataset.iso === calSelectedISO);
+    });
   }
+  showCalDay(calSelectedISO);
 }
 function showCalDay(dISO){
   const box = $('#calDayDetail');
