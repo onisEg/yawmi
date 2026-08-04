@@ -2884,16 +2884,17 @@ function mergeBHData(localBH, remoteBH){
     const l = localBH[name], r = remoteBH[name];
     if(!l){ out[name] = r; return; }
     if(!r){ out[name] = l; return; }
-    // الاتنين موجودين — ناخد الأحدث
-    const lRelapses = (l.relapses || []).length;
-    const rRelapses = (r.relapses || []).length;
-    // نجمّع كل الانتكاسات من الجهتين (بدون تكرار) عشان مانفقدش أي انتكاسة
-    const allRelapses = Array.from(new Set([...(l.relapses||[]), ...(r.relapses||[])])).sort((a,b)=>a-b);
-    // آخر تحديث = الأحدث بين الجهتين
-    const last = Math.max(l.last || 0, r.last || 0);
-    // البداية = الأقدم (عشان أطول فترة تتحسب صح)
+    // Last-Write-Wins: النسخة الأحدث (بأكبر updatedAt) بتكسب بالكامل
+    // ده بيخلّي أي تعديل — تسجيل أو مسح انتكاسة — من أي جهاز يوصل لباقي الأجهزة
+    const lStamp = l.updatedAt || l.last || 0;
+    const rStamp = r.updatedAt || r.last || 0;
+    // البداية = الأقدم عشان أطول فترة نضافة تتحسب صح (ده مش بيتأثر بالتعديلات)
     const start = Math.min(l.start || Date.now(), r.start || Date.now());
-    out[name] = { start, last, relapses: allRelapses };
+    if(rStamp > lStamp){
+      out[name] = Object.assign({}, r, { start });
+    } else {
+      out[name] = Object.assign({}, l, { start });
+    }
   });
   return out;
 }
@@ -4550,6 +4551,7 @@ function renderToday(){
       const dd = getBH(name);
       dd.relapses.push(ts);
       dd.last = Math.max(dd.last || 0, ts);
+      dd.updatedAt = Date.now();
       saveBH(); renderToday();
     };
     bhList.appendChild(card);
@@ -4738,6 +4740,7 @@ function openBHDetail(name){
         const ts = parseInt(btn.dataset.ts, 10);
         d.relapses = d.relapses.filter(x=>x!==ts);
         d.last = d.relapses.length ? Math.max(...d.relapses) : d.start;
+        d.updatedAt = Date.now();
         saveBH(); openBHDetail(name); renderToday();
       };
     });
@@ -8121,6 +8124,7 @@ $('#bhdRelapse').onclick = async ()=>{
   const d = getBH(name);
   d.relapses.push(ts);
   d.last = Math.max(d.last || 0, ts);
+  d.updatedAt = Date.now();
   saveBH(); openBHDetail(name); renderToday();
 };
 $('#saveSettings').onclick = async ()=>{
