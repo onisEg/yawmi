@@ -1224,6 +1224,10 @@ nav.bottom button.on{color:var(--gold)}
 /* ---------- goals & projects ---------- */
 .goalcard{background:var(--card); border:1px solid var(--line); border-radius:var(--r); padding:16px; margin-bottom:14px; box-shadow:0 2px 12px rgba(0,0,0,.04)}
 .goalhead{display:flex; align-items:flex-start; gap:10px; margin-bottom:4px}
+.goalchev{background:none; border:none; color:var(--muted); font-size:18px; cursor:pointer; padding:0 2px; margin-top:2px; transform:rotate(90deg); transition:transform .22s; flex-shrink:0; -webkit-tap-highlight-color:transparent}
+.goalcard.collapsed .goalchev{transform:rotate(0deg)}
+.goalbody{overflow:hidden; transition:max-height .3s cubic-bezier(.4,0,.2,1), opacity .2s, margin-top .2s; max-height:2000px; opacity:1}
+.goalcard.collapsed .goalbody{max-height:0; opacity:0; margin-top:0}
 .goaltitle{flex:1; font-size:16px; font-weight:500; line-height:1.5}
 .qbadge{background:var(--gold-soft); color:var(--gold); font-size:12px; border-radius:999px; padding:3px 10px; white-space:nowrap}
 .gprog{display:flex; align-items:center; gap:10px; margin:10px 0}
@@ -7232,6 +7236,7 @@ function renderGoals(){
     card.className = 'goalcard';
     card.innerHTML = `
       <div class="goalhead">
+        <button class="goalchev" aria-label="طي/فتح">›</button>
         <div class="goaltitle"></div>
         ${g.q ? `<span class="qbadge">${g.q}</span>` : ''}
         <button class="goaldel" aria-label="حذف الهدف">✕</button>
@@ -7240,13 +7245,27 @@ function renderGoals(){
         <div class="track"><div class="fill" style="width:${pct}%"></div></div>
         <span class="pct">${arNum(pct)}٪</span>
       </div>
-      <div class="projs"></div>
-      <div class="addproj">
-        <input type="text" class="projInp" placeholder="ضيف مشروع تحت الهدف ده..." autocomplete="off" autocapitalize="off" autocorrect="off" data-1p-ignore data-lpignore="true" data-form-type="other">
-        <button class="addbtn projAdd" aria-label="إضافة مشروع">+</button>
+      <div class="goalbody">
+        <div class="projs"></div>
+        <div class="addproj">
+          <input type="text" class="projInp" placeholder="ضيف مشروع تحت الهدف ده..." autocomplete="off" autocapitalize="off" autocorrect="off" data-1p-ignore data-lpignore="true" data-form-type="other">
+          <button class="addbtn projAdd" aria-label="إضافة مشروع">+</button>
+        </div>
       </div>`;
     card.querySelector('.goaltitle').textContent = g.t;
     makeEditable(card.querySelector('.goaltitle'), g.t, v=>{ if(v){ g.t = v; store(K.goals,goals); } renderGoals(); }, {rerender:renderGoals});
+    // طي/فتح مشاريع الهدف (الحالة محفوظة محلياً لكل هدف)
+    const collapsedGoals = JSON.parse(localStorage.getItem('yawmi_goals_collapsed') || '{}');
+    const isCollapsed = !!collapsedGoals[g.id];
+    if(isCollapsed) card.classList.add('collapsed');
+    card.querySelector('.goalchev').onclick = ()=>{
+      const cg = JSON.parse(localStorage.getItem('yawmi_goals_collapsed') || '{}');
+      const nowCollapsed = !card.classList.contains('collapsed');
+      card.classList.toggle('collapsed', nowCollapsed);
+      if(nowCollapsed) cg[g.id] = 1; else delete cg[g.id];
+      localStorage.setItem('yawmi_goals_collapsed', JSON.stringify(cg));
+      if(navigator.vibrate) navigator.vibrate(6);
+    };
     card.querySelector('.goaldel').onclick = async ()=>{
       const projCount = (g.projects || []).length;
       const extra = projCount ? ` (وجوّاه ${arNum(projCount)} مشروع)` : '';
