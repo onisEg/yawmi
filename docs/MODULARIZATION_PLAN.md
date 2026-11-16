@@ -1,5 +1,14 @@
 # Yawmi — safe modularization roadmap (Web / Android / iOS)
 
+## Mobile build verification — 16 November 2026
+
+- Android GitHub Actions build and JavaScript tests: passed — https://github.com/onisEg/yawmi/actions/runs/43942981331
+- Android 15 emulator: successfully installed, opened, stopped and reopened `in.yawmi.app.preview`. Screenshot pixel-dispersion validation passed; no WebView JavaScript syntax errors were found — https://github.com/onisEg/yawmi/actions/runs/43942981342
+- The debug package uses `applicationIdSuffix ".preview"` so it can coexist with an older installed debug APK. **It has its own local storage; do not uninstall the existing app.**
+- Native reminders are implemented and detected by the emulator's Capacitor plugin calls, but **scheduled background delivery has not been physically tested on a real Android device**.
+- An actual ongoing status bar countdown / Android foreground service and iPhone Dynamic Island / Live Activities are **not included**.
+- The safe-area display is verified on an Android 15 emulator, not on every device notch, cutout, gesture mode or keyboard.
+
 ## Current reality
 - The production PWA lives in one ~500 KB `index.html` with inlined CSS and JavaScript.
 - A single deployed PWA is in production and users have saved data in both localStorage and Supabase.
