@@ -7,6 +7,10 @@ on:
       - feat/android-safe-area-focus-notifications
   workflow_dispatch:
 
+concurrency:
+  group: yawmi-android-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: write
 
@@ -81,6 +85,13 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          # A newer commit may have landed during this long Android build.
+          # Never force-push an out-of-date generated native project over it.
+          git fetch origin "$GITHUB_REF_NAME"
+          if [ "$(git rev-parse HEAD)" != "$(git rev-parse origin/$GITHUB_REF_NAME)" ]; then
+            echo "Newer branch revision exists: skip auto-commit on stale CI checkout."
+            exit 0
+          fi
           git add android/ package-lock.json
           if ! git diff --cached --quiet; then
             git commit -m "chore(android): track tested native project and dependency lockfile"
