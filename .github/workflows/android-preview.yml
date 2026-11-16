@@ -73,6 +73,14 @@ jobs:
           chmod +x gradlew
           ./gradlew assembleDebug --no-daemon
 
+      - name: Upload preview APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: yawmi-android-safe-area-preview-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 7
+          if-no-files-found: error
+
       - name: Install and open preview on Android emulator
         uses: reactivecircus/android-emulator-runner@v2
         with:
@@ -108,10 +116,3 @@ jobs:
           if-no-files-found: warn
           retention-days: 7
 
-      - name: Upload preview APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: yawmi-android-safe-area-preview-apk
-          path: android/app/build/outputs/apk/debug/app-debug.apk
-          retention-days: 7
-          if-no-files-found: error
