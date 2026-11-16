@@ -54,6 +54,17 @@ jobs:
       - name: Sync staged assets into Android
         run: npx cap sync android
 
+      - name: Generate Yawmi native launcher and splash assets from its existing logo
+        run: |
+          mkdir -p assets
+          cp icon-512.png assets/logo.png
+          npx --yes @capacitor/assets@3.0.5 generate --android \
+            --iconBackgroundColor '#F5F3EC' \
+            --iconBackgroundColorDark '#14161F' \
+            --splashBackgroundColor '#F5F3EC' \
+            --splashBackgroundColorDark '#14161F'
+          rm assets/logo.png
+
       - name: Build unsigned debug APK (test only)
         working-directory: android
         run: |
