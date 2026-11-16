@@ -29,8 +29,8 @@ console.log('Yawmi web assets are ready in dist/.');
 // is not modified and cannot accidentally request native permissions.
 const original = await readFile(join(webDir, 'index.html'), 'utf8');
 const nativeDocument = original
-  .replace('</head>', '<script>window.__YAWMI_NATIVE_BUILD=true;</script>\\n</head>')
-  .replace('</body>', '<script type="module" src="./native-bridge.js"></script>\\n</body>');
+  .replace('</head>', '<script>window.__YAWMI_NATIVE_BUILD=true;</script></head>')
+  .replace('</body>', '<script type="module" src="./native-bridge.js"></script></body>');
 if (nativeDocument === original || !nativeDocument.includes('native-bridge.js')) {
   throw new Error('Could not attach the native bridge to staged HTML');
 }
