@@ -13,13 +13,25 @@ const html = source('index.html').toString('utf8');
 
 test('staging copies exactly the public app assets, byte for byte', () => {
   const sourceAssets = ['icon-192.png', 'icon-512.png', 'manifest.json', 'sw.js'];
-  const output = [...sourceAssets, 'index.html', 'native-bridge.js', 'src'];
+  const output = [...sourceAssets, 'index.html', 'native-bridge.js', 'src', 'styles'];
   assert.deepEqual(readdirSync(dist).sort(), output.sort());
   for (const name of sourceAssets) {
     assert.equal(checksum(source(name)), checksum(readFileSync(join(dist, name))), name);
   }
   const clockPath = 'src/features/focus/focus-clock.js';
   assert.equal(checksum(source(clockPath)), checksum(readFileSync(join(dist, clockPath))), 'focus-clock module');
+  for (const file of [
+    'src/features/tasks/task-model.js',
+    'src/features/notes/note-model.js',
+    'src/components/ui-cards.js',
+    'styles/tokens.css',
+    'styles/layout.css',
+    'styles/features.css',
+    'styles/components.css',
+    'styles/overlays.css'
+  ]) {
+    assert.equal(checksum(source(file)), checksum(readFileSync(join(dist, file))), 'Native asset ' + file);
+  }
   const stagedHTML = readFileSync(join(dist,'index.html'),'utf8');
   assert.ok(stagedHTML.startsWith('<!DOCTYPE html>'));
   assert.match(stagedHTML,/window\.__YAWMI_NATIVE_BUILD=true/);
