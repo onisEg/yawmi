@@ -11,7 +11,7 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   compile-and-test:
@@ -29,6 +29,18 @@ jobs:
         run: npm run typecheck
       - name: Build and run regression suite
         run: npm test
+      - name: Commit validated TypeScript JavaScript outputs and lockfile
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package-lock.json src/features/tasks/task-model.js src/features/notes/note-model.js
+          if git diff --cached --quiet; then
+            echo "No generated files changed"
+            exit 0
+          fi
+          git commit -m "build(types): commit verified JS output and TypeScript lockfile"
+          git push origin HEAD:refs/heads/refactor/typescript-strict-task-note-models
+
       - name: Upload generated JavaScript and resolved package lockfile
         if: always()
         uses: actions/upload-artifact@v4
