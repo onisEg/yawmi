@@ -22,13 +22,8 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Install JavaScript dependencies (locked when available)
-        run: |
-          if [ -f package-lock.json ]; then
-            npm ci --no-audit --no-fund
-          else
-            npm install --no-audit --no-fund
-          fi
+      - name: Install JavaScript dependencies and update plugin lockfile
+        run: npm install --no-audit --no-fund
 
       - name: Run offline and cloud-merge safety regression tests
         run: npm test
