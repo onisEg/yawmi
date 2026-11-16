@@ -1,0 +1,30 @@
+name: TypeScript strict validation
+
+on:
+  push:
+    branches:
+      - refactor/typescript-strict-task-note-models
+  workflow_dispatch:
+
+concurrency:
+  group: yawmi-typescript-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  typecheck-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install pinned dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Check TypeScript strict types
+        run: npm run typecheck
+      - name: Verify compiled browser scripts match source and run tests
+        run: npm test

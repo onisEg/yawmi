@@ -5,12 +5,15 @@
   "type": "module",
   "description": "Android packaging for the existing Yawmi PWA",
   "scripts": {
-    "build": "node scripts/build-web.mjs",
+    "build": "npm run typecheck && npm run check:generated && node scripts/build-web.mjs",
     "android:add": "npm run build && npx cap add android",
     "android:sync": "npm run build && npx cap sync android",
     "android:open": "npx cap open android",
     "android:run": "npm run android:sync && npx cap run android",
-    "test": "npm run build && node --test tests/*.test.mjs"
+    "test": "npm run build && node --test tests/*.test.mjs",
+    "generate:models": "node scripts/compile-browser-models.mjs",
+    "check:generated": "node scripts/compile-browser-models.mjs --check",
+    "typecheck": "tsc --project tsconfig.json --noEmit"
   },
   "dependencies": {
     "@capacitor/android": "^8.0.0",
@@ -19,7 +22,8 @@
   },
   "devDependencies": {
     "@capacitor/cli": "^8.0.0",
-    "esbuild": "^0.25.0"
+    "esbuild": "^0.25.0",
+    "typescript": "^5.9.3"
   },
   "engines": {
     "node": ">=22"

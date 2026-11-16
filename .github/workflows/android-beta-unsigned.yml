@@ -5,6 +5,7 @@ on:
     branches:
       - feat/android-updatable-beta-channel
       - refactor/ui-css-tasks-notes-modules
+      - refactor/typescript-strict-task-note-models
   workflow_dispatch:
 
 concurrency:
