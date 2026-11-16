@@ -8,6 +8,9 @@ import vm from 'node:vm';
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const html = readFileSync(join(root, 'index.html'), 'utf8');
 const native = readFileSync(join(root,'src/native/bridge.mjs'),'utf8');
+const tokens = readFileSync(join(root, 'styles/tokens.css'), 'utf8');
+const layout = readFileSync(join(root, 'styles/layout.css'), 'utf8');
+const overlays = readFileSync(join(root, 'styles/overlays.css'), 'utf8');
 const config = JSON.parse(readFileSync(join(root,'capacitor.config.json'),'utf8'));
 
 test('inline Yawmi JavaScript parses, including focus and reminder integrations', () => {
@@ -21,10 +24,10 @@ test('inline Yawmi JavaScript parses, including focus and reminder integrations'
 test('native status bar is visible and Android safe-area is injected by Capacitor', () => {
   assert.equal(config.plugins.SystemBars.insetsHandling,'css');
   assert.equal(config.plugins.SystemBars.hidden,false);
-  assert.match(html,/--yawmi-safe-top: max\(env\(safe-area-inset-top/);
-  assert.match(html,/padding-top:var\(--yawmi-safe-top\)/);
-  assert.match(html,/--yawmi-safe-bottom/);
-  assert.match(html,/bottom:calc\(12px \+ var\(--yawmi-safe-bottom\)\)/);
+  assert.match(tokens,/--yawmi-safe-top: max\(env\(safe-area-inset-top/);
+  assert.match(layout,/padding-top:var\(--yawmi-safe-top\)/);
+  assert.match(tokens,/--yawmi-safe-bottom/);
+  assert.match(overlays,/bottom:calc\(12px \+ var\(--yawmi-safe-bottom\)\)/);
 });
 
 test('focus timer uses wall-clock deadlines rather than decrementing seconds', () => {

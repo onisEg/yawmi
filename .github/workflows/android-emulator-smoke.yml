@@ -6,6 +6,7 @@ on:
       - feat/android-capacitor-foundation
       - feat/android-safe-area-focus-notifications
       - refactor/focus-clock-module-and-data-contracts
+      - refactor/ui-css-tasks-notes-modules
 
 concurrency:
   group: yawmi-emulator-${{ github.ref }}
