@@ -3428,6 +3428,7 @@ function fetchPrayerTimes(dISO){
     const t = j.data.timings;
     prayerCache[c.n + '|' + dISO] = [hmToMin(t.Fajr), hmToMin(t.Dhuhr), hmToMin(t.Asr), hmToMin(t.Maghrib), hmToMin(t.Isha)];
     store('yawmi_ptimes', prayerCache);
+    if(dISO === todayISO() && isNativeApp()) syncNativeReminders();
     ptFetching = false;
     renderToday();
   }).catch(()=>{ ptFetching = false; });
@@ -5044,16 +5045,36 @@ $('#tasbihTap').onclick = tapTasbih;
 })();
 $('#tasbihReset').onclick = ()=>{ tasbihCount = 0; updateTasbihUI(); if(navigator.vibrate) navigator.vibrate(10); };
 
-// ===== مؤقت التركيز (بومودورو) =====
+// ===== مؤقت التركيز (بومودورو): elapsed clock + persistence =====
+const FOCUS_KEY = 'yawmi_focus_runtime_v2';
 let focusState = {
-  running: false, phase: 'work', // work | break
-  remaining: 25*60, workMin: 25, breakMin: 5,
-  timer: null, taskLabel: ''
+  running:false, phase:'work', remaining:25*60,
+  workMin:25, breakMin:5, endsAt:null, timer:null, taskLabel:''
 };
 function focusSessionsKey(){ return 'yawmi_focus_' + todayISO(); }
 function getFocusSessions(){ return parseInt(localStorage.getItem(focusSessionsKey()) || '0', 10); }
 function addFocusSession(){ localStorage.setItem(focusSessionsKey(), String(getFocusSessions() + 1)); }
-// تحديث نص كارت التركيز في صفحة اليوم بعدد الجلسات
+function persistFocus(){
+  const {running,phase,remaining,workMin,breakMin,endsAt,taskLabel}=focusState;
+  localStorage.setItem(FOCUS_KEY, JSON.stringify({running,phase,remaining,workMin,breakMin,endsAt,taskLabel}));
+}
+function restoreFocus(){
+  try {
+    const old=JSON.parse(localStorage.getItem(FOCUS_KEY) || 'null');
+    if(!old || !['work','break'].includes(old.phase)) return;
+    focusState.phase=old.phase;
+    focusState.workMin=[15,25,45,50].includes(old.workMin) ? old.workMin : 25;
+    focusState.breakMin=Number.isFinite(old.breakMin) && old.breakMin>0 ? old.breakMin : 5;
+    focusState.remaining=Number.isFinite(old.remaining) && old.remaining>=0 ? old.remaining : focusState.workMin*60;
+    focusState.taskLabel=typeof old.taskLabel==='string'?old.taskLabel:'';
+    if(old.running && Number.isFinite(old.endsAt) && old.endsAt>0){
+      focusState.running=true;
+      focusState.endsAt=old.endsAt;
+      focusState.timer=setInterval(tickFocus,1000);
+      tickFocus();
+    }
+  } catch(e){ console.warn('focus state restore failed',e); }
+}
 function renderFocusCard(){
   const sub = $('#focusCardSub');
   if(!sub) return;
@@ -5063,15 +5084,15 @@ function renderFocusCard(){
     : '٢٥ دقيقة تركيز · بومودورو';
 }
 function openFocus(taskLabel){
-  focusState.taskLabel = taskLabel || '';
+  if(!focusState.running && taskLabel) focusState.taskLabel=taskLabel;
   $('#focusTaskLabel').textContent = focusState.taskLabel ? `🎯 ${focusState.taskLabel}` : '';
-  resetFocus();
+  tickFocus();
   updateFocusStats();
   $('#focusOv').classList.add('show');
 }
 function closeFocus(){
+  // Closing the sheet does NOT cancel an active focus session.
   $('#focusOv').classList.remove('show');
-  pauseFocus();
 }
 function fmtFocusTime(sec){
   const m = Math.floor(sec / 60), s = sec % 60;
@@ -5079,15 +5100,15 @@ function fmtFocusTime(sec){
 }
 function updateFocusUI(){
   $('#focusTime').textContent = arNum(fmtFocusTime(focusState.remaining));
-  const total = (focusState.phase === 'work' ? focusState.workMin : focusState.breakMin) * 60;
+  const total = (focusState.phase === 'work' ? focusState.workMin : focusState.breakMin)*60;
   const pct = total > 0 ? focusState.remaining / total : 0;
   const C = 552.9;
-  $('#focusFg').style.strokeDashoffset = C * (1 - pct);
+  $('#focusFg').style.strokeDashoffset = C * (1-pct);
   $('#focusFg').classList.toggle('break', focusState.phase === 'break');
   const phaseEl = $('#focusPhase');
   phaseEl.textContent = focusState.phase === 'work' ? 'وقت التركيز' : 'وقت الراحة ☕';
   phaseEl.classList.toggle('break', focusState.phase === 'break');
-  $('#focusToggle').textContent = focusState.running ? 'إيقاف مؤقت' : (focusState.remaining < (focusState.phase==='work'?focusState.workMin:focusState.breakMin)*60 ? 'كمّل' : 'ابدأ');
+  $('#focusToggle').textContent = focusState.running ? 'إيقاف مؤقت' : (focusState.remaining < total ? 'كمّل' : 'ابدأ');
 }
 function updateFocusStats(){
   const n = getFocusSessions();
@@ -5095,45 +5116,54 @@ function updateFocusStats(){
     ? `خلّصت النهارده <b>${arNum(n)}</b> ${n===1?'جلسة تركيز':n===2?'جلستين':'جلسات'} 🔥`
     : 'ابدأ أول جلسة تركيز النهارده 🌱';
 }
+function remainingFromDeadline(deadline,now=Date.now()){
+  return Math.max(0,Math.ceil((deadline-now)/1000));
+}
 function tickFocus(){
-  focusState.remaining--;
-  if(focusState.remaining <= 0){
-    // خلّصت المرحلة
-    if(focusState.phase === 'work'){
-      addFocusSession();
-      updateFocusStats();
-      renderFocusCard();
+  if(focusState.running && focusState.endsAt){
+    focusState.remaining = remainingFromDeadline(focusState.endsAt);
+    if(focusState.remaining === 0){
+      const wasWork=focusState.phase==='work';
+      // Finalize atomically before UI or notifications, to avoid double-count after restart.
+      focusState.running=false;
+      focusState.endsAt=null;
+      if(focusState.timer){clearInterval(focusState.timer);focusState.timer=null;}
+      focusState.phase=wasWork?'break':'work';
+      focusState.remaining=(wasWork?focusState.breakMin:focusState.workMin)*60;
+      persistFocus();
+      if(wasWork){addFocusSession();updateFocusStats();renderFocusCard();}
       if(navigator.vibrate) navigator.vibrate([100,50,100]);
-      try{ showLocalNotif('🎉 خلّصت جلسة تركيز!', 'وقت راحة قصيّرة، تستاهل 👏'); }catch(e){}
-      focusState.phase = 'break';
-      focusState.remaining = focusState.breakMin * 60;
-    } else {
-      if(navigator.vibrate) navigator.vibrate([100,50,100]);
-      try{ showLocalNotif('⏰ خلّصت الراحة', 'يلا نكمّل تركيز 💪'); }catch(e){}
-      focusState.phase = 'work';
-      focusState.remaining = focusState.workMin * 60;
+      // Native OS notification was scheduled at the deadline; don't send a duplicate.
+      if(!isNativeApp()) showLocalNotif(wasWork?'🎉 خلّصت جلسة تركيز!':'⏰ خلّصت الراحة',
+        wasWork?'وقت راحة قصيرة، تستاهل 👏':'يلا نكمّل تركيز 💪');
+      if(window.YawmiNative) window.YawmiNative.cancelFocus().catch(console.warn);
     }
-    pauseFocus();
-    updateFocusUI();
-    return;
   }
   updateFocusUI();
 }
 function startFocus(){
   if(focusState.running) return;
-  focusState.running = true;
-  focusState.timer = setInterval(tickFocus, 1000);
+  focusState.running=true;
+  focusState.endsAt=Date.now()+focusState.remaining*1000;
+  persistFocus();
+  focusState.timer=setInterval(tickFocus,1000);
+  if(window.YawmiNative) window.YawmiNative.scheduleFocus({endsAt:focusState.endsAt,phase:focusState.phase}).catch(console.warn);
   updateFocusUI();
 }
 function pauseFocus(){
-  focusState.running = false;
-  if(focusState.timer){ clearInterval(focusState.timer); focusState.timer = null; }
+  if(focusState.running && focusState.endsAt) focusState.remaining=remainingFromDeadline(focusState.endsAt);
+  focusState.running=false;
+  focusState.endsAt=null;
+  if(focusState.timer){clearInterval(focusState.timer);focusState.timer=null;}
+  if(window.YawmiNative) window.YawmiNative.cancelFocus().catch(console.warn);
+  persistFocus();
   updateFocusUI();
 }
 function resetFocus(){
   pauseFocus();
-  focusState.phase = 'work';
-  focusState.remaining = focusState.workMin * 60;
+  focusState.phase='work';
+  focusState.remaining=focusState.workMin*60;
+  persistFocus();
   updateFocusUI();
 }
 $('#focusClose').onclick = closeFocus;
@@ -5142,9 +5172,10 @@ $('#focusToggle').onclick = ()=>{ focusState.running ? pauseFocus() : startFocus
 $('#focusReset').onclick = resetFocus;
 $('#focusSkip').onclick = ()=>{
   // تخطّي المرحلة الحالية
+  pauseFocus();
   if(focusState.phase === 'work'){ focusState.phase = 'break'; focusState.remaining = focusState.breakMin*60; }
   else { focusState.phase = 'work'; focusState.remaining = focusState.workMin*60; }
-  pauseFocus();
+  persistFocus();
   updateFocusUI();
 };
 document.querySelectorAll('.fdur').forEach(b=>{
@@ -5158,6 +5189,7 @@ document.querySelectorAll('.fdur').forEach(b=>{
 });
 const focusOpenBtn = $('#focusOpenBtn');
 if(focusOpenBtn) focusOpenBtn.onclick = ()=> openFocus();
+restoreFocus();
 
 // أزرار تبويب نظرة الفرعي (إحصائيات | تقويم)
 document.querySelectorAll('[data-dashseg]').forEach(btn=>{
@@ -9518,6 +9550,7 @@ function applyTheme(t){
   document.querySelector('meta[name=theme-color]').setAttribute('content', t === 'light' ? '#F5F3EC' : '#14161F');
   $('#themeBtn').textContent = t === 'light' ? '☾' : '☀';
   localStorage.setItem('yawmi_theme', t);
+  if(window.YawmiNative) window.YawmiNative.setSystemBarsTheme(t).catch(console.warn);
 }
 $('#notifBtn').onclick = openNotifs;
 $('#openChallenges').onclick = ()=>{ openChallengeSheet(); $('#challengeOv').classList.add('show'); };
@@ -9547,7 +9580,7 @@ updateNavCurr();
 try{ checkOccasionNotifs(); }catch(e){ console.warn('occasion', e); }
 try{ startPrayerTimer(); }catch(e){ console.warn('prayerTimer', e); }
 try{ startHero(); }catch(e){ console.warn('hero', e); }
-if(notifSupported() && Notification.permission === 'granted') startReminderScheduler();
+if(!isNativeApp() && notifSupported() && Notification.permission === 'granted') startReminderScheduler();
 updateNotifDot();
 // إعادة رسم تانية عشان أي بيانات اتأخرت
 reloadState();
@@ -9781,8 +9814,9 @@ $('#installDismiss').onclick = ()=>{
 window.addEventListener('appinstalled', ()=>{ $('#installBanner').classList.add('hidden'); toast('اتثبّت التطبيق ✓'); });
 
 // هل التطبيق متثبّت بالفعل؟
+function isNativeApp(){ return !!window.__YAWMI_NATIVE_BUILD; }
 function isStandalone(){
-  return !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) ||
+  return isNativeApp() || !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) ||
     (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone === true;
 }
 // كشف نوع الجهاز
@@ -9797,9 +9831,15 @@ const REMKEY = 'yawmi_reminders';
 function loadReminders(){ try{ return JSON.parse(localStorage.getItem(REMKEY)) || {}; }catch(e){ return {}; } }
 function saveReminders(r){ localStorage.setItem(REMKEY, JSON.stringify(r)); }
 
-function notifSupported(){ return 'Notification' in window; }
+function notifSupported(){ return isNativeApp() || 'Notification' in window; }
 
 async function requestNotifPermission(){
+  if(isNativeApp()){
+    if(!window.YawmiNative){ showAlert('إشعارات Android لسه بتتحمّل، جرّب تاني', {icon:'🔔'}); return false; }
+    const granted = await window.YawmiNative.requestPermission();
+    if(granted) syncNativeReminders();
+    return granted;
+  }
   if(!notifSupported()){ showAlert('الإشعارات مش مدعومة في المتصفح ده', {icon:'🔔'}); return false; }
   if(Notification.permission === 'granted') return true;
   const perm = await Notification.requestPermission();
@@ -9807,6 +9847,10 @@ async function requestNotifPermission(){
 }
 
 function showLocalNotif(title, body){
+  if(isNativeApp()){
+    if(window.YawmiNative) window.YawmiNative.show(title,body).catch(e=> console.warn('native notif',e));
+    return;
+  }
   if(!notifSupported() || Notification.permission !== 'granted') return;
   try{
     if(navigator.serviceWorker && navigator.serviceWorker.ready){
@@ -9822,11 +9866,14 @@ function showLocalNotif(title, body){
 // جدولة: بنشيّك كل دقيقة على التذكيرات المستحقة اليوم
 let reminderInterval = null;
 function startReminderScheduler(){
+  if(isNativeApp()){ syncNativeReminders(); return; }
   if(reminderInterval) clearInterval(reminderInterval);
   checkDueReminders();
   reminderInterval = setInterval(checkDueReminders, 60000); // كل دقيقة
 }
 function checkDueReminders(){
+  // Native notifications are scheduled ahead by Android/iOS, never polled by the WebView.
+  if(isNativeApp()) return;
   const r = loadReminders();
   if(Notification.permission !== 'granted') return;
   const now = new Date();
@@ -9976,9 +10023,11 @@ function getTodayPrayerTimes(){
     return cache[key] || null;
   }catch(e){ return null; }
 }
-function populateReminders(){
+async function populateReminders(){
   const r = loadReminders();
-  const enabled = notifSupported() && Notification.permission === 'granted';
+  const enabled = isNativeApp()
+    ? !!(window.YawmiNative && await window.YawmiNative.hasPermission())
+    : (notifSupported() && Notification.permission === 'granted');
   $('#enableNotifBtn').classList.toggle('hidden', enabled);
   $('#reminderOptions').classList.toggle('hidden', !enabled);
   if($('#remPrayer')){ $('#remPrayer').checked = !!r.prayer; $('#remPrayerBefore').value = r.prayerBefore || '0'; }
@@ -9996,14 +10045,39 @@ function saveReminderSettings(){
     fast: $('#remFast').checked, fastTime: $('#remFastTime').value,
   };
   saveReminders(r);
+  if(isNativeApp()) syncNativeReminders();
 }
+
+async function syncNativeReminders(){
+  if(!isNativeApp() || !window.YawmiNative) return;
+  try {
+    return await window.YawmiNative.syncReminders({
+      rules: loadReminders(),
+      prayerTimes: getTodayPrayerTimes(),
+      obligations: obls
+    });
+  } catch(e) { console.warn('Native reminder scheduling failed', e); }
+}
+
+window.addEventListener('yawmi-native-ready', async ()=>{
+  await populateReminders();
+  await syncNativeReminders();
+  if(focusState.running && focusState.endsAt && focusState.endsAt > Date.now())
+    window.YawmiNative.scheduleFocus({endsAt:focusState.endsAt,phase:focusState.phase}).catch(console.warn);
+});
+document.addEventListener('visibilitychange', ()=>{
+  if(isNativeApp() && !document.hidden){
+    tickFocus();
+    syncNativeReminders();
+  }
+});
 
 // wire
 if($('#enableNotifBtn')){
   $('#enableNotifBtn').onclick = async ()=>{
     const ok = await requestNotifPermission();
-    if(ok){ populateReminders(); startReminderScheduler(); toast('اتفعّلت التذكيرات ✓'); }
-    else { showAlert('لازم تسمح بالإشعارات من المتصفح عشان التذكيرات تشتغل', {icon:'🔔'}); }
+    if(ok){ await populateReminders(); startReminderScheduler(); toast('اتفعّلت التذكيرات ✓'); }
+    else { showAlert('لازم تسمح بالإشعارات من إعدادات الجهاز عشان التذكيرات تشتغل', {icon:'🔔'}); }
   };
 }
 ['remPrayer','remPrayerBefore','remAzkar','remWird','remReview','remFast','remAzkarTime','remWirdTime','remReviewTime','remFastTime'].forEach(id=>{
