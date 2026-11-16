@@ -3,7 +3,7 @@ import { createServer } from 'node:http';
 import { readFile, stat } from 'node:fs/promises';
 import { resolve, extname, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
-const root = fileURLToPath(new URL('../', import.meta.url));
+const root = resolve(fileURLToPath(new URL('../', import.meta.url))); // normalize trailing slash for path containment
 const mime = { '.html':'text/html', '.css':'text/css', '.js':'text/javascript',
   '.json':'application/json', '.png':'image/png', '.svg':'image/svg+xml' };
 createServer(async (req,res) => {
