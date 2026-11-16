@@ -28,6 +28,14 @@ const clockRel = 'src/features/focus/focus-clock.js';
 await mkdir(join(webDir, 'src/features/focus'), { recursive: true });
 await copyFile(join(root, clockRel), join(webDir, clockRel));
 console.log('Staged ' + clockRel);
+// Reuse the exact stylesheet order from index.html across Web and Android.
+const styleNames = ['tokens.css', 'layout.css', 'features.css', 'components.css', 'overlays.css'];
+await mkdir(join(webDir, 'styles'), { recursive: true });
+for (const name of styleNames) {
+  await copyFile(join(root, 'styles', name), join(webDir, 'styles', name));
+  console.log('Staged styles/' + name);
+}
+
 console.log('Yawmi web assets are ready in dist/.');
 
 // Only Android/iOS copies get the native JavaScript bridge. The hosted PWA
