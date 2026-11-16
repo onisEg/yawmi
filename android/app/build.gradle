@@ -17,6 +17,13 @@ android {
         }
     }
     buildTypes {
+        // Debug artifacts are intentionally side-by-side with released Yawmi.
+        // CI-generated debug keystores rotate; NEVER ask testers to uninstall
+        // the existing app (which may hold local-only user data).
+        debug {
+            applicationIdSuffix ".preview"
+            versionNameSuffix "-preview"
+        }
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'

@@ -4,6 +4,11 @@ on:
   push:
     branches:
       - feat/android-capacitor-foundation
+      - feat/android-safe-area-focus-notifications
+
+concurrency:
+  group: yawmi-emulator-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
@@ -22,7 +27,7 @@ jobs:
           cache: npm
 
       - name: Install pinned dependencies
-        run: npm ci --no-audit --no-fund
+        run: npm install --no-audit --no-fund
 
       - name: Stage Yawmi web app
         run: npm run build
@@ -62,20 +67,27 @@ jobs:
           script: |
             adb install -r android/app/build/outputs/apk/debug/app-debug.apk
             adb logcat -c
-            adb shell am start -W -n in.yawmi.app/.MainActivity
+            adb shell am start -W -n in.yawmi.app.preview/in.yawmi.app.MainActivity
             sleep 25
-            adb shell pidof in.yawmi.app
+            adb shell pidof in.yawmi.app.preview
             adb exec-out screencap -p > yawmi-emulator-first-launch.png
-            adb shell am force-stop in.yawmi.app
-            adb shell am start -W -n in.yawmi.app/.MainActivity
+            adb shell am force-stop in.yawmi.app.preview
+            adb shell am start -W -n in.yawmi.app.preview/in.yawmi.app.MainActivity
             sleep 25
-            adb shell pidof in.yawmi.app
+            adb shell pidof in.yawmi.app.preview
             adb exec-out screencap -p > yawmi-emulator-second-launch.png
             adb logcat -d -v time > yawmi-emulator-full.log
             adb logcat -d -s AndroidRuntime:E > yawmi-emulator-runtime.log
-            adb shell uiautomator dump /sdcard/window.xml
-            adb pull /sdcard/window.xml yawmi-emulator-window.xml
             if grep -q 'FATAL EXCEPTION' yawmi-emulator-runtime.log; then cat yawmi-emulator-runtime.log; exit 1; fi
+
+      - name: Verify rendered UI is nonblank and WebView has no syntax errors
+        run: |
+          python3 -m pip install --quiet pillow
+          python3 -c 'from PIL import Image,ImageStat; import sys; im=Image.open("yawmi-emulator-second-launch.png").convert("RGB"); w,h=im.size; crop=im.crop((w//10,h//7,w*9//10,h*6//7)); spread=max(ImageStat.Stat(crop).stddev); print("App screenshot color spread:",spread); sys.exit(0 if spread>5 else 1)'
+          if grep -E "Uncaught SyntaxError|JavaScript Error:" yawmi-emulator-full.log; then
+            echo "A WebView JavaScript syntax error was detected!"
+            exit 1
+          fi
 
       - name: Upload emulator first-launch screenshot and crash log
         if: always()
@@ -87,6 +99,5 @@ jobs:
             yawmi-emulator-second-launch.png
             yawmi-emulator-full.log
             yawmi-emulator-runtime.log
-            yawmi-emulator-window.xml
           if-no-files-found: warn
           retention-days: 7

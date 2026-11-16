@@ -12,11 +12,23 @@ const checksum = (buf) => createHash('sha256').update(buf).digest('hex');
 const html = source('index.html').toString('utf8');
 
 test('staging copies exactly the public app assets, byte for byte', () => {
-  const expected = ['icon-192.png', 'icon-512.png', 'index.html', 'manifest.json', 'sw.js'];
-  assert.deepEqual(readdirSync(dist).sort(), expected);
-  for (const name of expected) {
+  const sourceAssets = ['icon-192.png', 'icon-512.png', 'manifest.json', 'sw.js'];
+  const output = [...sourceAssets, 'index.html', 'native-bridge.js'];
+  assert.deepEqual(readdirSync(dist).sort(), output.sort());
+  for (const name of sourceAssets) {
     assert.equal(checksum(source(name)), checksum(readFileSync(join(dist, name))), name);
   }
+  const stagedHTML = readFileSync(join(dist,'index.html'),'utf8');
+  assert.ok(stagedHTML.startsWith('<!DOCTYPE html>'));
+  assert.match(stagedHTML,/window\.__YAWMI_NATIVE_BUILD=true/);
+  assert.match(stagedHTML,/native-bridge\.js/);
+  // The original source contains an embedded PDF HTML template with its own </body>.
+  // A first-occurrence replacement would inject a literal <script> into a JS string and blank the app.
+  assert.ok(stagedHTML.indexOf('native-bridge.js') > stagedHTML.indexOf('function doExportPDF'));
+  assert.match(stagedHTML, /<script type="module" src="\.\/native-bridge\.js"><\/script><\/body><\/html>\s*$/);
+
+  assert.ok(readFileSync(join(dist,'native-bridge.js')).length > 100);
+
 });
 
 test('no database SQL, CNAME, credentials or documentation ships in the APK web assets', () => {

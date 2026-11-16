@@ -58,6 +58,14 @@
   --nav-glass:rgba(46,36,26,.72); --nav-glass-border:rgba(255,220,180,.1);
   --r:20px;
 }
+/* Capacitor 8 injects safe-area CSS vars on Android (including WebView < 140).
+   Web/PWA and iOS use CSS env() values; max() prevents losing either inset. */
+:root {
+  --yawmi-safe-top: max(env(safe-area-inset-top, 0px), var(--safe-area-inset-top, 0px));
+  --yawmi-safe-bottom: max(env(safe-area-inset-bottom, 0px), var(--safe-area-inset-bottom, 0px));
+  --yawmi-safe-left: max(env(safe-area-inset-left, 0px), var(--safe-area-inset-left, 0px));
+  --yawmi-safe-right: max(env(safe-area-inset-right, 0px), var(--safe-area-inset-right, 0px));
+}
 :root[data-theme="light"]{
   --bg:#F5F3EC; --card:#FFFFFF; --card2:#EFEDE4; --line:#E0DDD0;
   --text:#2A2C33; --muted:#6E7280; --faint:#A3A79E;
@@ -71,7 +79,8 @@ body{
   background:var(--bg); color:var(--text);
   font-family:var(--app-font,'IBM Plex Sans Arabic'),system-ui,sans-serif;
   font-size:var(--base-size,12px); line-height:1.7;
-  padding-bottom:calc(110px + env(safe-area-inset-bottom));
+  padding-top:var(--yawmi-safe-top);
+  padding-bottom:calc(110px + var(--yawmi-safe-bottom));
 }
 :root{--app-font:'IBM Plex Sans Arabic'; --base-size:12px}
 .amiri{font-family:'Amiri',serif}
@@ -205,7 +214,7 @@ main{padding:0 16px; max-width:560px; margin:0 auto}
 .scoretxt .scoreof{font-size:11px; color:var(--faint); margin-top:1px}
 .scoretxt .sub{font-size:11px; color:var(--muted); margin-top:5px}
 .streakbadge{display:inline-block; margin-top:7px; font-size:11px; color:var(--gold); background:var(--gold-soft); border-radius:8px; padding:3px 9px; font-weight:600}
-#installBanner{position:fixed; bottom:calc(88px + env(safe-area-inset-bottom)); right:12px; left:12px; max-width:540px; margin:0 auto; z-index:57; display:flex; align-items:center; gap:12px; background:var(--card); border:1px solid var(--gold); border-radius:16px; padding:12px 14px; box-shadow:0 6px 20px rgba(0,0,0,.16)}
+#installBanner{position:fixed; bottom:calc(88px + var(--yawmi-safe-bottom)); right:12px; left:12px; max-width:540px; margin:0 auto; z-index:57; display:flex; align-items:center; gap:12px; background:var(--card); border:1px solid var(--gold); border-radius:16px; padding:12px 14px; box-shadow:0 6px 20px rgba(0,0,0,.16)}
 #installBanner .installicon{color:var(--gold); flex-shrink:0}
 #installBanner .installicon .ico-svg{width:24px; height:24px}
 #installBanner .installtxt{flex:1; min-width:0}
@@ -215,7 +224,7 @@ main{padding:0 16px; max-width:560px; margin:0 auto}
 #installBanner #installDismiss{background:none; border:none; color:var(--muted); font-size:16px; cursor:pointer; padding:4px; flex-shrink:0}
 #installGuideOv{position:fixed; inset:0; background:rgba(0,0,0,.6); display:flex; align-items:flex-end; justify-content:center; z-index:63; opacity:0; visibility:hidden; transition:opacity .25s, visibility .25s}
 #installGuideOv.show{opacity:1; visibility:visible}
-#installGuideSheet{background:var(--card); border-radius:24px 24px 0 0; width:100%; max-width:560px; padding:20px 20px calc(24px + env(safe-area-inset-bottom)); max-height:85vh; overflow-y:auto; transform:translateY(100%); transition:transform .3s cubic-bezier(.32,.72,0,1)}
+#installGuideSheet{background:var(--card); border-radius:24px 24px 0 0; width:100%; max-width:560px; padding:20px 20px calc(24px + var(--yawmi-safe-bottom)); max-height:85vh; overflow-y:auto; transform:translateY(100%); transition:transform .3s cubic-bezier(.32,.72,0,1)}
 #installGuideOv.show #installGuideSheet{transform:translateY(0)}
 .installsteps{margin:0; padding-right:20px; display:flex; flex-direction:column; gap:14px}
 .installsteps li{font-size:14px; line-height:1.8; color:var(--text)}
@@ -252,7 +261,7 @@ main{padding:0 16px; max-width:560px; margin:0 auto}
 /* prayer state picker */
 .pickerov{position:fixed; inset:0; background:rgba(0,0,0,.6); display:flex; align-items:flex-end; justify-content:center; z-index:56; opacity:0; visibility:hidden; transition:opacity .25s ease, visibility .25s}
 .pickerov.show{opacity:1; visibility:visible}
-.pickerbox{background:var(--card); border-radius:20px 20px 0 0; width:100%; max-width:560px; padding:20px 20px calc(24px + env(safe-area-inset-bottom)); transform:translateY(100%); transition:transform .3s cubic-bezier(.32,.72,0,1)}
+.pickerbox{background:var(--card); border-radius:20px 20px 0 0; width:100%; max-width:560px; padding:20px 20px calc(24px + var(--yawmi-safe-bottom)); transform:translateY(100%); transition:transform .3s cubic-bezier(.32,.72,0,1)}
 .pickerov.show .pickerbox{transform:translateY(0)}
 .pickerbox h3{margin:0 0 14px; font-size:17px; text-align:center}
 .ppopt{display:flex; align-items:center; gap:12px; width:100%; background:var(--card2); border:1px solid var(--line); border-radius:14px; padding:14px; margin-bottom:8px; font-family:inherit; font-size:15px; color:var(--text); cursor:pointer}
@@ -447,7 +456,7 @@ main{padding:0 16px; max-width:560px; margin:0 auto}
 /* ===== تفاصيل التحدي ===== */
 #challengeDetailOv{position:fixed; inset:0; background:rgba(0,0,0,.6); display:flex; align-items:flex-end; justify-content:center; z-index:60; opacity:0; visibility:hidden; transition:opacity .25s ease, visibility .25s}
 #challengeDetailOv.show{opacity:1; visibility:visible}
-#challengeDetailModal{background:var(--card); border-radius:24px 24px 0 0; padding:20px 20px calc(24px + env(safe-area-inset-bottom)); width:100%; max-width:540px; transform:translateY(100%); transition:transform .3s cubic-bezier(.4,0,.2,1); max-height:92vh; overflow-y:auto}
+#challengeDetailModal{background:var(--card); border-radius:24px 24px 0 0; padding:20px 20px calc(24px + var(--yawmi-safe-bottom)); width:100%; max-width:540px; transform:translateY(100%); transition:transform .3s cubic-bezier(.4,0,.2,1); max-height:92vh; overflow-y:auto}
 #challengeDetailOv.show #challengeDetailModal{transform:translateY(0)}
 .cdprogresswrap{margin-bottom:16px}
 .cdprogressbar{height:12px; background:var(--card2); border-radius:999px; overflow:hidden; border:1px solid var(--line)}
@@ -456,7 +465,7 @@ main{padding:0 16px; max-width:560px; margin:0 auto}
 /* ===== تفاصيل العادة ===== */
 #habitDetailOv{position:fixed; inset:0; background:rgba(0,0,0,.6); display:flex; align-items:flex-end; justify-content:center; z-index:60; opacity:0; visibility:hidden; transition:opacity .25s ease, visibility .25s}
 #habitDetailOv.show{opacity:1; visibility:visible}
-#habitDetailModal{background:var(--card); border-radius:24px 24px 0 0; padding:20px 20px calc(24px + env(safe-area-inset-bottom)); width:100%; max-width:540px; transform:translateY(100%); transition:transform .3s cubic-bezier(.4,0,.2,1); max-height:92vh; overflow-y:auto}
+#habitDetailModal{background:var(--card); border-radius:24px 24px 0 0; padding:20px 20px calc(24px + var(--yawmi-safe-bottom)); width:100%; max-width:540px; transform:translateY(100%); transition:transform .3s cubic-bezier(.4,0,.2,1); max-height:92vh; overflow-y:auto}
 #habitDetailOv.show #habitDetailModal{transform:translateY(0)}
 .hdstats{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:8px}
 .hdstat{background:var(--card2); border:1.5px solid var(--line); border-radius:14px; padding:14px 12px; display:flex; flex-direction:column; align-items:center; gap:4px}
@@ -504,7 +513,7 @@ main{padding:0 16px; max-width:560px; margin:0 auto}
 /* نافذة تحرير الملاحظة */
 #noteEditOv{position:fixed; inset:0; background:rgba(0,0,0,.6); display:flex; align-items:flex-end; justify-content:center; z-index:60; opacity:0; visibility:hidden; transition:opacity .25s ease, visibility .25s}
 #noteEditOv.show{opacity:1; visibility:visible}
-#noteEditSheet{background:var(--card); border-radius:24px 24px 0 0; padding:20px 20px calc(24px + env(safe-area-inset-bottom)); width:100%; max-width:540px; transform:translateY(100%); transition:transform .3s cubic-bezier(.4,0,.2,1); max-height:92vh; overflow-y:auto}
+#noteEditSheet{background:var(--card); border-radius:24px 24px 0 0; padding:20px 20px calc(24px + var(--yawmi-safe-bottom)); width:100%; max-width:540px; transform:translateY(100%); transition:transform .3s cubic-bezier(.4,0,.2,1); max-height:92vh; overflow-y:auto}
 #noteEditOv.show #noteEditSheet{transform:translateY(0)}
 #neBody{min-height:160px; margin-top:10px}
 .necolors{display:flex; gap:9px; flex-wrap:wrap; margin-top:6px}
@@ -518,7 +527,7 @@ main{padding:0 16px; max-width:560px; margin:0 auto}
 /* مؤقت التركيز (بومودورو) */
 #focusOv{position:fixed; inset:0; background:rgba(0,0,0,.6); display:flex; align-items:flex-end; justify-content:center; z-index:60; opacity:0; visibility:hidden; transition:opacity .25s ease, visibility .25s}
 #focusOv.show{opacity:1; visibility:visible}
-#focusModal{background:var(--card); border-radius:24px 24px 0 0; padding:20px 20px calc(24px + env(safe-area-inset-bottom)); width:100%; max-width:540px; transform:translateY(100%); transition:transform .3s cubic-bezier(.4,0,.2,1); max-height:92vh; overflow-y:auto}
+#focusModal{background:var(--card); border-radius:24px 24px 0 0; padding:20px 20px calc(24px + var(--yawmi-safe-bottom)); width:100%; max-width:540px; transform:translateY(100%); transition:transform .3s cubic-bezier(.4,0,.2,1); max-height:92vh; overflow-y:auto}
 #focusOv.show #focusModal{transform:translateY(0)}
 .focusphase{text-align:center; font-size:14px; color:var(--gold); font-weight:700; margin:6px 0 14px; letter-spacing:.5px}
 .focusphase.break{color:var(--teal)}
@@ -541,7 +550,7 @@ main{padding:0 16px; max-width:560px; margin:0 auto}
 .focusstats b{color:var(--gold); font-size:16px}
 #tasbihOv{position:fixed; inset:0; background:rgba(0,0,0,.6); display:flex; align-items:flex-end; justify-content:center; z-index:60; opacity:0; visibility:hidden; transition:opacity .25s ease, visibility .25s}
 #tasbihOv.show{opacity:1; visibility:visible}
-#tasbihModal{background:var(--card); border-radius:24px 24px 0 0; width:100%; max-width:560px; padding:20px 20px calc(24px + env(safe-area-inset-bottom)); transform:translateY(100%); transition:transform .3s cubic-bezier(.32,.72,0,1)}
+#tasbihModal{background:var(--card); border-radius:24px 24px 0 0; width:100%; max-width:560px; padding:20px 20px calc(24px + var(--yawmi-safe-bottom)); transform:translateY(100%); transition:transform .3s cubic-bezier(.32,.72,0,1)}
 #tasbihOv.show #tasbihModal{transform:translateY(0)}
 .tasbihpick{display:flex; gap:8px; justify-content:center; flex-wrap:wrap; margin-bottom:16px}
 /* خرز السبحة المتحرك */
@@ -604,7 +613,7 @@ main{padding:0 16px; max-width:560px; margin:0 auto}
 .dhikrcard.done .dhikrnum b{color:var(--teal)}
 #dhikrManageOv{position:fixed; inset:0; background:rgba(0,0,0,.6); display:flex; align-items:flex-end; justify-content:center; z-index:58; opacity:0; visibility:hidden; transition:opacity .25s ease, visibility .25s}
 #dhikrManageOv.show{opacity:1; visibility:visible}
-#dhikrManageModal{background:var(--card); border-radius:20px 20px 0 0; width:100%; max-width:560px; padding:20px 20px calc(24px + env(safe-area-inset-bottom)); max-height:88vh; overflow-y:auto; transform:translateY(100%); transition:transform .3s cubic-bezier(.32,.72,0,1)}
+#dhikrManageModal{background:var(--card); border-radius:20px 20px 0 0; width:100%; max-width:560px; padding:20px 20px calc(24px + var(--yawmi-safe-bottom)); max-height:88vh; overflow-y:auto; transform:translateY(100%); transition:transform .3s cubic-bezier(.32,.72,0,1)}
 #dhikrManageOv.show #dhikrManageModal{transform:translateY(0)}
 .dmrow{display:flex; align-items:center; gap:10px; background:var(--card2); border-radius:14px; padding:12px; margin-bottom:8px}
 .dmrow .dmtext{flex:1; font-size:14px; line-height:1.7}
@@ -668,7 +677,7 @@ main{padding:0 16px; max-width:560px; margin:0 auto}
 .titem.dragplaceholder *{visibility:hidden}
 #taskDetailOv{position:fixed; inset:0; background:rgba(0,0,0,.6); display:flex; align-items:flex-end; justify-content:center; z-index:60; opacity:0; visibility:hidden; transition:opacity .25s, visibility .25s}
 #taskDetailOv.show{opacity:1; visibility:visible}
-#taskDetailSheet{background:var(--card); border-radius:20px 20px 0 0; width:100%; max-width:560px; padding:20px 20px calc(24px + env(safe-area-inset-bottom)); max-height:88vh; overflow-y:auto; transform:translateY(100%); transition:transform .3s cubic-bezier(.32,.72,0,1)}
+#taskDetailSheet{background:var(--card); border-radius:20px 20px 0 0; width:100%; max-width:560px; padding:20px 20px calc(24px + var(--yawmi-safe-bottom)); max-height:88vh; overflow-y:auto; transform:translateY(100%); transition:transform .3s cubic-bezier(.32,.72,0,1)}
 #taskDetailOv.show #taskDetailSheet{transform:translateY(0)}
 #taskDetailSheet label{display:block; font-size:13px; color:var(--muted); margin:0 0 8px}
 .priaxis{display:flex; flex-direction:column; gap:8px}
@@ -745,7 +754,7 @@ main{padding:0 16px; max-width:560px; margin:0 auto}
 .chaldel{background:none; border:none; color:var(--faint); font-size:14px; cursor:pointer; padding:4px 6px}
 #challengeOv{position:fixed; inset:0; background:rgba(0,0,0,.6); display:flex; align-items:flex-end; justify-content:center; z-index:63; opacity:0; visibility:hidden; transition:opacity .25s, visibility .25s}
 #challengeOv.show{opacity:1; visibility:visible}
-#challengeSheet{background:var(--card); border-radius:24px 24px 0 0; width:100%; max-width:560px; padding:20px 20px calc(24px + env(safe-area-inset-bottom)); max-height:85vh; overflow-y:auto; transform:translateY(100%); transition:transform .3s cubic-bezier(.32,.72,0,1)}
+#challengeSheet{background:var(--card); border-radius:24px 24px 0 0; width:100%; max-width:560px; padding:20px 20px calc(24px + var(--yawmi-safe-bottom)); max-height:85vh; overflow-y:auto; transform:translateY(100%); transition:transform .3s cubic-bezier(.32,.72,0,1)}
 #challengeOv.show #challengeSheet{transform:translateY(0)}
 .chaltpl{display:flex; align-items:center; gap:12px; padding:12px; background:var(--card2); border:1px solid var(--line); border-radius:16px; margin-bottom:8px}
 .chaltplicon{font-size:22px; flex-shrink:0}
@@ -793,7 +802,7 @@ main{padding:0 16px; max-width:560px; margin:0 auto}
 .notifdot{position:absolute; top:4px; right:6px; width:8px; height:8px; border-radius:50%; background:var(--red); border:1.5px solid var(--bg)}
 #notifOv{position:fixed; inset:0; background:rgba(0,0,0,.6); display:flex; align-items:flex-end; justify-content:center; z-index:62; opacity:0; visibility:hidden; transition:opacity .25s, visibility .25s}
 #notifOv.show{opacity:1; visibility:visible}
-#notifSheet{background:var(--card); border-radius:24px 24px 0 0; width:100%; max-width:560px; padding:20px 20px calc(24px + env(safe-area-inset-bottom)); max-height:80vh; overflow-y:auto; transform:translateY(100%); transition:transform .3s cubic-bezier(.32,.72,0,1)}
+#notifSheet{background:var(--card); border-radius:24px 24px 0 0; width:100%; max-width:560px; padding:20px 20px calc(24px + var(--yawmi-safe-bottom)); max-height:80vh; overflow-y:auto; transform:translateY(100%); transition:transform .3s cubic-bezier(.32,.72,0,1)}
 #notifOv.show #notifSheet{transform:translateY(0)}
 .notifitem{display:flex; align-items:flex-start; gap:12px; padding:12px; background:var(--card2); border:1px solid var(--line); border-radius:16px; margin-bottom:8px}
 .notifitem.unread{border-color:var(--gold); background:var(--gold-soft)}
@@ -847,7 +856,7 @@ input[type=time]::-webkit-calendar-picker-indicator, input[type=date]::-webkit-c
 /* detail popup */
 #bhOverlay{position:fixed; inset:0; background:rgba(0,0,0,.6); display:flex; align-items:flex-end; justify-content:center; z-index:55; opacity:0; visibility:hidden; transition:opacity .25s ease, visibility .25s}
 #bhOverlay.show{opacity:1; visibility:visible}
-#bhModal{background:var(--card); border-radius:20px 20px 0 0; width:100%; max-width:560px; padding:20px 20px calc(20px + env(safe-area-inset-bottom)); max-height:88vh; overflow-y:auto; transform:translateY(100%); transition:transform .3s cubic-bezier(.32,.72,0,1)}
+#bhModal{background:var(--card); border-radius:20px 20px 0 0; width:100%; max-width:560px; padding:20px 20px calc(20px + var(--yawmi-safe-bottom)); max-height:88vh; overflow-y:auto; transform:translateY(100%); transition:transform .3s cubic-bezier(.32,.72,0,1)}
 #bhOverlay.show #bhModal{transform:translateY(0)}
 .bhdhead{display:flex; align-items:center; justify-content:space-between; margin-bottom:16px}
 .bhdhead h2{margin:0; font-size:19px}
@@ -905,7 +914,7 @@ input[type=number]{color-scheme:dark light}
 /* زر الإضافة في نص النav — بارز لفوق */
 #quickOv{position:fixed; inset:0; background:rgba(0,0,0,.6); display:flex; align-items:flex-end; justify-content:center; z-index:64; opacity:0; visibility:hidden; transition:opacity .25s, visibility .25s}
 #quickOv.show{opacity:1; visibility:visible}
-#quickSheet{background:var(--card); border-radius:24px 24px 0 0; width:100%; max-width:560px; padding:20px 20px calc(24px + env(safe-area-inset-bottom)); transform:translateY(100%); transition:transform .3s cubic-bezier(.32,.72,0,1)}
+#quickSheet{background:var(--card); border-radius:24px 24px 0 0; width:100%; max-width:560px; padding:20px 20px calc(24px + var(--yawmi-safe-bottom)); transform:translateY(100%); transition:transform .3s cubic-bezier(.32,.72,0,1)}
 #quickOv.show #quickSheet{transform:translateY(0)}
 .quicktabs{display:flex; gap:8px; margin-bottom:16px}
 .quicktab{flex:1; background:var(--card2); border:1.5px solid var(--line); border-radius:999px; padding:10px; font-family:inherit; font-size:13px; font-weight:600; color:var(--muted); cursor:pointer; transition:all .15s}
@@ -1037,7 +1046,7 @@ input[type=number]{color-scheme:dark light}
 .odetailbtn{background:none; border:none; color:var(--muted); font-size:18px; cursor:pointer; padding:2px 8px; flex-shrink:0; line-height:1}
 #oblDetailOv{position:fixed; inset:0; background:rgba(0,0,0,.6); display:flex; align-items:flex-end; justify-content:center; z-index:63; opacity:0; visibility:hidden; transition:opacity .25s, visibility .25s}
 #oblDetailOv.show{opacity:1; visibility:visible}
-#oblDetailSheet{background:var(--card); border-radius:24px 24px 0 0; width:100%; max-width:560px; padding:20px 20px calc(24px + env(safe-area-inset-bottom)); max-height:85vh; overflow-y:auto; transform:translateY(100%); transition:transform .3s cubic-bezier(.32,.72,0,1)}
+#oblDetailSheet{background:var(--card); border-radius:24px 24px 0 0; width:100%; max-width:560px; padding:20px 20px calc(24px + var(--yawmi-safe-bottom)); max-height:85vh; overflow-y:auto; transform:translateY(100%); transition:transform .3s cubic-bezier(.32,.72,0,1)}
 #oblDetailOv.show #oblDetailSheet{transform:translateY(0)}
 .obldrow{margin-bottom:14px}
 .obldrow label{display:block; font-size:12px; color:var(--muted); margin-bottom:6px}
@@ -1090,7 +1099,7 @@ input[type=number]{color-scheme:dark light}
 
 /* ---------- bottom nav ---------- */
 nav.bottom{
-  position:fixed; bottom:calc(12px + env(safe-area-inset-bottom)); right:12px; left:12px;
+  position:fixed; bottom:calc(12px + var(--yawmi-safe-bottom)); right:12px; left:12px;
   z-index:50;
   background:var(--nav-glass); backdrop-filter:blur(20px) saturate(1.4); -webkit-backdrop-filter:blur(20px) saturate(1.4);
   border:1px solid var(--nav-glass-border); border-radius:999px;
@@ -1129,7 +1138,7 @@ nav.bottom button.on{color:var(--gold)}
 .btn.ghost{background:var(--card2); color:var(--text); border:1px solid var(--line)}
 
 #toast{
-  position:fixed; bottom:calc(88px + env(safe-area-inset-bottom)); right:50%;
+  position:fixed; bottom:calc(88px + var(--yawmi-safe-bottom)); right:50%;
   transform:translateX(50%); background:var(--card2); border:1px solid var(--line);
   color:var(--teal); padding:8px 18px; border-radius:999px; font-size:13px;
   opacity:0; transition:opacity .3s; pointer-events:none; z-index:60;
@@ -1141,11 +1150,11 @@ nav.bottom button.on{color:var(--gold)}
 /* ---------- auth modal ---------- */
 #authOverlay{position:fixed; inset:0; background:rgba(0,0,0,.6); display:flex; align-items:flex-end; justify-content:center; z-index:58; opacity:0; visibility:hidden; transition:opacity .25s ease, visibility .25s}
 #authOverlay.show{opacity:1; visibility:visible}
-#authModal{background:var(--card); border-radius:20px 20px 0 0; width:100%; max-width:560px; padding:20px 20px calc(24px + env(safe-area-inset-bottom)); max-height:90vh; overflow-y:auto; transform:translateY(100%); transition:transform .3s cubic-bezier(.32,.72,0,1)}
+#authModal{background:var(--card); border-radius:20px 20px 0 0; width:100%; max-width:560px; padding:20px 20px calc(24px + var(--yawmi-safe-bottom)); max-height:90vh; overflow-y:auto; transform:translateY(100%); transition:transform .3s cubic-bezier(.32,.72,0,1)}
 #authOverlay.show #authModal{transform:translateY(0)}
 #changePassOv{position:fixed; inset:0; background:rgba(0,0,0,.6); display:flex; align-items:flex-end; justify-content:center; z-index:59; opacity:0; visibility:hidden; transition:opacity .25s ease, visibility .25s}
 #changePassOv.show{opacity:1; visibility:visible}
-#changePassModal{background:var(--card); border-radius:20px 20px 0 0; width:100%; max-width:560px; padding:20px 20px calc(24px + env(safe-area-inset-bottom)); max-height:90vh; overflow-y:auto; transform:translateY(100%); transition:transform .3s cubic-bezier(.32,.72,0,1)}
+#changePassModal{background:var(--card); border-radius:20px 20px 0 0; width:100%; max-width:560px; padding:20px 20px calc(24px + var(--yawmi-safe-bottom)); max-height:90vh; overflow-y:auto; transform:translateY(100%); transition:transform .3s cubic-bezier(.32,.72,0,1)}
 #changePassOv.show #changePassModal{transform:translateY(0)}
 .btn.google{width:100%; background:var(--card2); border:1px solid var(--line); color:var(--text); display:flex; align-items:center; justify-content:center; gap:10px; font-size:15px}
 .btn.google span{display:inline-flex; align-items:center; justify-content:center; width:22px; height:22px; border-radius:50%; background:#fff; color:#4285F4; font-weight:700; font-family:Arial, sans-serif}
@@ -3419,6 +3428,7 @@ function fetchPrayerTimes(dISO){
     const t = j.data.timings;
     prayerCache[c.n + '|' + dISO] = [hmToMin(t.Fajr), hmToMin(t.Dhuhr), hmToMin(t.Asr), hmToMin(t.Maghrib), hmToMin(t.Isha)];
     store('yawmi_ptimes', prayerCache);
+    if(dISO === todayISO() && isNativeApp()) syncNativeReminders();
     ptFetching = false;
     renderToday();
   }).catch(()=>{ ptFetching = false; });
@@ -5035,16 +5045,36 @@ $('#tasbihTap').onclick = tapTasbih;
 })();
 $('#tasbihReset').onclick = ()=>{ tasbihCount = 0; updateTasbihUI(); if(navigator.vibrate) navigator.vibrate(10); };
 
-// ===== مؤقت التركيز (بومودورو) =====
+// ===== مؤقت التركيز (بومودورو): elapsed clock + persistence =====
+const FOCUS_KEY = 'yawmi_focus_runtime_v2';
 let focusState = {
-  running: false, phase: 'work', // work | break
-  remaining: 25*60, workMin: 25, breakMin: 5,
-  timer: null, taskLabel: ''
+  running:false, phase:'work', remaining:25*60,
+  workMin:25, breakMin:5, endsAt:null, timer:null, taskLabel:''
 };
 function focusSessionsKey(){ return 'yawmi_focus_' + todayISO(); }
 function getFocusSessions(){ return parseInt(localStorage.getItem(focusSessionsKey()) || '0', 10); }
 function addFocusSession(){ localStorage.setItem(focusSessionsKey(), String(getFocusSessions() + 1)); }
-// تحديث نص كارت التركيز في صفحة اليوم بعدد الجلسات
+function persistFocus(){
+  const {running,phase,remaining,workMin,breakMin,endsAt,taskLabel}=focusState;
+  localStorage.setItem(FOCUS_KEY, JSON.stringify({running,phase,remaining,workMin,breakMin,endsAt,taskLabel}));
+}
+function restoreFocus(){
+  try {
+    const old=JSON.parse(localStorage.getItem(FOCUS_KEY) || 'null');
+    if(!old || !['work','break'].includes(old.phase)) return;
+    focusState.phase=old.phase;
+    focusState.workMin=[15,25,45,50].includes(old.workMin) ? old.workMin : 25;
+    focusState.breakMin=Number.isFinite(old.breakMin) && old.breakMin>0 ? old.breakMin : 5;
+    focusState.remaining=Number.isFinite(old.remaining) && old.remaining>=0 ? old.remaining : focusState.workMin*60;
+    focusState.taskLabel=typeof old.taskLabel==='string'?old.taskLabel:'';
+    if(old.running && Number.isFinite(old.endsAt) && old.endsAt>0){
+      focusState.running=true;
+      focusState.endsAt=old.endsAt;
+      focusState.timer=setInterval(tickFocus,1000);
+      tickFocus();
+    }
+  } catch(e){ console.warn('focus state restore failed',e); }
+}
 function renderFocusCard(){
   const sub = $('#focusCardSub');
   if(!sub) return;
@@ -5054,15 +5084,15 @@ function renderFocusCard(){
     : '٢٥ دقيقة تركيز · بومودورو';
 }
 function openFocus(taskLabel){
-  focusState.taskLabel = taskLabel || '';
+  if(!focusState.running && taskLabel) focusState.taskLabel=taskLabel;
   $('#focusTaskLabel').textContent = focusState.taskLabel ? `🎯 ${focusState.taskLabel}` : '';
-  resetFocus();
+  tickFocus();
   updateFocusStats();
   $('#focusOv').classList.add('show');
 }
 function closeFocus(){
+  // Closing the sheet does NOT cancel an active focus session.
   $('#focusOv').classList.remove('show');
-  pauseFocus();
 }
 function fmtFocusTime(sec){
   const m = Math.floor(sec / 60), s = sec % 60;
@@ -5070,15 +5100,15 @@ function fmtFocusTime(sec){
 }
 function updateFocusUI(){
   $('#focusTime').textContent = arNum(fmtFocusTime(focusState.remaining));
-  const total = (focusState.phase === 'work' ? focusState.workMin : focusState.breakMin) * 60;
+  const total = (focusState.phase === 'work' ? focusState.workMin : focusState.breakMin)*60;
   const pct = total > 0 ? focusState.remaining / total : 0;
   const C = 552.9;
-  $('#focusFg').style.strokeDashoffset = C * (1 - pct);
+  $('#focusFg').style.strokeDashoffset = C * (1-pct);
   $('#focusFg').classList.toggle('break', focusState.phase === 'break');
   const phaseEl = $('#focusPhase');
   phaseEl.textContent = focusState.phase === 'work' ? 'وقت التركيز' : 'وقت الراحة ☕';
   phaseEl.classList.toggle('break', focusState.phase === 'break');
-  $('#focusToggle').textContent = focusState.running ? 'إيقاف مؤقت' : (focusState.remaining < (focusState.phase==='work'?focusState.workMin:focusState.breakMin)*60 ? 'كمّل' : 'ابدأ');
+  $('#focusToggle').textContent = focusState.running ? 'إيقاف مؤقت' : (focusState.remaining < total ? 'كمّل' : 'ابدأ');
 }
 function updateFocusStats(){
   const n = getFocusSessions();
@@ -5086,45 +5116,54 @@ function updateFocusStats(){
     ? `خلّصت النهارده <b>${arNum(n)}</b> ${n===1?'جلسة تركيز':n===2?'جلستين':'جلسات'} 🔥`
     : 'ابدأ أول جلسة تركيز النهارده 🌱';
 }
+function remainingFromDeadline(deadline,now=Date.now()){
+  return Math.max(0,Math.ceil((deadline-now)/1000));
+}
 function tickFocus(){
-  focusState.remaining--;
-  if(focusState.remaining <= 0){
-    // خلّصت المرحلة
-    if(focusState.phase === 'work'){
-      addFocusSession();
-      updateFocusStats();
-      renderFocusCard();
+  if(focusState.running && focusState.endsAt){
+    focusState.remaining = remainingFromDeadline(focusState.endsAt);
+    if(focusState.remaining === 0){
+      const wasWork=focusState.phase==='work';
+      // Finalize atomically before UI or notifications, to avoid double-count after restart.
+      focusState.running=false;
+      focusState.endsAt=null;
+      if(focusState.timer){clearInterval(focusState.timer);focusState.timer=null;}
+      focusState.phase=wasWork?'break':'work';
+      focusState.remaining=(wasWork?focusState.breakMin:focusState.workMin)*60;
+      persistFocus();
+      if(wasWork){addFocusSession();updateFocusStats();renderFocusCard();}
       if(navigator.vibrate) navigator.vibrate([100,50,100]);
-      try{ showLocalNotif('🎉 خلّصت جلسة تركيز!', 'وقت راحة قصيّرة، تستاهل 👏'); }catch(e){}
-      focusState.phase = 'break';
-      focusState.remaining = focusState.breakMin * 60;
-    } else {
-      if(navigator.vibrate) navigator.vibrate([100,50,100]);
-      try{ showLocalNotif('⏰ خلّصت الراحة', 'يلا نكمّل تركيز 💪'); }catch(e){}
-      focusState.phase = 'work';
-      focusState.remaining = focusState.workMin * 60;
+      // Native OS notification was scheduled at the deadline; don't send a duplicate.
+      if(!isNativeApp()) showLocalNotif(wasWork?'🎉 خلّصت جلسة تركيز!':'⏰ خلّصت الراحة',
+        wasWork?'وقت راحة قصيرة، تستاهل 👏':'يلا نكمّل تركيز 💪');
+      if(window.YawmiNative) window.YawmiNative.cancelFocus().catch(console.warn);
     }
-    pauseFocus();
-    updateFocusUI();
-    return;
   }
   updateFocusUI();
 }
 function startFocus(){
   if(focusState.running) return;
-  focusState.running = true;
-  focusState.timer = setInterval(tickFocus, 1000);
+  focusState.running=true;
+  focusState.endsAt=Date.now()+focusState.remaining*1000;
+  persistFocus();
+  focusState.timer=setInterval(tickFocus,1000);
+  if(window.YawmiNative) window.YawmiNative.scheduleFocus({endsAt:focusState.endsAt,phase:focusState.phase}).catch(console.warn);
   updateFocusUI();
 }
 function pauseFocus(){
-  focusState.running = false;
-  if(focusState.timer){ clearInterval(focusState.timer); focusState.timer = null; }
+  if(focusState.running && focusState.endsAt) focusState.remaining=remainingFromDeadline(focusState.endsAt);
+  focusState.running=false;
+  focusState.endsAt=null;
+  if(focusState.timer){clearInterval(focusState.timer);focusState.timer=null;}
+  if(window.YawmiNative) window.YawmiNative.cancelFocus().catch(console.warn);
+  persistFocus();
   updateFocusUI();
 }
 function resetFocus(){
   pauseFocus();
-  focusState.phase = 'work';
-  focusState.remaining = focusState.workMin * 60;
+  focusState.phase='work';
+  focusState.remaining=focusState.workMin*60;
+  persistFocus();
   updateFocusUI();
 }
 $('#focusClose').onclick = closeFocus;
@@ -5133,9 +5172,10 @@ $('#focusToggle').onclick = ()=>{ focusState.running ? pauseFocus() : startFocus
 $('#focusReset').onclick = resetFocus;
 $('#focusSkip').onclick = ()=>{
   // تخطّي المرحلة الحالية
+  pauseFocus();
   if(focusState.phase === 'work'){ focusState.phase = 'break'; focusState.remaining = focusState.breakMin*60; }
   else { focusState.phase = 'work'; focusState.remaining = focusState.workMin*60; }
-  pauseFocus();
+  persistFocus();
   updateFocusUI();
 };
 document.querySelectorAll('.fdur').forEach(b=>{
@@ -5149,6 +5189,7 @@ document.querySelectorAll('.fdur').forEach(b=>{
 });
 const focusOpenBtn = $('#focusOpenBtn');
 if(focusOpenBtn) focusOpenBtn.onclick = ()=> openFocus();
+restoreFocus();
 
 // أزرار تبويب نظرة الفرعي (إحصائيات | تقويم)
 document.querySelectorAll('[data-dashseg]').forEach(btn=>{
@@ -9509,6 +9550,7 @@ function applyTheme(t){
   document.querySelector('meta[name=theme-color]').setAttribute('content', t === 'light' ? '#F5F3EC' : '#14161F');
   $('#themeBtn').textContent = t === 'light' ? '☾' : '☀';
   localStorage.setItem('yawmi_theme', t);
+  if(window.YawmiNative) window.YawmiNative.setSystemBarsTheme(t).catch(console.warn);
 }
 $('#notifBtn').onclick = openNotifs;
 $('#openChallenges').onclick = ()=>{ openChallengeSheet(); $('#challengeOv').classList.add('show'); };
@@ -9538,7 +9580,7 @@ updateNavCurr();
 try{ checkOccasionNotifs(); }catch(e){ console.warn('occasion', e); }
 try{ startPrayerTimer(); }catch(e){ console.warn('prayerTimer', e); }
 try{ startHero(); }catch(e){ console.warn('hero', e); }
-if(notifSupported() && Notification.permission === 'granted') startReminderScheduler();
+if(!isNativeApp() && notifSupported() && Notification.permission === 'granted') startReminderScheduler();
 updateNotifDot();
 // إعادة رسم تانية عشان أي بيانات اتأخرت
 reloadState();
@@ -9772,8 +9814,9 @@ $('#installDismiss').onclick = ()=>{
 window.addEventListener('appinstalled', ()=>{ $('#installBanner').classList.add('hidden'); toast('اتثبّت التطبيق ✓'); });
 
 // هل التطبيق متثبّت بالفعل؟
+function isNativeApp(){ return !!window.__YAWMI_NATIVE_BUILD; }
 function isStandalone(){
-  return !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) ||
+  return isNativeApp() || !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) ||
     (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone === true;
 }
 // كشف نوع الجهاز
@@ -9788,9 +9831,15 @@ const REMKEY = 'yawmi_reminders';
 function loadReminders(){ try{ return JSON.parse(localStorage.getItem(REMKEY)) || {}; }catch(e){ return {}; } }
 function saveReminders(r){ localStorage.setItem(REMKEY, JSON.stringify(r)); }
 
-function notifSupported(){ return 'Notification' in window; }
+function notifSupported(){ return isNativeApp() || 'Notification' in window; }
 
 async function requestNotifPermission(){
+  if(isNativeApp()){
+    if(!window.YawmiNative){ showAlert('إشعارات Android لسه بتتحمّل، جرّب تاني', {icon:'🔔'}); return false; }
+    const granted = await window.YawmiNative.requestPermission();
+    if(granted) syncNativeReminders();
+    return granted;
+  }
   if(!notifSupported()){ showAlert('الإشعارات مش مدعومة في المتصفح ده', {icon:'🔔'}); return false; }
   if(Notification.permission === 'granted') return true;
   const perm = await Notification.requestPermission();
@@ -9798,6 +9847,10 @@ async function requestNotifPermission(){
 }
 
 function showLocalNotif(title, body){
+  if(isNativeApp()){
+    if(window.YawmiNative) window.YawmiNative.show(title,body).catch(e=> console.warn('native notif',e));
+    return;
+  }
   if(!notifSupported() || Notification.permission !== 'granted') return;
   try{
     if(navigator.serviceWorker && navigator.serviceWorker.ready){
@@ -9813,11 +9866,14 @@ function showLocalNotif(title, body){
 // جدولة: بنشيّك كل دقيقة على التذكيرات المستحقة اليوم
 let reminderInterval = null;
 function startReminderScheduler(){
+  if(isNativeApp()){ syncNativeReminders(); return; }
   if(reminderInterval) clearInterval(reminderInterval);
   checkDueReminders();
   reminderInterval = setInterval(checkDueReminders, 60000); // كل دقيقة
 }
 function checkDueReminders(){
+  // Native notifications are scheduled ahead by Android/iOS, never polled by the WebView.
+  if(isNativeApp()) return;
   const r = loadReminders();
   if(Notification.permission !== 'granted') return;
   const now = new Date();
@@ -9967,9 +10023,11 @@ function getTodayPrayerTimes(){
     return cache[key] || null;
   }catch(e){ return null; }
 }
-function populateReminders(){
+async function populateReminders(){
   const r = loadReminders();
-  const enabled = notifSupported() && Notification.permission === 'granted';
+  const enabled = isNativeApp()
+    ? !!(window.YawmiNative && await window.YawmiNative.hasPermission())
+    : (notifSupported() && Notification.permission === 'granted');
   $('#enableNotifBtn').classList.toggle('hidden', enabled);
   $('#reminderOptions').classList.toggle('hidden', !enabled);
   if($('#remPrayer')){ $('#remPrayer').checked = !!r.prayer; $('#remPrayerBefore').value = r.prayerBefore || '0'; }
@@ -9987,14 +10045,39 @@ function saveReminderSettings(){
     fast: $('#remFast').checked, fastTime: $('#remFastTime').value,
   };
   saveReminders(r);
+  if(isNativeApp()) syncNativeReminders();
 }
+
+async function syncNativeReminders(){
+  if(!isNativeApp() || !window.YawmiNative) return;
+  try {
+    return await window.YawmiNative.syncReminders({
+      rules: loadReminders(),
+      prayerTimes: getTodayPrayerTimes(),
+      obligations: obls
+    });
+  } catch(e) { console.warn('Native reminder scheduling failed', e); }
+}
+
+window.addEventListener('yawmi-native-ready', async ()=>{
+  await populateReminders();
+  await syncNativeReminders();
+  if(focusState.running && focusState.endsAt && focusState.endsAt > Date.now())
+    window.YawmiNative.scheduleFocus({endsAt:focusState.endsAt,phase:focusState.phase}).catch(console.warn);
+});
+document.addEventListener('visibilitychange', ()=>{
+  if(isNativeApp() && !document.hidden){
+    tickFocus();
+    syncNativeReminders();
+  }
+});
 
 // wire
 if($('#enableNotifBtn')){
   $('#enableNotifBtn').onclick = async ()=>{
     const ok = await requestNotifPermission();
-    if(ok){ populateReminders(); startReminderScheduler(); toast('اتفعّلت التذكيرات ✓'); }
-    else { showAlert('لازم تسمح بالإشعارات من المتصفح عشان التذكيرات تشتغل', {icon:'🔔'}); }
+    if(ok){ await populateReminders(); startReminderScheduler(); toast('اتفعّلت التذكيرات ✓'); }
+    else { showAlert('لازم تسمح بالإشعارات من إعدادات الجهاز عشان التذكيرات تشتغل', {icon:'🔔'}); }
   };
 }
 ['remPrayer','remPrayerBefore','remAzkar','remWird','remReview','remFast','remAzkarTime','remWirdTime','remReviewTime','remFastTime'].forEach(id=>{

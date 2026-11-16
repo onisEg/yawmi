@@ -1,5 +1,13 @@
 {
   "appId": "in.yawmi.app",
   "appName": "يومي",
-  "webDir": "dist"
+  "webDir": "dist",
+  "plugins": {
+    "SystemBars": {
+      "insetsHandling": "css",
+      "initialViewportFitValueHint": "cover",
+      "hidden": false,
+      "style": "LIGHT"
+    }
+  }
 }
