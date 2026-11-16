@@ -82,6 +82,15 @@ jobs:
             adb pull /sdcard/window.xml yawmi-emulator-window.xml
             if grep -q 'FATAL EXCEPTION' yawmi-emulator-runtime.log; then cat yawmi-emulator-runtime.log; exit 1; fi
 
+      - name: Verify rendered UI is nonblank and WebView has no syntax errors
+        run: |
+          python3 -m pip install --quiet pillow
+          python3 -c 'from PIL import Image,ImageStat; import sys; im=Image.open("yawmi-emulator-second-launch.png").convert("RGB"); w,h=im.size; crop=im.crop((w//10,h//7,w*9//10,h*6//7)); spread=max(ImageStat.Stat(crop).stddev); print("App screenshot color spread:",spread); sys.exit(0 if spread>5 else 1)'
+          if grep -E "Uncaught SyntaxError|JavaScript Error:" yawmi-emulator-full.log; then
+            echo "A WebView JavaScript syntax error was detected!"
+            exit 1
+          fi
+
       - name: Upload emulator first-launch screenshot and crash log
         if: always()
         uses: actions/upload-artifact@v4
