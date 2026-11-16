@@ -13,7 +13,8 @@
     "test": "npm run build && node --test tests/*.test.mjs",
     "generate:models": "node scripts/compile-browser-models.mjs",
     "check:generated": "node scripts/compile-browser-models.mjs --check",
-    "typecheck": "tsc --project tsconfig.json --noEmit"
+    "typecheck": "tsc --project tsconfig.json --noEmit",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@capacitor/android": "^8.0.0",
