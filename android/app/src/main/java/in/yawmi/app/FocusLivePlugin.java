@@ -72,7 +72,10 @@ public class FocusLivePlugin extends Plugin {
             PendingIntent pending = PendingIntent.getActivity(
                 getContext(), 0, openApp, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
             );
-            Notification.Builder builder = new Notification.Builder(getContext(), CHANNEL)
+            Notification.Builder baseBuilder = Build.VERSION.SDK_INT >= 26
+                ? new Notification.Builder(getContext(), CHANNEL)
+                : new Notification.Builder(getContext()); // Android 7 fallback
+            Notification.Builder builder = baseBuilder
                 .setSmallIcon(isBreak ? R.drawable.ic_yawmi_break : R.drawable.ic_yawmi_focus)
                 .setContentTitle(isBreak ? "☕ وقت الراحة" : "🎯 وقت التركيز")
                 .setContentText(isBreak ? "ارتاح شوية — الوقت المتبقي" : "يومي — الوقت المتبقي للتركيز")
