@@ -12,11 +12,6 @@ interface TaskGroup<T extends TaskRecord> {
   cls: string;
   items: T[];
 }
-interface TaskModel {
-  groupTasks: typeof groupTasks;
-  sortTasks: typeof sortTasks;
-}
-
 (function initYawmiTaskModel(host: typeof globalThis) {
   'use strict';
 
@@ -48,6 +43,11 @@ interface TaskModel {
       if (priority(b) !== priority(a)) return priority(b) - priority(a);
       return added(b) - added(a);
     });
+  }
+
+  interface TaskModel {
+    groupTasks: typeof groupTasks;
+    sortTasks: typeof sortTasks;
   }
 
   (host as typeof globalThis & { YawmiTaskModel?: Readonly<TaskModel> })
