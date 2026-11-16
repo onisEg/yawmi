@@ -2985,6 +2985,8 @@ function hideDataLoading(){
 async function syncFull(silent){
   if(syncing || !isLoggedIn()) return;
   syncing = true;
+  // Block every write until a successful remote read establishes a safe merge base.
+  syncReady = false;
   setSyncStrip(true, 'بنجيب بياناتك من حسابك…');
   if(!silent) toast('بيزامن...');
   const res = await syncPull();
@@ -2992,9 +2994,9 @@ async function syncFull(silent){
 
   if(res.status === 'error' || res.status === 'offline'){
     // فشل السحب → منعملش أي رفع (عشان منمسحش بيانات السحابة بالغلط)
-    // بس بنعلّم syncReady=true عشان التطبيق يكمّل ببياناتك المحلية ومايفضلش عالق
+    // Display local data but forbid cloud writes until a later successful pull.
     syncing = false;
-    syncReady = true;
+    syncReady = false;
     setSyncStrip(false); hideDataLoading();
     try{ reloadState(); renderCurrentTab(); }catch(e){}
     if(!silent) toast('المزامنة فشلت: ' + (lastSyncError || 'النت') + ' — بياناتك سليمة');
@@ -8243,7 +8245,7 @@ function doExportPDF(){
 }
 
 function doExportJSON(){
-  const data = {v:1, exported:new Date().toISOString(), days, tasks, exps, obls, revs, goals, bhData, settings};
+  const data = {v:2, exported:new Date().toISOString(), days, tasks, exps, obls, revs, goals, bhData, settings, challenges:load(K.challenges,[]), notes};
   const blob = new Blob([JSON.stringify(data,null,1)], {type:'application/json'});
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
@@ -8538,6 +8540,9 @@ $('#importFile').onchange = e=>{
       settings = Object.assign(settings, data.settings||{});
       settings.budgets = settings.budgets || {};
       store(K.days,days); store(K.tasks,tasks); store(K.exp,exps); store(K.obl,obls); store(K.rev,revs); store(K.goals,goals); store(K.bh,bhData); store(K.set,settings);
+      // Backwards compatible: older backup files do not contain these sections.
+      if(Array.isArray(data.challenges)) store(K.challenges, data.challenges);
+      if(Array.isArray(data.notes)){ notes = data.notes; store(K.notes, notes); }
       document.querySelector('nav.bottom button[data-tab=today]').click();
       renderToday(); toast('اتسترجعت البيانات ✓');
     }catch(err){ showAlert('الملف ده مش نسخة احتياطية صالحة', {icon:'⚠️'}); }
@@ -9768,7 +9773,8 @@ window.addEventListener('appinstalled', ()=>{ $('#installBanner').classList.add(
 
 // هل التطبيق متثبّت بالفعل؟
 function isStandalone(){
-  return (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone === true;
+  return !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) ||
+    (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone === true;
 }
 // كشف نوع الجهاز
 function detectPlatform(){
@@ -10056,7 +10062,7 @@ $('#installAppBtn').onclick = ()=> doInstall();
 $('#installGuideClose').onclick = ()=> $('#installGuideOv').classList.remove('show');
 $('#installGuideOv').onclick = e=>{ if(e.target.id==='installGuideOv') $('#installGuideOv').classList.remove('show'); };
 
-if('serviceWorker' in navigator && (location.protocol==='https:' || location.hostname==='localhost')){
+if(!isStandalone() && 'serviceWorker' in navigator && (location.protocol==='https:' || location.hostname==='localhost')){
   navigator.serviceWorker.register('sw.js');
 }
 </script>
