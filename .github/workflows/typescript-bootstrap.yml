@@ -1,0 +1,42 @@
+name: TypeScript migration bootstrap and validation
+
+on:
+  push:
+    branches:
+      - refactor/typescript-strict-task-note-models
+  workflow_dispatch:
+
+concurrency:
+  group: yawmi-typescript-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  compile-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Resolve exact TypeScript dependency and lockfile
+        run: npm install --no-audit --no-fund
+      - name: Generate browser JavaScript from canonical TypeScript source
+        run: npm run generate:models
+      - name: Strict TypeScript typecheck
+        run: npm run typecheck
+      - name: Build and run regression suite
+        run: npm test
+      - name: Upload generated JavaScript and resolved package lockfile
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: yawmi-typescript-bootstrap
+          path: |
+            package-lock.json
+            src/features/tasks/task-model.js
+            src/features/notes/note-model.js
+          retention-days: 7
+          if-no-files-found: error
