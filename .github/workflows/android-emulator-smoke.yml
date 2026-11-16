@@ -7,6 +7,7 @@ on:
       - feat/android-safe-area-focus-notifications
       - refactor/focus-clock-module-and-data-contracts
       - refactor/ui-css-tasks-notes-modules
+      - refactor/typescript-strict-task-note-models
 
 concurrency:
   group: yawmi-emulator-${{ github.ref }}
@@ -29,7 +30,7 @@ jobs:
           cache: npm
 
       - name: Install pinned dependencies
-        run: npm install --no-audit --no-fund
+        run: npm ci --no-audit --no-fund
 
       - name: Stage Yawmi web app
         run: npm run build
