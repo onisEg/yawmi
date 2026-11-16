@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   android:
@@ -22,8 +22,13 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Install JavaScript dependencies
-        run: npm install --no-audit --no-fund
+      - name: Install JavaScript dependencies (locked when available)
+        run: |
+          if [ -f package-lock.json ]; then
+            npm ci --no-audit --no-fund
+          else
+            npm install --no-audit --no-fund
+          fi
 
       - name: Run offline and cloud-merge safety regression tests
         run: npm test
@@ -40,8 +45,11 @@ jobs:
       - name: Install Android API 36 platform
         run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
 
-      - name: Generate a clean Capacitor Android project
-        run: npx cap add android
+      - name: Generate Capacitor Android project when missing
+        run: |
+          if [ ! -d android ]; then
+            npx cap add android
+          fi
 
       - name: Sync staged assets into Android
         run: npx cap sync android
@@ -59,3 +67,16 @@ jobs:
           path: android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 7
+
+      - name: Commit verified native project and exact dependency lockfile
+        if: github.event_name == 'push' && github.ref == 'refs/heads/feat/android-capacitor-foundation'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add android/ package-lock.json
+          if ! git diff --cached --quiet; then
+            git commit -m "chore(android): track tested native project and dependency lockfile"
+            git push origin HEAD:feat/android-capacitor-foundation
+          else
+            echo "Native source and lockfile already up to date."
+          fi
