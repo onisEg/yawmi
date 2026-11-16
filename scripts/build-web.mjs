@@ -1,6 +1,7 @@
 // Stage only the public web assets for Capacitor's native Android WebView.
 // This script does not touch the deployed site, original assets, or Supabase.
-import { copyFile, mkdir, rm } from 'node:fs/promises';
+import { copyFile, mkdir, rm, readFile, writeFile } from 'node:fs/promises';
+import { build as bundle } from 'esbuild';
 import { fileURLToPath } from 'node:url';
 import { join } from 'node:path';
 
@@ -23,3 +24,24 @@ for (const asset of assets) {
 }
 
 console.log('Yawmi web assets are ready in dist/.');
+
+// Only Android/iOS copies get the native JavaScript bridge. The hosted PWA
+// is not modified and cannot accidentally request native permissions.
+const original = await readFile(join(webDir, 'index.html'), 'utf8');
+const nativeDocument = original
+  .replace('</head>', '<script>window.__YAWMI_NATIVE_BUILD=true;</script>\\n</head>')
+  .replace('</body>', '<script type="module" src="./native-bridge.js"></script>\\n</body>');
+if (nativeDocument === original || !nativeDocument.includes('native-bridge.js')) {
+  throw new Error('Could not attach the native bridge to staged HTML');
+}
+await writeFile(join(webDir, 'index.html'), nativeDocument);
+await bundle({
+  entryPoints: [join(root, 'src/native/bridge.mjs')],
+  outfile: join(webDir, 'native-bridge.js'),
+  platform: 'browser',
+  format: 'esm',
+  target: 'es2022',
+  bundle: true,
+  minify: true
+});
+console.log('Native Capacitor bridge bundled.');
