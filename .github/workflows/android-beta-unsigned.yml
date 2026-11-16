@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - feat/android-updatable-beta-channel
+      - refactor/ui-css-tasks-notes-modules
   workflow_dispatch:
 
 concurrency:
