@@ -1,6 +1,21 @@
-const CACHE = 'yawmi-v187';
+const CACHE = 'yawmi-v188';
 const FONT_CACHE = 'yawmi-fonts-v1';
-const ASSETS = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png', './src/features/focus/focus-clock.js'];
+const ASSETS = [
+  './',
+  './index.html',
+  './manifest.json',
+  './icon-192.png',
+  './icon-512.png',
+  './src/features/focus/focus-clock.js',
+  './src/features/tasks/task-model.js',
+  './src/features/notes/note-model.js',
+  './src/components/ui-cards.js',
+  './styles/tokens.css',
+  './styles/layout.css',
+  './styles/features.css',
+  './styles/components.css',
+  './styles/overlays.css'
+];
 
 self.addEventListener('install', e => {
   self.skipWaiting();
