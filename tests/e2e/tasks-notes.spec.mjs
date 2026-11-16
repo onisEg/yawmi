@@ -62,7 +62,9 @@ test('note create, edit and delete preserves other records', async ({page}) => {
   await page.locator('#notesGrid .notecard').filter({hasText:title}).first().click();
   await page.locator('#neDel').click();
   const confirm = page.locator('#dlgOv');
-  if (await confirm.isVisible()) await page.locator('#dlgOk').click();
+  await expect(confirm).toHaveClass(/show/);
+  await expect(page.locator('#dlgOk')).toBeVisible();
+  await page.locator('#dlgOk').click();
   await expect(page.locator('#notesGrid .notecard').filter({hasText:title})).toHaveCount(0);
   await page.reload();
   await expect.poll(async () => page.evaluate(text =>
