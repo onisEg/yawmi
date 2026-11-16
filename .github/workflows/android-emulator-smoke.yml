@@ -67,14 +67,14 @@ jobs:
           script: |
             adb install -r android/app/build/outputs/apk/debug/app-debug.apk
             adb logcat -c
-            adb shell am start -W -n in.yawmi.app/.MainActivity
+            adb shell am start -W -n in.yawmi.app.preview/in.yawmi.app.MainActivity
             sleep 25
-            adb shell pidof in.yawmi.app
+            adb shell pidof in.yawmi.app.preview
             adb exec-out screencap -p > yawmi-emulator-first-launch.png
-            adb shell am force-stop in.yawmi.app
-            adb shell am start -W -n in.yawmi.app/.MainActivity
+            adb shell am force-stop in.yawmi.app.preview
+            adb shell am start -W -n in.yawmi.app.preview/in.yawmi.app.MainActivity
             sleep 25
-            adb shell pidof in.yawmi.app
+            adb shell pidof in.yawmi.app.preview
             adb exec-out screencap -p > yawmi-emulator-second-launch.png
             adb logcat -d -v time > yawmi-emulator-full.log
             adb logcat -d -s AndroidRuntime:E > yawmi-emulator-runtime.log
