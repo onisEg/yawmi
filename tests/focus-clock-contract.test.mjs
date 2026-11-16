@@ -39,7 +39,8 @@ test('clock module loads before the legacy app script on web and native', () => 
   const index = src.indexOf(linked);
   const app = src.indexOf('<script>\n/* ================= state');
   assert.ok(index > 0 && app > index, 'Clock loads synchronously before application state');
-  assert.match(src, /window\.YawmiFocusClock\.remainingFromDeadline/);
+  assert.match(src, /window\.YawmiFocusClock/);
+  assert.match(src, /clock\.remainingFromDeadline\(deadline,now\)/);
   const nativeHTML = readFileSync(join(root, 'dist/index.html'), 'utf8');
   assert.ok(nativeHTML.includes(linked));
   assert.ok(existsSync(join(root, 'dist', clockFile)));
