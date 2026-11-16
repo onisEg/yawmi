@@ -1,0 +1,38 @@
+name: Playwright E2E isolated Web and mobile
+on:
+  push:
+    branches:
+      - feat/qa-e2e-sync-live-focus-beta
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: yawmi-e2e-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  browser-journeys:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: TypeScript and isolated model/regression tests
+        run: npm test
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Browser user journeys with no production API credentials
+        run: npm run test:e2e
+      - name: Upload failed browser traces
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: yawmi-playwright-qa
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7
+          if-no-files-found: warn
