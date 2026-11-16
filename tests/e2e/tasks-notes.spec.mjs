@@ -26,9 +26,9 @@ test('task survives reload, can be completed and moved to trash', async ({page})
   await saved.locator('.tcheck').click();
   // Completed tasks are collapsed into their own group; verifying persisted JSON
   // is safer than depending on a particular accordion/visual state.
-  await expect.poll(async () => page.evaluate(() =>
+  await expect.poll(async () => page.evaluate((text) =>
     JSON.parse(localStorage.getItem('yawmi_tasks') || '[]')
-      .find(t => t.t === label)?.done)).toBe(true);
+      .find(t => t.t === text)?.done,label)).toBe(true);
   await page.reload();
   await expect.poll(async () => page.evaluate((text) =>
     JSON.parse(localStorage.getItem('yawmi_tasks') || '[]')
@@ -50,8 +50,14 @@ test('note create, edit and delete preserves other records', async ({page}) => {
   const stored = page.locator('#notesGrid .notecard').filter({hasText:title}).first();
   await expect(stored).toBeVisible();
   await stored.click();
+  await expect(page.locator('#noteEditOv')).toHaveClass(/show/);
+  await expect(page.locator('#neTitle')).toHaveValue(title);
   await page.locator('#neBody').fill('Updated note content');
+  await expect(page.locator('#neBody')).toHaveValue('Updated note content');
   await page.locator('#neSave').click();
+  await expect.poll(async () => page.evaluate((text) =>
+    JSON.parse(localStorage.getItem('yawmi_notes') || '[]').find(n => n.t === text)?.body, title
+  )).toBe('Updated note content');
   await expect(page.locator('#notesGrid .notecard').filter({hasText:'Updated note content'})).toBeVisible();
   await page.locator('#notesGrid .notecard').filter({hasText:title}).first().click();
   await page.locator('#neDel').click();
