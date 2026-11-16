@@ -20,8 +20,8 @@ test('staging copies exactly the public app assets, byte for byte', () => {
   }
   const stagedHTML = readFileSync(join(dist,'index.html'),'utf8');
   assert.ok(stagedHTML.startsWith('<!DOCTYPE html>'));
-  assert.match(stagedHTML,/window\\.__YAWMI_NATIVE_BUILD=true/);
-  assert.match(stagedHTML,/native-bridge\\.js/);
+  assert.match(stagedHTML,/window\.__YAWMI_NATIVE_BUILD=true/);
+  assert.match(stagedHTML,/native-bridge\.js/);
   assert.ok(readFileSync(join(dist,'native-bridge.js')).length > 100);
 
 });
