@@ -3802,7 +3802,17 @@ function startFocus(){
   focusState.endsAt=Date.now()+focusState.remaining*1000;
   persistFocus();
   focusState.timer=setInterval(tickFocus,1000);
-  if(window.YawmiNative) window.YawmiNative.scheduleFocus({endsAt:focusState.endsAt,phase:focusState.phase}).catch(console.warn);
+  if(window.YawmiNative) {
+    // Trigger the notification permission prompt only after the user's
+    // explicit Start action. No prompts on page load or passive restore.
+    (async ()=>{
+      const allowed = await window.YawmiNative.hasPermission()
+        || await window.YawmiNative.requestPermission();
+      if(allowed && focusState.running && focusState.endsAt > Date.now()) {
+        await window.YawmiNative.scheduleFocus({endsAt:focusState.endsAt,phase:focusState.phase});
+      }
+    })().catch(e=>console.warn('Native focus countdown unavailable',e));
+  }
   updateFocusUI();
 }
 function pauseFocus(){
