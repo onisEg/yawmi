@@ -30,7 +30,7 @@ console.log('Yawmi web assets are ready in dist/.');
 const original = await readFile(join(webDir, 'index.html'), 'utf8');
 const nativeDocument = original
   .replace('</head>', '<script>window.__YAWMI_NATIVE_BUILD=true;</script></head>')
-  .replace(/<\\/body>\\s*<\\/html>\\s*$/i, '<script type="module" src="./native-bridge.js"></script></body></html>');
+  .replace(/<\/body>\s*<\/html>\s*$/i, '<script type="module" src="./native-bridge.js"></script></body></html>');
 if (nativeDocument === original || !nativeDocument.includes('native-bridge.js')) {
   throw new Error('Could not attach the native bridge to staged HTML');
 }
