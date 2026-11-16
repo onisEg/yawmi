@@ -1,4 +1,4 @@
-name: TypeScript migration bootstrap and validation
+name: TypeScript strict validation
 
 on:
   push:
@@ -11,44 +11,20 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  compile-and-test:
+  typecheck-and-test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Resolve exact TypeScript dependency and lockfile
-        run: npm install --no-audit --no-fund
-      - name: Generate browser JavaScript from canonical TypeScript source
-        run: npm run generate:models
-      - name: Strict TypeScript typecheck
+          cache: npm
+      - name: Install pinned dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Check TypeScript strict types
         run: npm run typecheck
-      - name: Build and run regression suite
+      - name: Verify compiled browser scripts match source and run tests
         run: npm test
-      - name: Commit validated TypeScript JavaScript outputs and lockfile
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add package-lock.json src/features/tasks/task-model.js src/features/notes/note-model.js
-          if git diff --cached --quiet; then
-            echo "No generated files changed"
-            exit 0
-          fi
-          git commit -m "build(types): commit verified JS output and TypeScript lockfile"
-          git push origin HEAD:refs/heads/refactor/typescript-strict-task-note-models
-
-      - name: Upload generated JavaScript and resolved package lockfile
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: yawmi-typescript-bootstrap
-          path: |
-            package-lock.json
-            src/features/tasks/task-model.js
-            src/features/notes/note-model.js
-          retention-days: 7
-          if-no-files-found: error
