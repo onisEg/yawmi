@@ -121,7 +121,7 @@ const api = {
   async cancelFocus() { await cancelIds([focusId]); },
   show,
   async setSystemBarsTheme(theme) {
-    try { await SystemBars.setStyle({ style: theme === 'dark' ? 'LIGHT' : 'DARK' }); }
+    try { await SystemBars.setStyle({ style: theme === 'dark' ? 'DARK' : 'LIGHT' }); }
     catch (e) { console.warn('System bars style unavailable', e); }
   }
 };
