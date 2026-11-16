@@ -9,7 +9,7 @@ const focusId = 15001;
 const native = Capacitor.isNativePlatform();
 
 function nextDate(day, hhmm) {
-  if (!/^([01]\\d|2[0-3]):[0-5]\\d$/.test(hhmm || '')) return null;
+  if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(hhmm || '')) return null;
   const [h, m] = hhmm.split(':').map(Number);
   const at = new Date(day);
   at.setHours(h, m, 0, 0);
