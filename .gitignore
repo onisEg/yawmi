@@ -1,0 +1,25 @@
+# Local Node dependencies / build output
+node_modules/
+dist/
+
+# Native Android generated build products (keep android/ source itself)
+android/.gradle/
+android/.idea/
+android/.cxx/
+android/build/
+android/app/build/
+android/local.properties/
+*.apk
+*.aab
+
+# Developer secrets / keystores must never be committed
+*.jks
+*.keystore
+.env
+.env.*
+!.env.example
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
