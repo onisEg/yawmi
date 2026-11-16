@@ -1,11 +1,12 @@
 // Android/iOS-only bridge. Bundled by esbuild into the Capacitor web assets.
 // The deployed PWA never loads this file; no production user data is touched.
-import { Capacitor, SystemBars } from '@capacitor/core';
+import { Capacitor, SystemBars, registerPlugin } from '@capacitor/core';
 import { LocalNotifications } from '@capacitor/local-notifications';
 
 const managedMin = 11000;
 const managedMax = 11999;
 const focusId = 15001;
+const FocusLive = registerPlugin('YawmiFocusLive');
 const native = Capacitor.isNativePlatform();
 
 function nextDate(day, hhmm) {
@@ -88,18 +89,31 @@ function localISO(date) {
   return [date.getFullYear(), String(date.getMonth()+1).padStart(2,'0'), String(date.getDate()).padStart(2,'0')].join('-');
 }
 async function scheduleFocus({ endsAt, phase }) {
+  // The native status notification is independent from the end-of-session alert.
+  // A countdown can keep rendering in Android while the JS WebView is suspended.
   await cancelIds([focusId]);
-  if (!native || !(await permissionGranted()) || !(Number(endsAt) > Date.now())) return false;
-  await LocalNotifications.schedule({ notifications: [{
-    id: focusId,
-    title: phase === 'break' ? '⏰ خلصت الراحة' : '🎉 خلصت جلسة تركيز!',
-    body: phase === 'break' ? 'يلا نكمّل تركيز 💪' : 'وقت راحة قصيرة، تستاهل 👏',
-    schedule: { at: new Date(Number(endsAt)), allowWhileIdle: true },
-    isExactNotification: false,
-    autoCancel: true,
-    extra: { yawmiFocus: true }
-  }] });
-  return true;
+  if (!native || !(Number(endsAt) > Date.now())) return false;
+  if (!(await permissionGranted())) {
+    try { await FocusLive.hide(); } catch(e) { console.warn('Focus notification cleanup', e); }
+    return false;
+  }
+  const results = await Promise.allSettled([
+    LocalNotifications.schedule({ notifications: [{
+      id: focusId,
+      title: phase === 'break' ? '⏰ خلصت الراحة' : '🎉 خلصت جلسة تركيز!',
+      body: phase === 'break' ? 'يلا نكمّل تركيز 💪' : 'وقت راحة قصيرة، تستاهل 👏',
+      schedule: { at: new Date(Number(endsAt)), allowWhileIdle: true },
+      isExactNotification: false, autoCancel: true,
+      extra: { yawmiFocus: true }
+    }] }),
+    FocusLive.show({ endsAt: Number(endsAt), phase })
+  ]);
+  results.forEach((result, index) => {
+    if (result.status === 'rejected') console.warn(
+      index === 0 ? 'Focus completion reminder unavailable' : 'Focus live status unavailable',
+      result.reason);
+  });
+  return results.some(result => result.status === 'fulfilled');
 }
 async function show(title, body) {
   if (!native || !(await permissionGranted())) return false;
@@ -118,7 +132,9 @@ const api = {
   },
   syncReminders,
   scheduleFocus,
-  async cancelFocus() { await cancelIds([focusId]); },
+  async cancelFocus() {
+    await Promise.allSettled([cancelIds([focusId]), FocusLive.hide()]);
+  },
   show,
   async setSystemBarsTheme(theme) {
     try { await SystemBars.setStyle({ style: theme === 'dark' ? 'DARK' : 'LIGHT' }); }
