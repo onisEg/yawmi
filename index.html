@@ -58,7 +58,6 @@
         const statusBar = window.Capacitor.Plugins && window.Capacitor.Plugins.StatusBar;
         if (statusBar) {
           await statusBar.setOverlaysWebView({ overlay: false });
-          await statusBar.setStyle({ style: 'DARK' });
         }
       } catch (error) {
         console.warn('Native status bar appearance could not be applied:', error);
