@@ -52,15 +52,20 @@ jobs:
           s = gradle.read_text()
           old = 'applicationId "in.yawmi.app"'
           assert s.count(old) == 1
-          gradle.write_text(s.replace(old, 'applicationId "in.yawmi.app.preview"'))
+          gradle.write_text(s.replace(old, 'applicationId "in.yawmi.app.qa"'))
           strings = Path('android/app/src/main/res/values/strings.xml')
           t = strings.read_text()
           assert '<string name="app_name">يومي</string>' in t
           assert '<string name="title_activity_main">يومي</string>' in t
-          t = t.replace('<string name="app_name">يومي</string>', '<string name="app_name">يومي - تجربة</string>')
-          t = t.replace('<string name="title_activity_main">يومي</string>', '<string name="title_activity_main">يومي - تجربة</string>')
+          t = t.replace('<string name="app_name">يومي</string>', '<string name="app_name">يومي - اختبار</string>')
+          t = t.replace('<string name="title_activity_main">يومي</string>', '<string name="title_activity_main">يومي - اختبار</string>')
           strings.write_text(t)
           PY
+
+      - name: Verify unique app ID before assembly
+        run: |
+          grep -q 'applicationId "in.yawmi.app.qa"' android/app/build.gradle
+          grep -q 'namespace = "in.yawmi.app"' android/app/build.gradle
 
       - name: Build separately installable debug APK
         working-directory: android
@@ -71,17 +76,18 @@ jobs:
       - name: Install and open preview on Android emulator
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 35
+          api-level: 36
           target: google_apis
           arch: x86_64
           profile: pixel_7
           disable-animations: true
           script: |
             adb install -r android/app/build/outputs/apk/debug/app-debug.apk
+            adb shell pm path in.yawmi.app.qa
             adb logcat -c
-            adb shell am start -W -n in.yawmi.app.preview/in.yawmi.app.MainActivity
+            adb shell am start -W -n in.yawmi.app.qa/in.yawmi.app.MainActivity
             sleep 22
-            adb shell pidof in.yawmi.app.preview
+            adb shell pidof in.yawmi.app.qa
             adb exec-out screencap -p > yawmi-preview-launch.png
             adb shell uiautomator dump /sdcard/preview.xml
             adb pull /sdcard/preview.xml yawmi-preview-window.xml
