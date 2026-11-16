@@ -2568,6 +2568,7 @@ nav.bottom button.on{color:var(--gold)}
 
 <div id="toast">تم الحفظ ✓</div>
 
+<script src="./src/features/focus/focus-clock.js"></script>
 <script>
 /* ================= state ================= */
 const K = {days:'yawmi_days', tasks:'yawmi_tasks', exp:'yawmi_exp', obl:'yawmi_obl', rev:'yawmi_rev', goals:'yawmi_goals', bh:'yawmi_bhdata', set:'yawmi_settings', notifs:'yawmi_notifs', challenges:'yawmi_challenges', notes:'yawmi_notes'};
@@ -5117,7 +5118,11 @@ function updateFocusStats(){
     : 'ابدأ أول جلسة تركيز النهارده 🌱';
 }
 function remainingFromDeadline(deadline,now=Date.now()){
-  return Math.max(0,Math.ceil((deadline-now)/1000));
+  // First feature extracted into a pure module. Keep a safe fallback so a
+  // temporary missing asset cannot break older offline PWA installations.
+  const clock=(typeof window !== 'undefined') && window.YawmiFocusClock;
+  return clock ? clock.remainingFromDeadline(deadline,now)
+    : Math.max(0,Math.ceil((deadline-now)/1000));
 }
 function tickFocus(){
   if(focusState.running && focusState.endsAt){
