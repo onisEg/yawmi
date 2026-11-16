@@ -1,6 +1,6 @@
-const CACHE = 'yawmi-v186';
+const CACHE = 'yawmi-v187';
 const FONT_CACHE = 'yawmi-fonts-v1';
-const ASSETS = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png'];
+const ASSETS = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png', './src/features/focus/focus-clock.js'];
 
 self.addEventListener('install', e => {
   self.skipWaiting();
