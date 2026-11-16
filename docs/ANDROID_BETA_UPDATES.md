@@ -8,6 +8,7 @@
 - Android display name: `يومي Beta`.
 - Version code: `1000 + github.run_number * 10 + github.run_attempt` (rises for each build).
 - All future beta APKs **must** be signed with the exact same keystore/certificate.
+- Expected public beta signing certificate **SHA-256** fingerprint: `730A84F331A2178819358A8A7E97BAA4004C410898717ADBE976489C172901D8`. Compare with `apksigner verify --print-certs`; if it differs, **do not install an update**.
 - Keystore stored securely outside the repository; `.gitignore` excludes `*.jks`, `*.keystore`, `*.apk`, and `*.aab`.
 
 ## First install versus updates
