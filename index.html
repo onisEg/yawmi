@@ -1216,6 +1216,9 @@
 <div id="toast">تم الحفظ ✓</div>
 
 <script src="./src/features/focus/focus-clock.js"></script>
+<script src="./src/features/tasks/task-model.js"></script>
+<script src="./src/features/notes/note-model.js"></script>
+<script src="./src/components/ui-cards.js"></script>
 <script>
 /* ================= state ================= */
 const K = {days:'yawmi_days', tasks:'yawmi_tasks', exp:'yawmi_exp', obl:'yawmi_obl', rev:'yawmi_rev', goals:'yawmi_goals', bh:'yawmi_bhdata', set:'yawmi_settings', notifs:'yawmi_notifs', challenges:'yawmi_challenges', notes:'yawmi_notes'};
@@ -3967,30 +3970,16 @@ function renderNotes(){
   const grid = $('#notesGrid'), empty = $('#notesEmpty');
   if(!grid) return;
   const q = ($('#notesSearch') && $('#notesSearch').value || '').trim().toLowerCase();
-  let list = notes.filter(n=> !n.del);
-  if(q) list = list.filter(n=> ((n.t||'') + ' ' + (n.body||'')).toLowerCase().includes(q));
-  // المثبّتة الأول، بعدين الأحدث
-  list.sort((a,b)=>{
-    if(!!b.pinned !== !!a.pinned) return (b.pinned?1:0) - (a.pinned?1:0);
-    return (b.u||0) - (a.u||0);
-  });
+  const list = window.YawmiNoteModel.listVisible(notes, q);
   grid.innerHTML = '';
   empty.classList.toggle('hidden', list.length > 0);
   grid.classList.toggle('hidden', list.length === 0);
   list.forEach(n=>{
-    const c = noteColor(n.color);
-    const el = document.createElement('div');
-    el.className = 'notecard' + (n.pinned ? ' pinned' : '');
-    el.style.background = c.bg;
-    el.style.borderColor = c.br;
-    const title = (n.t || '').trim();
-    const body = (n.body || '').trim();
-    el.innerHTML = `${title ? '<div class="nctitle"></div>' : ''}${body ? '<div class="ncbody"></div>' : ''}<div class="ncdate"></div>`;
-    if(title) el.querySelector('.nctitle').textContent = title;
-    if(body) el.querySelector('.ncbody').textContent = body;
-    el.querySelector('.ncdate').textContent = noteDateLabel(n.u);
-    el.onclick = ()=> openNoteEdit(n);
-    grid.appendChild(el);
+    grid.appendChild(window.YawmiComponents.createNoteCard(n, {
+      color: noteColor(n.color),
+      dateLabel: noteDateLabel(n.u),
+      onOpen: openNoteEdit
+    }));
   });
 }
 function noteDateLabel(ts){
@@ -4558,15 +4547,7 @@ function renderTasks(){
   const t0 = todayISO();
   const yst = iso(new Date(Date.now() - 86400000)); // أمس
   const q = (window.taskSearchQuery || '').trim().toLowerCase();
-  const match = t => !q || (t.t || '').toLowerCase().includes(q);
-  const groups = [
-    {name:'متأخرة (أكتر من يوم)', cls:'late', items: tasks.filter(t=>!t.del && !t.done && t.due && t.due < yst && match(t))},
-    {name:'أمس', cls:'late', items: tasks.filter(t=>!t.del && !t.done && t.due === yst && match(t))},
-    {name:'النهارده', cls:'', items: tasks.filter(t=>!t.del && !t.done && t.due === t0 && match(t))},
-    {name:'قادمة', cls:'', items: tasks.filter(t=>!t.del && !t.done && t.due && t.due > t0 && match(t))},
-    {name:'من غير تاريخ', cls:'', items: tasks.filter(t=>!t.del && !t.done && !t.due && match(t))},
-    {name:'مكتملة', cls:'', items: tasks.filter(t=>!t.del && t.done && match(t))},
-  ];
+  const groups = window.YawmiTaskModel.groupTasks(tasks, {today:t0, yesterday:yst, query:q});
   let any = false;
   groups.forEach(g=>{
     if(!g.items.length) return;
@@ -4599,25 +4580,8 @@ function renderTasks(){
       list.appendChild(body);
       container = body;
     }
-    // الترتيب: لو المستخدم رتّب بإيده (order موجود) نستخدمه، وإلا حسب الأولوية ثم الأحدث إضافةً
-    const priScore = t => (t.urgent?2:0) + (t.important?1:0);
-    // id = وقت الإضافة (Date.now)، فالأكبر = الأحدث
-    const addedTime = t => (typeof t.id === 'number' ? t.id : 0);
-    const anyManual = g.items.some(t=> typeof t.order === 'number');
-    if(anyManual){
-      g.items.sort((a,b)=>{
-        const ao = typeof a.order === 'number' ? a.order : 9999;
-        const bo = typeof b.order === 'number' ? b.order : 9999;
-        if(ao !== bo) return ao - bo;
-        if(priScore(b) !== priScore(a)) return priScore(b) - priScore(a);
-        return addedTime(b) - addedTime(a);
-      });
-    } else {
-      g.items.sort((a,b)=>{
-        if(priScore(b) !== priScore(a)) return priScore(b) - priScore(a);
-        return addedTime(b) - addedTime(a);  // الأحدث إضافةً فوق
-      });
-    }
+    // Pure model handles priority / manual order while preserving the stored array.
+    window.YawmiTaskModel.sortTasks(g.items);
     g.items.forEach(t=>{
       const el = document.createElement('div');
       el.className = 'titem' + (t.done ? ' done' : '');
@@ -4694,7 +4658,9 @@ function renderTasks(){
       container.appendChild(el);
     });
   });
-  if(!any) list.innerHTML = '<div class="empty-big"><span class="ico">📝</span><div class="ttl">مفيش مهام دلوقتي</div><div class="desc">ضيف أول مهمة من فوق وابدأ يومك منظم</div></div>';
+  if(!any) list.appendChild(window.YawmiComponents.createEmptyState({
+    icon:'📝', title:'مفيش مهام دلوقتي', description:'ضيف أول مهمة من فوق وابدأ يومك منظم'
+  }));
   renderTrash(list);
 }
 // سلة المهملات
