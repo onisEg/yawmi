@@ -68,6 +68,40 @@ jobs:
           chmod +x gradlew
           ./gradlew assembleDebug --no-daemon
 
+      - name: Install and open preview on Android emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_7
+          disable-animations: true
+          script: |
+            adb install -r android/app/build/outputs/apk/debug/app-debug.apk
+            adb logcat -c
+            adb shell am start -W -n in.yawmi.app.preview/in.yawmi.app.MainActivity
+            sleep 22
+            adb shell pidof in.yawmi.app.preview
+            adb exec-out screencap -p > yawmi-preview-launch.png
+            adb shell uiautomator dump /sdcard/preview.xml
+            adb pull /sdcard/preview.xml yawmi-preview-window.xml
+            adb logcat -d -v time > yawmi-preview-logcat.txt
+            adb logcat -d -s AndroidRuntime:E > yawmi-preview-crash.txt
+            test ! -s yawmi-preview-crash.txt
+
+      - name: Save preview Android screenshots and logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: yawmi-preview-emulator-qa
+          path: |
+            yawmi-preview-launch.png
+            yawmi-preview-window.xml
+            yawmi-preview-logcat.txt
+            yawmi-preview-crash.txt
+          if-no-files-found: warn
+          retention-days: 7
+
       - name: Upload preview APK
         uses: actions/upload-artifact@v4
         with:
