@@ -25,7 +25,7 @@ test('staging copies exactly the public app assets, byte for byte', () => {
   // The original source contains an embedded PDF HTML template with its own </body>.
   // A first-occurrence replacement would inject a literal <script> into a JS string and blank the app.
   assert.ok(stagedHTML.indexOf('native-bridge.js') > stagedHTML.indexOf('function doExportPDF'));
-  assert.match(stagedHTML, /<script type="module" src="\\.\\/native-bridge\\.js"><\\/script><\\/body><\\/html>\\s*$/);
+  assert.match(stagedHTML, /<script type="module" src="\.\/native-bridge\.js"><\/script><\/body><\/html>\s*$/);
 
   assert.ok(readFileSync(join(dist,'native-bridge.js')).length > 100);
 
