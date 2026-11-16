@@ -1,9 +1,23 @@
 # Yawmi → Android / Google Play — implementation plan
 
-**Status:** Foundation only. Not yet a tested Android release.
+**Status (2026-11-16):** Native Android project tracked, dependency lockfile committed, emulator smoke-tested. **Debug-only, not a Google Play release.**
 **Source:** Existing public GitHub Pages PWA. Production site is left unchanged.
 **Approach:** Capacitor 8 native Android shell, existing HTML/CSS/JS retained for the first milestone.
 **Android app ID (PROVISIONAL):** `in.yawmi.app`; confirm the permanent ID before first Play upload.
+
+## Verified milestone: 2026-11-16
+
+- **Automated JavaScript tests:** 13/13 passed on GitHub Actions. Checks cover original asset integrity, app identity, native PWA guards, merge conflict cases, delete tombstones, failed cloud-pull write protection, and notes/challenges in backup import/export.
+- **Android debug build:** Capacitor 8 / compile and target API 36 / min API 24. Gradle `assembleDebug` passed, APK signed with a development key and checked for the signature block.
+- **Source control:** Generated `android/` project and exact `package-lock.json` committed to this feature branch only. Yawmi original icon used for native icon/splash generation.
+- **Real emulator:** Android 15 API 35 emulator installed the APK, launched and reopened `in.yawmi.app/.MainActivity`. Arabic RTL Yawmi welcome/onboarding UI rendered on both first and second launch after initial WebView warmup; full screenshot evidence is preserved in Actions artifacts. No `AndroidRuntime` fatal exceptions were logged.
+- **Known nonfatal console warning:** Capacitor's injected safe-area CSS reports three null-style errors in this emulator. Check layout on physical Android devices.
+- **No production impact:** Website `main` not modified; Supabase production data and policies not changed. DB checks were read-only.
+
+GitHub Actions build example: https://github.com/onisEg/yawmi/actions/runs/43931519708  
+Emulator evidence: https://github.com/onisEg/yawmi/actions/runs/43931519726
+
+**Next release-blocking work:** test authenticated sync end-to-end with an isolated test account; implement secure native Google OAuth/deep link if retaining Google login; verify native JSON import/export and PDF/CSV sharing; implement genuine Android scheduled notifications; verify Android back navigation, offline restart/persistence, and local data migration UX; review production Supabase security and account deletion/privacy policy; test on a physical device; then build a signed release AAB with a protected keystore.
 
 ## 1. Non-negotiable data safeguards
 
