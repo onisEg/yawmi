@@ -23,11 +23,18 @@ for (const asset of assets) {
   console.log('Staged ' + asset);
 }
 
-// Keep the pure focus-clock file identical in Web and Capacitor output.
-const clockRel = 'src/features/focus/focus-clock.js';
-await mkdir(join(webDir, 'src/features/focus'), { recursive: true });
-await copyFile(join(root, clockRel), join(webDir, clockRel));
-console.log('Staged ' + clockRel);
+// Copy all browser modules exactly; same paths for PWA and native WebView.
+const browserModules = [
+  'src/features/focus/focus-clock.js',
+  'src/features/tasks/task-model.js',
+  'src/features/notes/note-model.js',
+  'src/components/ui-cards.js'
+];
+for (const file of browserModules) {
+  await mkdir(join(webDir, file.slice(0, file.lastIndexOf('/'))), { recursive: true });
+  await copyFile(join(root, file), join(webDir, file));
+  console.log('Staged ' + file);
+}
 // Reuse the exact stylesheet order from index.html across Web and Android.
 const styleNames = ['tokens.css', 'layout.css', 'features.css', 'components.css', 'overlays.css'];
 await mkdir(join(webDir, 'styles'), { recursive: true });
