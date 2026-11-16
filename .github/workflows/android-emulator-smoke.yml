@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - feat/android-capacitor-foundation
+      - feat/android-safe-area-focus-notifications
 
 permissions:
   contents: read
