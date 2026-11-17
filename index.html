@@ -56,6 +56,7 @@
 <link rel="stylesheet" href="./styles/overlays.css">
 <link rel="stylesheet" href="./styles/liquid-glass.css">
 <link rel="stylesheet" href="./styles/today-premium.css">
+<link rel="stylesheet" href="./styles/v1-unified.css">
 </head>
 <body>
 
@@ -8628,15 +8629,15 @@ function validateOfficialApkAsset(release){
 // The release tag and asset must agree on Android's monotonically increasing versionCode.
 function validateOfficialAndroidRelease(release){
   const url = validateOfficialApkAsset(release);
-  const match = /^android-beta-v0\.(3|4)\.(\d+)$/.exec(release && release.tag_name || '');
+  const match = /^android-beta-v(0\.(?:3|4)|1\.0)\.(\d+)$/.exec(release && release.tag_name || '');
   if(!url || !match) return null;
   const versionCode = Number(match[2]);
   if(!Number.isSafeInteger(versionCode) || versionCode < 1 || versionCode > 2100000000) return null;
-  const expectedName = 'Yawmi-Beta-v0.' + match[1] + '.' + match[2] + '.apk';
+  const expectedName = 'Yawmi-Beta-v' + match[1] + '.' + match[2] + '.apk';
   if(!new URL(url).pathname.endsWith('/' + expectedName)) return null;
   if(!release.assets.some(asset => asset && asset.state === 'uploaded' &&
       asset.name === expectedName && asset.browser_download_url === url)) return null;
-  return {url, versionCode, versionName:'0.' + match[1] + '.' + match[2]};
+  return {url, versionCode, versionName:match[1] + '.' + match[2]};
 }
 async function discoverOfficialAndroidApk(){
   if(!/Android/i.test(navigator.userAgent || '') || !canOfferMobileInstall()) return;

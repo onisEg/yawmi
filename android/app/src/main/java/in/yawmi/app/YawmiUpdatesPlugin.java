@@ -51,7 +51,8 @@ public class YawmiUpdatesPlugin extends Plugin {
                 && uri.getQuery() == null
                 && uri.getFragment() == null
                 && path != null
-                && path.matches("/onisEg/yawmi/releases/download/android-beta-v0\\.(3|4)\\.[0-9]+/Yawmi-Beta-v0\\.(3|4)\\.[0-9]+\\.apk");
+                && (path.matches("/onisEg/yawmi/releases/download/android-beta-v0\\.(3|4)\\.[0-9]+/Yawmi-Beta-v0\\.(3|4)\\.[0-9]+\\.apk")
+                || path.matches("/onisEg/yawmi/releases/download/android-beta-v1\\.0\\.([0-9]+)/Yawmi-Beta-v1\\.0\\.\\1\\.apk"));
             if (!allowed) {
                 call.reject("Only official Yawmi GitHub Release APK links are allowed");
                 return;
