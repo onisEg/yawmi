@@ -644,3 +644,18 @@
     background:#fff!important;
   }
 }
+
+
+/* Polish after visual QA: keep empty add-habit control spanning the row,
+   and avoid the legacy "+" pseudo-element doubling the chevron. */
+#tab-today .premium-habits #habitChips .chip.chipadd {
+  grid-column:1 / -1;
+  justify-content:center;
+  min-height:43px;
+  background:rgba(229,247,240,.54);
+  border-style:dashed;
+  border-color:rgba(90,164,144,.35);
+}
+#tab-today .premium-journal-card:not(.filled):not(.open) .collapsehead .collapsearrow::before {
+  content:none;
+}
