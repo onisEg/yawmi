@@ -72,15 +72,28 @@ test('note create, edit and delete preserves other records', async ({page}) => {
   )).toBe(true);
 });
 
-test('focus countdown can start, close its sheet and resume after reload', async ({page}) => {
+test('liquid focus card mirrors the selected interval, survives closed sheet and reload', async ({page}) => {
   await page.locator('#focusOpenBtn').click();
+  await page.locator('.fdur[data-work="50"][data-break="10"]').click();
+  await expect(page.locator('#focusCardSub')).toContainText('٥٠');
+  await expect(page.locator('#focusCardSub')).toContainText('١٠');
   await page.locator('#focusToggle').click();
   await expect.poll(async () => page.evaluate(() =>
     JSON.parse(localStorage.getItem('yawmi_focus_runtime_v2') || '{}').running)).toBe(true);
   await page.locator('#focusClose').click();
+  await expect(page.locator('#focusCardPhase')).toContainText('التركيز شغال');
+  await expect(page.locator('#focusQuickToggle')).toHaveText('إيقاف مؤقت');
+  await expect(page.locator('#focusCardTime')).not.toBeEmpty();
   await page.reload();
   await expect.poll(async () => page.evaluate(() => {
     const state = JSON.parse(localStorage.getItem('yawmi_focus_runtime_v2') || '{}');
-    return state.running && state.endsAt > Date.now();
+    return state.running && state.workMin===50 && state.breakMin===10 && state.endsAt > Date.now();
   })).toBe(true);
+  await expect(page.locator('#focusCardPhase')).toContainText('التركيز شغال');
+  await page.locator('#focusOpenBtn').click();
+  await expect(page.locator('.fdur[data-work="50"][data-break="10"]')).toHaveClass(/on/);
+  await page.locator('#focusClose').click();
+  await page.locator('#focusQuickToggle').click();
+  await expect(page.locator('#focusCardPhase')).toContainText('متوقف مؤقتًا');
+  await expect(page.locator('#focusQuickToggle')).toHaveText('كمّل');
 });

@@ -49,7 +49,7 @@ test('clock module loads before the legacy app script on web and native', () => 
 test('PWA precaches clock module so the focus timer works offline', () => {
   const worker = readFileSync(join(root, 'sw.js'), 'utf8');
   assert.match(worker, /\.\/src\/features\/focus\/focus-clock\.js/);
-  assert.match(worker, /yawmi-v189/);
+  assert.match(worker, /yawmi-v190-liquid-beta/);
 });
 
 test('the timer keeps the same localStorage persistence key', () => {
