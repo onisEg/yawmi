@@ -54,6 +54,7 @@
 <link rel="stylesheet" href="./styles/features.css">
 <link rel="stylesheet" href="./styles/components.css">
 <link rel="stylesheet" href="./styles/overlays.css">
+<link rel="stylesheet" href="./styles/liquid-glass.css">
 </head>
 <body>
 
@@ -238,14 +239,30 @@
       <div id="challengesList"></div>
     </div>
 
-    <div class="card todaycard" id="focusCard" data-cid="focus" draggable="false">
+    <div class="card todaycard" id="focusCard" data-cid="focus" data-focus-phase="work" draggable="false">
       <div class="carddraghandle" title="اسحب لترتيب الكروت">⠿</div>
       <h3 class="h3ic"><span>🎯</span> وضع التركيز</h3>
-      <button class="focusopenbtn" id="focusOpenBtn">
-        <span class="fobic">🍅</span>
-        <span class="fobtxt"><b>ابدأ جلسة تركيز</b><small id="focusCardSub">٢٥ دقيقة تركيز · بومودورو</small></span>
-        <span class="fobarrow">←</span>
-      </button>
+      <div class="focusglass" role="group" aria-label="ملخص مؤقت التركيز">
+        <div class="focusglass-head">
+          <div class="focusglass-heading">
+            <span class="focusglass-emblem" aria-hidden="true">🍅</span>
+            <span class="focusglass-state" id="focusCardPhase">جاهز للتركيز</span>
+          </div>
+          <span class="focusglass-timer" id="focusCardTime" dir="ltr">25:00</span>
+        </div>
+        <div class="focusglass-meta" id="focusCardSub">٢٥ دقيقة تركيز · ٥ دقائق راحة</div>
+        <div class="focusglass-task" id="focusCardTask" hidden></div>
+        <div class="focusglass-track" id="focusCardProgressTrack" role="progressbar" aria-label="التقدم في الفترة الحالية" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+          <div class="focusglass-fill" id="focusCardProgress"></div>
+        </div>
+        <div class="focusglass-bottom">
+          <span class="focusglass-count" id="focusCardSessions">ابدأ أول جلسة النهارده 🌱</span>
+          <div class="focusglass-actions">
+            <button type="button" class="focusglass-button secondary" id="focusOpenBtn" aria-label="افتح تفاصيل وإعدادات مؤقت التركيز">الإعدادات</button>
+            <button type="button" class="focusglass-button primary" id="focusQuickToggle">ابدأ التركيز</button>
+          </div>
+        </div>
+      </div>
     </div>
 
     <div class="card collapsecard todaycard" id="moodCard" data-cid="mood" draggable="false">
@@ -3731,17 +3748,47 @@ function restoreFocus(){
   } catch(e){ console.warn('focus state restore failed',e); }
 }
 function renderFocusCard(){
-  const sub = $('#focusCardSub');
-  if(!sub) return;
-  const n = getFocusSessions();
-  sub.textContent = n > 0
+  // The inline card and the full-screen sheet consume exactly the same
+  // focusState. Never persist a second timer or alter the legacy storage key.
+  const card=$('#focusCard');
+  if(!card) return;
+  const sec=focusState.running && focusState.endsAt
+    ? remainingFromDeadline(focusState.endsAt) : focusState.remaining;
+  const total=(focusState.phase==='work'?focusState.workMin:focusState.breakMin)*60;
+  const isBreak=focusState.phase==='break';
+  const progress=total>0?Math.max(0,Math.min(100,Math.round((1-sec/total)*100))):0;
+  card.dataset.focusPhase=focusState.phase;
+  $('#focusCardTime').textContent=fmtFocusTime(Math.max(0,sec));
+  const phase=$('#focusCardPhase');
+  phase.textContent=focusState.running
+    ? (isBreak?'☕ الراحة شغالة':'🎯 التركيز شغال')
+    : (sec<total?'⏸ متوقف مؤقتًا':(isBreak?'☕ جاهز للراحة':'🎯 جاهز للتركيز'));
+  phase.dataset.state=!focusState.running && sec<total?'paused':focusState.phase;
+  $('#focusCardSub').textContent=`${arNum(focusState.workMin)} دقيقة تركيز · ${arNum(focusState.breakMin)} دقائق راحة`;
+  const task=$('#focusCardTask');
+  task.textContent=focusState.taskLabel ? `🎯 ${focusState.taskLabel}` : '';
+  task.hidden=!focusState.taskLabel;
+  $('#focusCardProgress').style.width=progress+'%';
+  $('#focusCardProgressTrack').setAttribute('aria-valuenow',String(progress));
+  const n=getFocusSessions();
+  $('#focusCardSessions').textContent=n>0
     ? `خلّصت ${arNum(n)} ${n===1?'جلسة':n===2?'جلستين':'جلسات'} النهارده 🔥`
-    : '٢٥ دقيقة تركيز · بومودورو';
+    : 'ابدأ أول جلسة النهارده 🌱';
+  $('#focusQuickToggle').textContent=focusState.running?'إيقاف مؤقت'
+    : sec<total?'كمّل':isBreak?'ابدأ الراحة':'ابدأ التركيز';
+}
+function syncFocusDurationPicker(){
+  document.querySelectorAll('.fdur').forEach(b=>{
+    const active=Number(b.dataset.work)===focusState.workMin
+      && Number(b.dataset.break)===focusState.breakMin;
+    b.classList.toggle('on',active);
+  });
 }
 function openFocus(taskLabel){
   if(!focusState.running && taskLabel) focusState.taskLabel=taskLabel;
   $('#focusTaskLabel').textContent = focusState.taskLabel ? `🎯 ${focusState.taskLabel}` : '';
   tickFocus();
+  syncFocusDurationPicker();
   updateFocusStats();
   $('#focusOv').classList.add('show');
 }
@@ -3764,6 +3811,7 @@ function updateFocusUI(){
   phaseEl.textContent = focusState.phase === 'work' ? 'وقت التركيز' : 'وقت الراحة ☕';
   phaseEl.classList.toggle('break', focusState.phase === 'break');
   $('#focusToggle').textContent = focusState.running ? 'إيقاف مؤقت' : (focusState.remaining < total ? 'كمّل' : 'ابدأ');
+  renderFocusCard();
 }
 function updateFocusStats(){
   const n = getFocusSessions();
@@ -3885,7 +3933,11 @@ document.querySelectorAll('.fdur').forEach(b=>{
 });
 const focusOpenBtn = $('#focusOpenBtn');
 if(focusOpenBtn) focusOpenBtn.onclick = ()=> openFocus();
+const focusQuickToggle=$('#focusQuickToggle');
+if(focusQuickToggle) focusQuickToggle.onclick=()=>{ focusState.running ? pauseFocus() : startFocus(); };
 restoreFocus();
+updateFocusUI();
+syncFocusDurationPicker();
 
 // أزرار تبويب نظرة الفرعي (إحصائيات | تقويم)
 document.querySelectorAll('[data-dashseg]').forEach(btn=>{
