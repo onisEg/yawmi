@@ -9787,11 +9787,11 @@ function showMobileInstallOffer(){
 function validateOfficialApkAsset(release){
   if(!release || release.draft || release.prerelease || !Array.isArray(release.assets)) return '';
   for(const asset of release.assets){
-    if(!asset || !/\\.apk$/i.test(asset.name || '') || asset.state !== 'uploaded') continue;
+    if(!asset || !/\.apk$/i.test(asset.name || '') || asset.state !== 'uploaded') continue;
     try{
       const parsed = new URL(asset.browser_download_url);
       if(parsed.protocol !== 'https:' || parsed.hostname !== 'github.com') continue;
-      if(!/^\\/onisEg\\/yawmi\\/releases\\/download\\/[^/]+\\/[^/]+\\.apk$/i.test(parsed.pathname)) continue;
+      if(!/^\/onisEg\/yawmi\/releases\/download\/[^/]+\/[^/]+\.apk$/i.test(parsed.pathname)) continue;
       if(parsed.search || parsed.hash) continue;
       return parsed.href;
     }catch(_){}
