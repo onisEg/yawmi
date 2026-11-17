@@ -1,0 +1,24 @@
+name: Signed APK release pipeline safety contract
+
+on:
+  push:
+    branches:
+      - ci/publish-verified-signed-android-release
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  apk-release-safety:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify signed APK release cannot publish untrusted build
+        run: node --test tests/signed-release-pipeline-guard.test.mjs
