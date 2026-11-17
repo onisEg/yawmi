@@ -91,7 +91,7 @@ test('focus card mirrors chosen duration and active timer after closing sheet/re
   await expect(page.locator('.fdur[data-work="50"][data-break="10"]')).toHaveClass(/on/);
   await page.locator('#focusClose').click();
   await expect(page.locator('#focusMiniTime')).toHaveText('50:00');
-  await page.locator('#focusCardSub').toContainText('راحة');
+  await expect(page.locator('#focusCardSub')).toContainText('راحة');
   await page.locator('#focusQuickToggle').click();
   await expect(page.locator('#focusCard')).toHaveAttribute('data-focus-running','true');
   await expect.poll(() => page.evaluate(() => {
