@@ -115,7 +115,7 @@ test('empty-state component preserves legacy CSS classes and Arabic labels', () 
 });
 
 test('all stylesheets are linked in cascade order and packaged unchanged', () => {
-  const styles=['tokens','layout','features','components','overlays'];
+  const styles=['tokens','layout','features','components','overlays','liquid-glass'];
   const head=html.split('</head>')[0];
   assert.doesNotMatch(head,/<style>/);
   let lastIndex=-1;
@@ -138,10 +138,10 @@ test('classic task/note/component scripts load before legacy inline app and are 
     'src/features/tasks/task-model.js',
     'src/features/notes/note-model.js',
     'src/components/ui-cards.js',
-    ...['tokens','layout','features','components','overlays'].map(n=>'styles/'+n+'.css')
+    ...['tokens','layout','features','components','overlays','liquid-glass'].map(n=>'styles/'+n+'.css')
   ];
   const serviceWorker=load('sw.js');
-  assert.match(serviceWorker,/yawmi-v189/);
+  assert.match(serviceWorker,/yawmi-v190-liquid-beta/);
   for(const asset of assets) {
     assert.ok(html.includes('./'+asset), 'HTML missing '+asset);
     if(asset.endsWith('.js')) {
