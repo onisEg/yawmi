@@ -1206,14 +1206,17 @@
   })();
 </script>
 
-<div id="installBanner" class="hidden">
-  <span data-icon="download" class="installicon"></span>
+<div id="installBanner" class="hidden" role="region" aria-label="خيارات تثبيت يومي">
+  <span data-icon="download" class="installicon" aria-hidden="true"></span>
   <div class="installtxt">
-    <div class="installttl">ثبّت يومي على موبايلك</div>
-    <div class="installsub">افتحه بضغطة زي أي تطبيق، وشغّال أوفلاين</div>
+    <div class="installttl">خلّي يومي على موبايلك 📲</div>
+    <div class="installsub" id="installBannerSub">ثبّت نسخة الويب أو حمّل تطبيق أندرويد الرسمي عند توفره</div>
   </div>
-  <button id="installBtn">تثبيت</button>
-  <button id="installDismiss" aria-label="إغلاق">✕</button>
+  <div class="installactions">
+    <a id="installApkBtn" href="#" hidden target="_blank" rel="noopener noreferrer" aria-label="تحميل النسخة الرسمية من تطبيق يومي APK">تحميل APK</a>
+    <button id="installBtn" type="button">تثبيت الويب</button>
+  </div>
+  <button id="installDismiss" type="button" aria-label="إغلاق خيارات التثبيت">✕</button>
 </div>
 
 <div id="oblDetailOv">
@@ -8557,21 +8560,78 @@ setTimeout(()=>{
   }
 }, 6000);
 window.addEventListener('online', ()=>{ if(isLoggedIn()) syncFull(true); });
-// اقتراح تثبيت التطبيق على الموبايل (PWA)
+// Web/PWA install + optional official Android APK (never an unsigned APK).
+// Do not show dead download links: the APK action stays hidden until an
+// actual downloadable asset is returned by this repository's GitHub Releases.
 let deferredInstallPrompt = null;
+let verifiedAndroidApkUrl = '';
+let mobileInstallTimer = null;
+function canOfferMobileInstall(){
+  const ua = navigator.userAgent || '';
+  const mobile = /Android|iPhone|iPad|iPod/i.test(ua);
+  const native = !!window.__YAWMI_NATIVE_BUILD ||
+    !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+  const installed = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) ||
+    window.navigator.standalone === true;
+  return mobile && !native && !installed && !localStorage.getItem('yawmi_install_dismissed');
+}
+function showMobileInstallOffer(){
+  if(!canOfferMobileInstall()) return;
+  if(mobileInstallTimer) clearTimeout(mobileInstallTimer);
+  mobileInstallTimer = setTimeout(()=>{
+    if(canOfferMobileInstall()) $('#installBanner').classList.remove('hidden');
+  }, 1800);
+}
+function validateOfficialApkAsset(release){
+  if(!release || release.draft || release.prerelease || !Array.isArray(release.assets)) return '';
+  for(const asset of release.assets){
+    if(!asset || !/\.apk$/i.test(asset.name || '') || asset.state !== 'uploaded') continue;
+    try{
+      const parsed = new URL(asset.browser_download_url);
+      if(parsed.protocol !== 'https:' || parsed.hostname !== 'github.com') continue;
+      if(!/^\/onisEg\/yawmi\/releases\/download\/[^/]+\/[^/]+\.apk$/i.test(parsed.pathname)) continue;
+      if(parsed.search || parsed.hash) continue;
+      return parsed.href;
+    }catch(_){}
+  }
+  return '';
+}
+async function discoverOfficialAndroidApk(){
+  if(!/Android/i.test(navigator.userAgent || '') || !canOfferMobileInstall()) return;
+  try{
+    const res = await fetch('https://api.github.com/repos/onisEg/yawmi/releases/latest', {
+      method:'GET', mode:'cors', cache:'no-store', headers:{Accept:'application/vnd.github+json'}
+    });
+    if(!res.ok) return;
+    const url = validateOfficialApkAsset(await res.json());
+    if(!url) return;
+    verifiedAndroidApkUrl = url;
+    const btn = $('#installApkBtn');
+    btn.href = url;
+    btn.hidden = false;
+    $('#installBannerSub').textContent = 'حمّل النسخة الرسمية من GitHub أو ثبّت نسخة الويب بدون APK';
+    showMobileInstallOffer();
+  }catch(_){
+    // Offline / rate limits: the PWA installation remains available.
+  }
+}
 window.addEventListener('beforeinstallprompt', (e)=>{
   e.preventDefault();
   deferredInstallPrompt = e;
-  if(localStorage.getItem('yawmi_install_dismissed')) return;
-  if(window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) return;
-  setTimeout(()=>{ $('#installBanner').classList.remove('hidden'); }, 3000);
+  showMobileInstallOffer();
 });
 $('#installBtn').onclick = ()=> doInstall();
 $('#installDismiss').onclick = ()=>{
   $('#installBanner').classList.add('hidden');
   localStorage.setItem('yawmi_install_dismissed', '1');
+  if(mobileInstallTimer) clearTimeout(mobileInstallTimer);
 };
 window.addEventListener('appinstalled', ()=>{ $('#installBanner').classList.add('hidden'); toast('اتثبّت التطبيق ✓'); });
+// Display on mobile even when Safari or Chrome does not emit beforeinstallprompt.
+if(canOfferMobileInstall()){
+  showMobileInstallOffer();
+  discoverOfficialAndroidApk();
+}
 
 // هل التطبيق متثبّت بالفعل؟
 function isNativeApp(){ return !!window.__YAWMI_NATIVE_BUILD; }
