@@ -9,6 +9,7 @@ on:
       - feat/qa-e2e-sync-live-focus-beta
       - fix/focus-audible-completion-and-legacy-security-plan
       - design/light-liquid-glass-beta
+      - design/liquid-glass-full-app-beta
   workflow_dispatch:
 
 concurrency:

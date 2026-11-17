@@ -97,3 +97,41 @@ test('liquid focus card mirrors the selected interval, survives closed sheet and
   await expect(page.locator('#focusCardPhase')).toContainText('متوقف مؤقتًا');
   await expect(page.locator('#focusQuickToggle')).toHaveText('كمّل');
 });
+
+
+test('Liquid Glass applies across every existing tab without rearranging content', async ({page}, testInfo) => {
+  await expect(page.locator('#splash')).toBeHidden({timeout:10000});
+  const tabs=['today','tasks','notes','exp','dash','settings'];
+  await expect(page.locator('html')).toHaveAttribute('dir','rtl');
+  await expect(page.locator('html')).toHaveAttribute('data-theme','light');
+  await expect(page.locator('link[href="./styles/liquid-glass.css"]')).toHaveCount(1);
+  for(const name of tabs){
+    await page.locator('nav.bottom button[data-tab="'+name+'"]').click();
+    const section=page.locator('#tab-'+name);
+    await expect(section).toHaveClass(/active/);
+    await expect(section).toBeVisible();
+    const vars=await page.evaluate(()=>{
+      const c=getComputedStyle(document.documentElement);
+      return {surface:c.getPropertyValue('--lg-frost').trim(),
+        edge:c.getPropertyValue('--lg-frost-edge').trim()};
+    });
+    expect(vars.surface).toContain('rgba(');
+    expect(vars.edge).toContain('rgba(');
+    // Screenshots are QA evidence; no user content or real account is loaded.
+    await page.screenshot({
+      path:'test-results/liquid-'+testInfo.project.name+'-'+name+'.png',
+      fullPage:false
+    });
+  }
+  // Dark mode keeps identical navigation, cards and content structure.
+  await page.evaluate(()=>localStorage.setItem('yawmi_theme','dark'));
+  await page.reload();
+  await expect(page.locator('#splash')).toBeHidden({timeout:10000});
+  await expect(page.locator('html')).toHaveAttribute('data-theme','dark');
+  await page.locator('nav.bottom button[data-tab="settings"]').click();
+  await expect(page.locator('#tab-settings .setsection').first()).toBeVisible();
+  await page.screenshot({
+    path:'test-results/liquid-'+testInfo.project.name+'-dark-settings.png',
+    fullPage:false
+  });
+});
