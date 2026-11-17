@@ -1,0 +1,112 @@
+name: Android emulator smoke test
+
+on:
+  push:
+    branches:
+      - feat/android-capacitor-foundation
+      - feat/android-safe-area-focus-notifications
+      - refactor/focus-clock-module-and-data-contracts
+      - refactor/ui-css-tasks-notes-modules
+      - refactor/typescript-strict-task-note-models
+      - feat/qa-e2e-sync-live-focus-beta
+      - fix/focus-audible-completion-and-legacy-security-plan
+      - design/light-liquid-glass-beta
+      - design/today-premium-component-redesign
+      - release/pre14-main-security-candidate
+      - release/beta-pre14-stable-security-qa
+
+concurrency:
+  group: yawmi-emulator-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  launch-on-emulator:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install pinned dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Stage Yawmi web app
+        run: npm run build
+
+      - name: Configure Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Install Android SDK
+        uses: android-actions/setup-android@v4
+
+      - name: Install Android API 36 platform
+        run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+
+      - name: Sync and build debug app
+        run: |
+          npx cap sync android
+          chmod +x android/gradlew
+          cd android && ./gradlew assembleDebug --no-daemon
+
+      - name: Enable KVM hardware acceleration where available
+        run: |
+          if [ -e /dev/kvm ]; then
+            sudo chmod 666 /dev/kvm
+          fi
+
+      - name: Install and launch Yawmi on an Android emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_7
+          disable-animations: true
+          script: |
+            adb install -r android/app/build/outputs/apk/debug/app-debug.apk
+            adb logcat -c
+            adb shell am start -W -n in.yawmi.app.preview/in.yawmi.app.MainActivity
+            sleep 25
+            adb shell pidof in.yawmi.app.preview
+            adb exec-out screencap -p > yawmi-emulator-first-launch.png
+            adb shell am force-stop in.yawmi.app.preview
+            adb shell am start -W -n in.yawmi.app.preview/in.yawmi.app.MainActivity
+            sleep 25
+            adb shell pidof in.yawmi.app.preview
+            adb exec-out screencap -p > yawmi-emulator-second-launch.png
+            adb logcat -d -v time > yawmi-emulator-full.log
+            adb logcat -d -s AndroidRuntime:E > yawmi-emulator-runtime.log
+            if grep -q 'FATAL EXCEPTION' yawmi-emulator-runtime.log; then cat yawmi-emulator-runtime.log; exit 1; fi
+
+      - name: Verify rendered UI is nonblank and WebView has no syntax errors
+        run: |
+          python3 -m pip install --quiet pillow
+          python3 -c 'from PIL import Image,ImageStat; import sys; im=Image.open("yawmi-emulator-second-launch.png").convert("RGB"); w,h=im.size; crop=im.crop((w//10,h//7,w*9//10,h*6//7)); spread=max(ImageStat.Stat(crop).stddev); print("App screenshot color spread:",spread); sys.exit(0 if spread>5 else 1)'
+          if grep -E "Uncaught SyntaxError|JavaScript Error:" yawmi-emulator-full.log; then
+            echo "A WebView JavaScript syntax error was detected!"
+            exit 1
+          fi
+
+      - name: Upload emulator first-launch screenshot and crash log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: yawmi-android-emulator-smoke
+          path: |
+            yawmi-emulator-first-launch.png
+            yawmi-emulator-second-launch.png
+            yawmi-emulator-full.log
+            yawmi-emulator-runtime.log
+          if-no-files-found: warn
+          retention-days: 7

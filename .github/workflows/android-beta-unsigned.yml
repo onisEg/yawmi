@@ -1,0 +1,111 @@
+name: Android updatable beta - unsigned build
+
+on:
+  push:
+    branches:
+      - feat/android-updatable-beta-channel
+      - refactor/ui-css-tasks-notes-modules
+      - refactor/typescript-strict-task-note-models
+      - feat/qa-e2e-sync-live-focus-beta
+      - fix/focus-audible-completion-and-legacy-security-plan
+      - design/light-liquid-glass-beta
+      - design/today-premium-component-redesign
+      - release/pre14-main-security-candidate
+      - release/beta-pre14-stable-security-qa
+  workflow_dispatch:
+
+concurrency:
+  group: yawmi-updatable-beta-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build-beta:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - name: Check out Yawmi beta sources
+        uses: actions/checkout@v4
+
+      - name: Use Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install pinned packages
+        run: npm ci --no-audit --no-fund
+
+      - name: Verify data and focus clock regressions
+        run: npm test
+
+      - name: Use Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Install Android SDK
+        uses: android-actions/setup-android@v4
+
+      - name: Install SDK and Build Tools 36
+        run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+
+      - name: Sync web assets and plugins
+        run: npx cap sync android
+
+      - name: Set immutable beta identity and monotonic build number
+        env:
+          CI_RUN_NUMBER: ${{ github.run_number }}
+          CI_RUN_ATTEMPT: ${{ github.run_attempt }}
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import os
+          path = Path("android/app/build.gradle")
+          s = path.read_text()
+          identity = 'applicationId "in.yawmi.app"'
+          assert s.count(identity) == 1, "Unexpected Android app ID — abort"
+          s = s.replace(identity, 'applicationId "in.yawmi.app.beta"')
+          assert s.count('versionCode 1') == 1
+          build = 1000 + int(os.environ["CI_RUN_NUMBER"]) * 10 + int(os.environ["CI_RUN_ATTEMPT"])
+          assert build < 2100000000
+          s = s.replace('versionCode 1', f'versionCode {build}')
+          assert s.count('versionName "1.0"') == 1
+          s = s.replace('versionName "1.0"', f'versionName "0.3.{build}"')
+          path.write_text(s)
+          strings = Path("android/app/src/main/res/values/strings.xml")
+          txt = strings.read_text()
+          assert '<string name="app_name">يومي</string>' in txt
+          txt = txt.replace('<string name="app_name">يومي</string>',
+                            '<string name="app_name">يومي Beta</string>')
+          strings.write_text(txt)
+          print("Stable package in.yawmi.app.beta; version code", build)
+          PY
+
+      - name: Build unsigned, aligned beta APK
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleRelease --no-daemon --stacktrace
+
+      - name: Verify APK package ID, version, and signing state
+        run: |
+          APK=android/app/build/outputs/apk/release/app-release-unsigned.apk
+          test -s "$APK"
+          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "$APK" | head -12
+          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "$APK" | grep -q "package: name='in.yawmi.app.beta'"
+          mkdir -p beta-signing-tool
+          cp "$ANDROID_HOME/build-tools/36.0.0/lib/apksigner.jar" beta-signing-tool/apksigner.jar
+
+      - name: Upload unsigned APK - NOT installable before signing
+        uses: actions/upload-artifact@v4
+        with:
+          name: yawmi-beta-unsigned-apk-and-tool
+          path: |
+            android/app/build/outputs/apk/release/app-release-unsigned.apk
+            beta-signing-tool/apksigner.jar
+          retention-days: 7
+          if-no-files-found: error

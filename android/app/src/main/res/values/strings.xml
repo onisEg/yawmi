@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">يومي</string>
+    <string name="title_activity_main">يومي</string>
+    <string name="package_name">in.yawmi.app</string>
+    <string name="custom_url_scheme">in.yawmi.app</string>
+</resources>

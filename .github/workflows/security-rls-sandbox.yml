@@ -1,0 +1,74 @@
+name: Legacy Supabase RLS lockdown - disposable PostgreSQL
+
+on:
+  push:
+    branches:
+      - release/pre14-main-security-candidate
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  security-rls-sandbox:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_DB: postgres
+          POSTGRES_PASSWORD: ephemeral-only-ci-password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: "5432"
+      PGUSER: postgres
+      PGDATABASE: postgres
+      PGPASSWORD: ephemeral-only-ci-password
+
+    steps:
+      - name: Checkout proposed migration and disposable tests
+        uses: actions/checkout@v4
+
+      - name: Install PostgreSQL client (not Supabase credentials)
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-client
+
+      - name: Construct simulated Auth users and fake data
+        run: psql -X -v ON_ERROR_STOP=1 -f security/staging/prelock_fixtures.sql
+
+      - name: Confirm old policy actually allows unauthorized access
+        run: psql -X -v ON_ERROR_STOP=1 -f security/staging/assert_before_lock.sql
+
+      - name: Apply exact prepared migration only in disposable DB
+        run: psql -X -v ON_ERROR_STOP=1 -f docs/manual-sql/close-legacy-sync-after-backup.sql
+
+      - name: Check anonymous SQL read really denied
+        run: |
+          if psql -X -v ON_ERROR_STOP=1 -c \
+            "SET ROLE anon; SELECT sync_code FROM public.yawmi_sync LIMIT 1;" \
+            >/dev/null 2>&1; then
+            echo "Security regression: anonymous user can read legacy table"
+            exit 1
+          fi
+          echo "PASS: anonymous SQL read rejected after lockdown"
+
+      - name: Check both owners isolated and fake rows preserved
+        run: psql -X -v ON_ERROR_STOP=1 -f security/staging/assert_after_lock.sql
+
+      - name: Confirm staging-only workflow has no Supabase credentials
+        run: |
+          if printenv SUPABASE_SERVICE_ROLE_KEY >/dev/null; then exit 1; fi
+          if printenv SUPABASE_DB_PASSWORD >/dev/null; then exit 1; fi
+          echo "PASS: disposable local PostgreSQL used"

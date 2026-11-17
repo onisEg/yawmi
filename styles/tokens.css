@@ -1,0 +1,24 @@
+
+:root{
+  --bg:#1A1410; --card:#241C15; --card2:#2E241A; --line:#3A2E22;
+  --text:#F0E9DF; --muted:#A89680; --faint:#6B5B48;
+  --gold:#E89A44; --gold-soft:#3D2E1A; --teal:#6BBF9E; --red:#E07856;
+  --nav-bg:rgba(26,20,16,.92);
+  --nav-glass:rgba(46,36,26,.72); --nav-glass-border:rgba(255,220,180,.1);
+  --r:20px;
+}
+/* Capacitor 8 injects safe-area CSS vars on Android (including WebView < 140).
+   Web/PWA and iOS use CSS env() values; max() prevents losing either inset. */
+:root {
+  --yawmi-safe-top: max(env(safe-area-inset-top, 0px), var(--safe-area-inset-top, 0px));
+  --yawmi-safe-bottom: max(env(safe-area-inset-bottom, 0px), var(--safe-area-inset-bottom, 0px));
+  --yawmi-safe-left: max(env(safe-area-inset-left, 0px), var(--safe-area-inset-left, 0px));
+  --yawmi-safe-right: max(env(safe-area-inset-right, 0px), var(--safe-area-inset-right, 0px));
+}
+:root[data-theme="light"]{
+  --bg:#F5F3EC; --card:#FFFFFF; --card2:#EFEDE4; --line:#E0DDD0;
+  --text:#2A2C33; --muted:#6E7280; --faint:#A3A79E;
+  --gold:#9E7220; --gold-soft:#F3E7C8; --teal:#3E9B7E; --red:#C9584E;
+  --nav-bg:rgba(245,243,236,.92);
+  --nav-glass:rgba(255,255,255,.72); --nav-glass-border:rgba(0,0,0,.06);
+}
