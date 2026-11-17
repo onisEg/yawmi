@@ -84,3 +84,25 @@ test('focus countdown can start, close its sheet and resume after reload', async
     return state.running && state.endsAt > Date.now();
   })).toBe(true);
 });
+
+test('focus card mirrors chosen duration and active timer after closing sheet/reload', async ({page}) => {
+  await page.locator('#focusOpenBtn').click();
+  await page.locator('.fdur[data-work="50"][data-break="10"]').click();
+  await expect(page.locator('.fdur[data-work="50"][data-break="10"]')).toHaveClass(/on/);
+  await page.locator('#focusClose').click();
+  await expect(page.locator('#focusMiniTime')).toHaveText('50:00');
+  await expect(page.locator('#focusCardSub')).toContainText('راحة');
+  await page.locator('#focusQuickToggle').click();
+  await expect(page.locator('#focusCard')).toHaveAttribute('data-focus-running','true');
+  await expect.poll(() => page.evaluate(() => {
+    const value = JSON.parse(localStorage.getItem('yawmi_focus_runtime_v2') || '{}');
+    return value.running && value.workMin===50 && value.breakMin===10;
+  })).toBe(true);
+  await page.locator('#focusOpenBtn').click();
+  await expect(page.locator('.fdur[data-work="50"][data-break="10"]')).toHaveClass(/on/);
+  await page.locator('#focusClose').click();
+  await expect(page.locator('#focusCard')).toHaveAttribute('data-focus-running','true');
+  await page.reload();
+  await expect(page.locator('#focusCard')).toHaveAttribute('data-focus-running','true');
+  await expect(page.locator('#focusCardSub')).toContainText('راحة');
+});

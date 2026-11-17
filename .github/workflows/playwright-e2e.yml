@@ -4,6 +4,7 @@ on:
     branches:
       - feat/qa-e2e-sync-live-focus-beta
       - fix/focus-audible-completion-and-legacy-security-plan
+      - feat/liquid-glass-light-focus-beta
   workflow_dispatch:
 permissions:
   contents: read
