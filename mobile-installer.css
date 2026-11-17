@@ -1,0 +1,42 @@
+/* Small mobile-only installation choice. Does not alter Yawmi records. */
+#yawmiMobileInstaller[hidden],#yawmiMobileInstaller [hidden]{display:none !important}
+#yawmiMobileInstaller{
+  position:fixed; z-index:85;
+  inset-inline:12px; bottom:calc(78px + env(safe-area-inset-bottom, 0px));
+  max-width:430px; margin-inline:auto; box-sizing:border-box;
+  padding:18px 17px 14px;
+  border:1px solid var(--line,#d8d5cb); border-radius:22px;
+  background:var(--card,#fff); color:var(--text,#222);
+  box-shadow:0 15px 48px rgba(0,0,0,.2);
+  font-family:inherit; text-align:right;
+  opacity:0; transform:translateY(15px);
+  transition:opacity .22s ease,transform .22s ease;
+}
+#yawmiMobileInstaller.ymi-open{opacity:1;transform:translateY(0)}
+#yawmiMobileInstaller .ymi-close{
+  position:absolute; top:7px; inset-inline-start:9px;
+  width:36px; height:36px; border:0; border-radius:50%;
+  background:transparent; color:var(--muted,#666); font:25px/1 inherit;cursor:pointer;
+}
+#yawmiMobileInstaller .ymi-title{font-size:16px;font-weight:800; padding-inline-start:32px}
+#yawmiMobileInstaller .ymi-subtitle{font-size:12px;line-height:1.65;color:var(--muted,#666);margin:7px 0 12px}
+#yawmiMobileInstaller .ymi-actions{display:flex;flex-wrap:wrap;gap:8px}
+#yawmiMobileInstaller .ymi-pwa,
+#yawmiMobileInstaller .ymi-apk{
+  display:inline-flex;align-items:center;justify-content:center;text-decoration:none;
+  flex:1 1 130px;min-height:43px;padding:9px 10px;border-radius:12px;
+  font:700 13px/1.4 inherit;cursor:pointer;border:1px solid var(--gold,#9e7220);
+}
+#yawmiMobileInstaller .ymi-pwa{background:var(--gold,#9e7220);color:#fff}
+#yawmiMobileInstaller .ymi-apk{background:var(--card2,#f7f3e8);color:var(--text,#222)}
+#yawmiMobileInstaller .ymi-status{color:var(--muted,#666);font-size:11px;line-height:1.6;margin:9px 0 0}
+#yawmiMobileInstaller .ymi-warning{font-size:11px;line-height:1.7;color:var(--muted,#666);margin:7px 0 0}
+@media(min-width:820px){
+  #yawmiMobileInstaller{display:none !important}
+}
+@media(max-height:620px){
+  #yawmiMobileInstaller{max-height:55vh;overflow-y:auto}
+}
+@media(prefers-reduced-motion:reduce){
+  #yawmiMobileInstaller{transition:none}
+}
