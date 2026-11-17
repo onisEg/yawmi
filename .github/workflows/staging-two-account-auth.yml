@@ -1,0 +1,56 @@
+name: Supabase real two-account staging QA (manual)
+
+on:
+  push:
+    branches:
+      - ci/staging-real-auth-two-users
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-safety:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Validate staging-only real Auth test script parses
+        run: node --check scripts/qa-staging-auth-real-users.mjs
+      - name: Verify the tool fails closed without staging secrets
+        run: |
+          if node scripts/qa-staging-auth-real-users.mjs > /tmp/qa-out.log 2>&1; then
+            echo "ERROR: staging-only QA runner must refuse running without explicit approval"
+            exit 1
+          fi
+          grep -q "staging only" /tmp/qa-out.log
+          echo "PASS: no staging secrets means no API operations"
+
+  real-auth-isolation:
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
+    needs: validate-safety
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: staging-qa
+    env:
+      ALLOW_STAGING_QA_WRITE: YES_STAGING_ONLY
+      SUPABASE_QA_PROJECT_REF: khlfscufeigvykxkwohk
+      SUPABASE_QA_URL: https://khlfscufeigvykxkwohk.supabase.co
+      SUPABASE_QA_PUBLISHABLE_KEY: ${{ secrets.YAWMI_STAGING_PUBLISHABLE_KEY }}
+      SUPABASE_QA_SERVICE_ROLE_KEY: ${{ secrets.YAWMI_STAGING_SERVICE_ROLE_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Fail if staging secrets were not configured
+        run: |
+          if test -z "$SUPABASE_QA_PUBLISHABLE_KEY" || test -z "$SUPABASE_QA_SERVICE_ROLE_KEY"; then
+            echo "Staging secrets missing. Configure staging-qa environment secrets first."
+            exit 1
+          fi
+      - name: Test two real Auth users then delete only disposable accounts
+        run: node scripts/qa-staging-auth-real-users.mjs
