@@ -10,11 +10,11 @@ Users opening the site from iOS see PWA installation guidance, **not** an Androi
 
 ## Publish a real, signed APK
 
-The manual workflow `.github/workflows/publish-signed-android-beta.yml` is deliberately **not automatic**. It builds on `main`, signs with the original private Yawmi Beta key, verifies the certificate, verifies the package ID `in.yawmi.app.beta`, publishes the signed APK and `SHA256SUMS.txt` to an official public GitHub Release.
+The manual workflow `.github/workflows/publish-signed-android-beta.yml` is deliberately **not automatic**. It is dispatched from `main` but checks out the **pinned, previously tested pre-PR14 native commit** `526909193b4696ecd142d385a9bde7f66b9496e9`. This deliberately avoids trying to build the current website-only `main` as an Android project, and does not merge Draft PR #16. It signs with the original private Yawmi Beta key, verifies the certificate and package ID `in.yawmi.app.beta`, then publishes the signed APK and `SHA256SUMS.txt` in an official public GitHub Release.
 
 ### Owner setup (one time; never paste secrets into chat)
 
-1. Merge the reviewed Capacitor native app/release candidate to `main` **only after its production safety gates are passed**. Until then, current `main` lacks the required `android/` and `package.json`; publishing workflow is intentionally blocked.
+1. The workflow signs the exact pinned pre-PR14 Android source commit. Confirm this is still the desired stable beta before publishing. **Do not merge Draft PR #16 merely to publish an APK**; the beta release can be independent from a future production web merge. Update the pinned source commit only through a separately tested and reviewed PR.
 2. Go to the repository's **Settings → Environments** and create `android-beta-release`. Prefer **required reviewers** so the release cannot happen accidentally.
 3. Add these encrypted **environment secrets**:
    - `YAWMI_BETA_KEYSTORE_B64`: the original private PKCS#12 Beta keystore, base64 encoded. Store only in GitHub encrypted secrets, never in repository files, PRs, logs, or chats.
@@ -38,7 +38,7 @@ The manual workflow `.github/workflows/publish-signed-android-beta.yml` is delib
 As of 2026-11-17:
 - The website's browser install UX has been merged separately and tested.
 - The repository had **no publicly published GitHub Releases** when the UX was reviewed. The actual APK download option will stay hidden until a verified release exists.
-- The pre-PR14 native app is still part of Draft [PR #16](https://github.com/onisEg/yawmi/pull/16), **not `main`**. CI on its latest reviewed SHA has passed, but real Supabase Auth two-account E2E, in-place device upgrade, and release risk assessment remain.
+- The pre-PR14 native app is still part of Draft [PR #16](https://github.com/onisEg/yawmi/pull/16), **not `main`**. The signed beta workflow instead builds the pinned pre-PR14 native commit. Real Supabase Auth two-account E2E and in-place device upgrade remain separate release acceptance tests.
 - Production `yawmi_sync` legacy RLS remains permissive; a staged fix exists but the live change must wait for a verified backup and old-client compatibility decision. Publishing an APK is **not** permission to change database policies.
 
 **Do not represent the APK as downloadable until the official release asset actually exists.**
