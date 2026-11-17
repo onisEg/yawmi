@@ -1,5 +1,20 @@
 # Yawmi — APK-only Android installation and update notices
 
+## Current Yawmi v1.0 beta release (supersedes older 0.x release instructions)
+- Latest signed beta targets Android package in.yawmi.app.beta; launcher: يومي;
+  versionName: 1.0.<versionCode>, with strictly increasing versionCode.
+- Pin checked-out source to reviewed main commit ca77952e8c5b7622933d5c3b88441f68b59d1329, containing
+  the unified Liquid Glass styles and both native/web v1 update validation.
+- The owner's three already-saved signing secrets are located under the GitHub
+  environment named YAWMI_BETA_KEYSTORE_B64, not android-beta-release.
+  The workflow uses that environment label and does not print or publish secrets.
+- Official release format: android-beta-v1.0.<versionCode>, with downloadable
+  Yawmi-Beta-v1.0.<versionCode>.apk plus SHA256SUMS.txt. The public APK is only
+  available AFTER the manual signed-release action completes successfully.
+- The verified permanent certificate SHA-256 and package ID stay unchanged
+  for future v1 updates. Earlier APKs with a *different* signing certificate
+  cannot update in-place; protect their local data before migration.
+
 ## Website experience (new UX)
 - The Android website no longer offers an in-app **PWA install** button, browser PWA prompt, or a PWA fallback when the APK is not available.
 - On Android, **Download Yawmi (APK)** always means a real official .apk. The download CTA stays hidden until the latest, non-draft, non-prerelease GitHub Release contains a verified-format `Yawmi-Beta-v0.x.versionCode.apk` asset matching the release tag.

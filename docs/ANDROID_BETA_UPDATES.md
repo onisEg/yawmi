@@ -1,5 +1,16 @@
 # Yawmi Android Beta — safe repeatable APK updates
 
+> **Current release target (v1.0):** The reviewed main UI source is pinned to
+> ca77952e8c5b7622933d5c3b88441f68b59d1329. All existing features and storage stay unchanged. Android keeps
+> package in.yawmi.app.beta and the same permanent certificate fingerprint below,
+> while the launcher says يومي and versionName is 1.0.<versionCode>. The
+> preconfigured GitHub environment is named YAWMI_BETA_KEYSTORE_B64 (the
+> environment LABEL, not a credential); it holds the three signing secrets.
+> Releases are named android-beta-v1.0.<versionCode> and contain signed
+> Yawmi-Beta-v1.0.<versionCode>.apk and SHA256SUMS.txt. Never uninstall an
+> older differently signed beta before backing up or verifying synced data.
+> The notes below describe the previous v0.4 approach for historical reference.
+
 **Do not install unsigned APK artifacts.** The manual GitHub Actions publisher builds, signs and verifies the APK with a NEW permanent private v0.4 key. Never commit or share the keystore. Starting a fresh beta signing identity means older APKs signed with another key will not accept a same-ID in-place update.
 
 ## Stable beta identity and version

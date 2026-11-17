@@ -7,7 +7,7 @@ const docs=readFileSync('docs/ANDROID_APK_PUBLIC_DISTRIBUTION.md','utf8');
 test('publishing signed APK is a manual opt-in workflow, never a push action',()=>{
  assert.match(workflow,/^on:\s*\n\s+workflow_dispatch:/m);
  assert.doesNotMatch(workflow,/^\s+push:\s*$/m);
- assert.match(workflow,/environment: android-beta-release/);
+ assert.match(workflow,/environment: YAWMI_BETA_KEYSTORE_B64/);
  assert.match(workflow,/test "\$GITHUB_REF" = 'refs\/heads\/main'/);
 });
 test('release uses encrypted environment secrets and validates permanent new baseline certificate',()=>{
@@ -24,6 +24,8 @@ test('APK is a compatible, monotonically-versioned Beta',()=>{
  assert.match(workflow,/1391 < version_code/);
  assert.match(workflow,/applicationId "in\.yawmi\.app\.beta"/);
  assert.match(workflow,/sha256sum/);
+ assert.match(workflow,/versionName "1\.0\.\{version_code\}"/);
+ assert.match(workflow,/Yawmi-Beta-v\$VERSION\.apk/);
 });
 test('only a signed APK and checksum are published to official repository releases',()=>{
  assert.match(workflow,/GH_TOKEN: \$\{\{ github\.token \}\}/);
@@ -35,7 +37,7 @@ test('only a signed APK and checksum are published to official repository releas
 });
 
 test('signing source is audited and SHA-pinned to the tested APK-only main',()=>{
- const pinned='66c16c9f608dc8a430624d562658d0c3325989e5';
+ const pinned='ca77952e8c5b7622933d5c3b88441f68b59d1329';
  assert.match(workflow,new RegExp('ref: '+pinned));
  assert.match(workflow,/git rev-parse HEAD/);
  assert.match(workflow,/persist-credentials: false/);
