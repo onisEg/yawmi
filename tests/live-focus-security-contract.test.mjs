@@ -34,11 +34,12 @@ test('Native plugin validates deadline and phase and does not start a power-hung
   assert.doesNotMatch(java,/startForegroundService|WakeLock|TimerTask|Thread\.sleep/);
 });
 
-test('Pausing, finishing or canceling focus removes the ongoing status and end alert',()=>{
-  assert.match(bridge,/FocusLive\.show\(\{ endsAt: Number\(endsAt\), phase \}\)/);
+test('Manual pause cancels the completion alert while natural finish keeps an audible completion',()=>{
+  assert.match(bridge,/FocusLive\.show\(\{\s*endsAt:\s*Number\(endsAt\),\s*phase\s*\}\)/);
   assert.match(bridge,/Promise\.allSettled\(\[cancelIds\(\[focusId\]\), FocusLive\.hide\(\)\]\)/);
   assert.match(html,/function pauseFocus\(\)/);
   assert.match(html,/window\.YawmiNative\.cancelFocus\(\)/);
+  assert.match(html,/window\.YawmiNative\.completeFocus\(\{/);
   assert.match(html,/window\.YawmiNative\.requestPermission\(\)/);
   assert.match(html,/const FOCUS_KEY = 'yawmi_focus_runtime_v2'/);
 });

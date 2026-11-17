@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - feat/qa-e2e-sync-live-focus-beta
+      - fix/focus-audible-completion-and-legacy-security-plan
   workflow_dispatch:
 permissions:
   contents: read

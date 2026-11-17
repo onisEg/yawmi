@@ -6,6 +6,7 @@ import { LocalNotifications } from '@capacitor/local-notifications';
 const managedMin = 11000;
 const managedMax = 11999;
 const focusId = 15001;
+const focusTestId = 15002;
 const FocusLive = registerPlugin('YawmiFocusLive');
 const native = Capacitor.isNativePlatform();
 
@@ -88,32 +89,82 @@ async function syncReminders(input = {}) {
 function localISO(date) {
   return [date.getFullYear(), String(date.getMonth()+1).padStart(2,'0'), String(date.getDate()).padStart(2,'0')].join('-');
 }
+const focusDoneChannels = Object.freeze({
+  work: 'yawmi_focus_work_done_v1',
+  break: 'yawmi_focus_break_done_v1'
+});
+const focusDoneMessage = Object.freeze({
+  work: { title:'🎉 خلصت جلسة تركيز!', body:'وقت راحة قصيرة، تستاهل 👏' },
+  break:{ title:'⏰ خلصت الراحة!', body:'يلا نكمّل تركيز 💪' }
+});
+function completionPayload(phase) {
+  const p = phase === 'break' ? 'break' : 'work';
+  return {
+    id:focusId,
+    title:focusDoneMessage[p].title,
+    body:focusDoneMessage[p].body,
+    channelId:focusDoneChannels[p],
+    smallIcon:p === 'work' ? 'ic_yawmi_focus' : 'ic_yawmi_break',
+    autoCancel:true,
+    extra:{ yawmiFocus:true, focusPhase:p }
+  };
+}
+async function configureFocusSounds() {
+  // Separate audible channels from the silent low-importance Live Focus channel.
+  // Android 8+ sound is a property of the channel, not of an individual alert.
+  await FocusLive.prepareCompletionAlerts();
+}
 async function scheduleFocus({ endsAt, phase }) {
-  // The native status notification is independent from the end-of-session alert.
-  // A countdown can keep rendering in Android while the JS WebView is suspended.
+  // An explicit new session replaces any previous completion reminder.
   await cancelIds([focusId]);
   if (!native || !(Number(endsAt) > Date.now())) return false;
   if (!(await permissionGranted())) {
-    try { await FocusLive.hide(); } catch(e) { console.warn('Focus notification cleanup', e); }
+    await FocusLive.hide().catch(e=>console.warn('Focus notification cleanup',e));
     return false;
   }
+  await configureFocusSounds();
+  const notification = {
+    ...completionPayload(phase),
+    schedule: { at:new Date(Number(endsAt)), allowWhileIdle:true }
+  };
   const results = await Promise.allSettled([
-    LocalNotifications.schedule({ notifications: [{
-      id: focusId,
-      title: phase === 'break' ? '⏰ خلصت الراحة' : '🎉 خلصت جلسة تركيز!',
-      body: phase === 'break' ? 'يلا نكمّل تركيز 💪' : 'وقت راحة قصيرة، تستاهل 👏',
-      schedule: { at: new Date(Number(endsAt)), allowWhileIdle: true },
-      isExactNotification: false, autoCancel: true,
-      extra: { yawmiFocus: true }
-    }] }),
-    FocusLive.show({ endsAt: Number(endsAt), phase })
+    LocalNotifications.schedule({ notifications:[notification] }),
+    FocusLive.show({ endsAt:Number(endsAt), phase })
   ]);
-  results.forEach((result, index) => {
-    if (result.status === 'rejected') console.warn(
-      index === 0 ? 'Focus completion reminder unavailable' : 'Focus live status unavailable',
+  results.forEach((result,index)=>{
+    if(result.status==='rejected') console.warn(
+      index===0 ? 'Focus audible completion scheduling failed' : 'Focus Live Update unavailable',
       result.reason);
   });
-  return results.some(result => result.status === 'fulfilled');
+  // The completion reminder, not the ongoing status, is essential.
+  return results[0].status==='fulfilled';
+}
+async function completeFocus({ phase }) {
+  // WebView can reach zero ahead of the Android scheduled alarm; don't cancel
+  // the pending alert and leave the user with silence. Ensure one audible
+  // completion notification immediately when the app is in the foreground.
+  await FocusLive.hide().catch(e=>console.warn('Focus live status cleanup',e));
+  if (!native || !(await permissionGranted())) return false;
+  try {
+    const delivered = (await LocalNotifications.getDeliveredNotifications()).notifications || [];
+    if(delivered.some(n=>n.id===focusId)) return true; // already rang in background
+    await configureFocusSounds();
+    await cancelIds([focusId]); // cancel only the pending, not the displayed one
+    await LocalNotifications.schedule({notifications:[completionPayload(phase)]});
+    return true;
+  } catch(e) {
+    console.warn('Immediate focus completion alert failed',e);
+    return false;
+  }
+}
+
+async function testFocusSound(phase='work') {
+  if(!native || !(await permissionGranted())) return false;
+  await configureFocusSounds();
+  await LocalNotifications.schedule({ notifications:[
+    { ...completionPayload(phase), id:focusTestId }
+  ] });
+  return true;
 }
 async function show(title, body) {
   if (!native || !(await permissionGranted())) return false;
@@ -132,6 +183,8 @@ const api = {
   },
   syncReminders,
   scheduleFocus,
+  completeFocus,
+  testFocusSound,
   async cancelFocus() {
     await Promise.allSettled([cancelIds([focusId]), FocusLive.hide()]);
   },
