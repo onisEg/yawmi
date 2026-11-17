@@ -465,3 +465,28 @@
  mask-image:linear-gradient(90deg,#000 30%,transparent 100%);
 }
 #tab-today .concept-today-header{position:relative;isolation:isolate;min-height:35px}
+
+
+/* Keep the approved reference's compact prayer/score pair, while retaining
+   all original prayer notices and next-prayer countdown in an explicit drawer. */
+#tab-today > .concept-score,
+#tab-today > .concept-prayer{height:100%}
+#tab-today .concept-score{justify-content:center}
+#tab-today .concept-prayer .concept-prayer-more{
+ margin-top:8px;border:1px solid rgba(201,182,149,.3);
+ border-radius:10px;padding:4px 7px;
+ background:rgba(255,251,242,.63);
+}
+#tab-today .concept-prayer .concept-prayer-more summary{
+ color:#8e714a;cursor:pointer;font-size:9px;font-weight:700;
+ line-height:1.6;text-align:center;list-style-position:inside;
+}
+#tab-today .concept-prayer .concept-prayer-more[open] summary{
+ margin-bottom:5px;border-bottom:1px solid rgba(195,172,137,.22);padding-bottom:4px;
+}
+#tab-today .concept-prayer .concept-prayer-more .prayeralert{
+ font-size:9px;line-height:1.5;padding:6px;border-radius:8px;
+}
+#tab-today .concept-prayer .concept-prayer-more #prayerTimer{
+ margin-top:5px;padding:5px 4px;
+}
