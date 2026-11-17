@@ -4587,7 +4587,9 @@ function applySavedCardsOrder(){
   const cards = [...todayTab.querySelectorAll('.todaycard')];
   const cardMap = Object.fromEntries(cards.map(c=>[c.dataset.cid, c]));
   const ordered = saved.map(cid=>cardMap[cid]).filter(Boolean);
-  ordered.forEach(card=>todayTab.appendChild(card));
+  const savedSet = new Set(saved);
+  const remaining = cards.filter(card=>!savedSet.has(card.dataset.cid));
+  [...ordered,...remaining].forEach(card=>todayTab.appendChild(card));
 }
 
 function initTodayCardsDrag(){
