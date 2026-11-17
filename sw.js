@@ -1,4 +1,4 @@
-const CACHE = 'yawmi-v193-apk-only-native-updates';
+const CACHE = 'yawmi-v194-v1-unified';
 const FONT_CACHE = 'yawmi-fonts-v1';
 const ASSETS = [
   './',
@@ -16,7 +16,8 @@ const ASSETS = [
   './styles/components.css',
   './styles/overlays.css',
   './styles/liquid-glass.css',
-  './styles/today-premium.css'
+  './styles/today-premium.css',
+  './styles/v1-unified.css'
 ];
 
 self.addEventListener('install', e => {

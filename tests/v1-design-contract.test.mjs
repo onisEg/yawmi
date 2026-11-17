@@ -13,6 +13,8 @@ test('Yawmi v1 design loads after the existing premium layers',()=>{
 test('v1 visual changes share the same surface and safe modes without altering data',()=>{
  const css=readFileSync('styles/v1-unified.css','utf8');
  assert.match(css,/--v1-surface/);
+ assert.match(readFileSync('sw.js','utf8'),/\.\/styles\/v1-unified\.css/);
+ assert.match(readFileSync('scripts/build-web.mjs','utf8'),/'v1-unified\.css'/);
  assert.match(css,/#tab-today \.card\.todaycard/);
  assert.match(css,/nav\.bottom/);
  assert.match(css,/prefers-reduced-transparency/);
