@@ -33,3 +33,13 @@ test('only a signed APK and checksum are published to official repository releas
  assert.doesNotMatch(workflow,/upload-artifact/);
  assert.match(docs,/no publicly published GitHub Releases/i);
 });
+
+test('signing source is audited and SHA-pinned rather than web-only main',()=>{
+ const pinned='526909193b4696ecd142d385a9bde7f66b9496e9';
+ assert.match(workflow,new RegExp('ref: '+pinned));
+ assert.match(workflow,/git rev-parse HEAD/);
+ assert.match(workflow,/persist-credentials: false/);
+ assert.match(workflow,/--target "\$\(git rev-parse HEAD\)"/);
+ assert.doesNotMatch(workflow,/--target "\$GITHUB_SHA"/);
+ assert.match(docs,/pinned pre-PR14 native commit/);
+});
