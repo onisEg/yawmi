@@ -55,6 +55,7 @@
 <link rel="stylesheet" href="./styles/components.css">
 <link rel="stylesheet" href="./styles/overlays.css">
 <link rel="stylesheet" href="./styles/liquid-glass.css">
+<link rel="stylesheet" href="./styles/today-premium.css">
 </head>
 <body>
 
@@ -87,6 +88,7 @@
     <div class="daynav">
       <button class="navb" id="nextDayBtn" aria-label="اليوم التالي">‹</button>
       <div class="datewrap">
+        <div class="today-date-eyebrow" aria-hidden="true"><span class="today-date-dot"></span> صفحتك النهارده</div>
         <div id="gdate" class="amiri"></div>
         <div id="hdate"></div>
         <button class="linkbtn hidden" id="backToday">الرجوع للنهارده</button>
@@ -100,8 +102,9 @@
     </div>
     <button class="glancepill hidden" id="glancePill" aria-label="عرض ملخصك"></button>
 
-    <div class="card herocard todaycard" id="heroCard" data-cid="hero" draggable="false">
+    <div class="card herocard todaycard premium-hero" id="heroCard" data-cid="hero" draggable="false">
       <div class="carddraghandle" title="اسحب لترتيب الكروت">⠿</div>
+      <div class="today-hero-eyebrow" aria-hidden="true"><span>✦</span> جرعة إلهام</div>
       <div class="heroinner">
         <div class="heroslide" id="heroSlide">
           <span class="heroic" id="heroIcon"></span>
@@ -112,7 +115,7 @@
       <div class="herodots" id="heroDots"></div>
     </div>
 
-    <div class="card scorecard todaycard" data-cid="score" draggable="false">
+    <div class="card scorecard todaycard premium-score" data-cid="score" draggable="false">
       <div class="carddraghandle" title="اسحب لترتيب الكروت">⠿</div>
       <div class="ringwrap">
         <svg width="96" height="96" viewBox="0 0 96 96">
@@ -129,6 +132,7 @@
         <div class="ringnum" id="scoreNum">0</div>
       </div>
       <div class="scoretxt">
+        <div class="premium-kicker">تقدمك اليوم</div>
         <div class="big">نتيجة اليوم</div>
         <div class="scoreof">من ١٠ <span id="scoreBonus" class="hidden"></span></div>
         <div class="sub" id="scoreSub">الصلوات والعادات بيتحسبوا تلقائي</div>
@@ -136,11 +140,15 @@
     </div>
 
 
-    <div class="card todaycard" data-cid="prayer" draggable="false">
+    <div class="card todaycard premium-prayer" data-cid="prayer" draggable="false">
       <div class="carddraghandle" title="اسحب لترتيب الكروت">⠿</div>
-      <div style="display:flex; justify-content:space-between; align-items:center">
-        <h3 id="prayH3" class="h3ic" style="margin:0"><span data-icon="beads"></span>الصلاة</h3>
-        <button class="linkbtn" id="prayDetailsBtn" style="margin:0">المواعيد والتقدم ›</button>
+      <div class="premium-section-head">
+        <div class="premium-head-copy">
+          <span class="premium-kicker">طمأنينة اليوم</span>
+          <h3 id="prayH3" class="h3ic"><span data-icon="beads"></span>الصلاة</h3>
+          <p class="premium-caption">خمس محطات نور في يومك</p>
+        </div>
+        <button class="premium-quiet-action" id="prayDetailsBtn">المواعيد والتقدم <span aria-hidden="true">↗</span></button>
       </div>
       <div id="prayerQuoteRow">
         <div id="prayerQuote"></div>
@@ -155,9 +163,16 @@
       </div>
     </div>
 
-    <div class="card todaycard" data-cid="habits" draggable="false">
+    <div class="card todaycard premium-habits" data-cid="habits" draggable="false">
       <div class="carddraghandle" title="اسحب لترتيب الكروت">⠿</div>
-      <h3 class="h3ic"><span data-icon="check_square"></span>العادات</h3>
+      <div class="premium-section-head">
+        <div class="premium-head-copy">
+          <span class="premium-kicker">كل يوم خطوة</span>
+          <h3 class="h3ic"><span data-icon="check_square"></span>العادات</h3>
+          <p class="premium-caption">ابنِ عاداتك واحدة واحدة</p>
+        </div>
+        <span class="premium-deco premium-deco-habits" aria-hidden="true">✳</span>
+      </div>
       <div class="chips" id="habitChips"></div>
       <div id="badHabitWrap" class="hidden">
         <h3 class="h3ic" style="margin-top:18px; padding-top:14px; border-top:1px solid var(--line)"><span data-icon="ban"></span>عادات تحت السيطرة</h3>
@@ -165,17 +180,27 @@
       </div>
     </div>
 
-    <div class="card todaycard" data-cid="azkar" draggable="false">
+    <div class="card todaycard premium-azkar" data-cid="azkar" draggable="false">
       <div class="carddraghandle" title="اسحب لترتيب الكروت">⠿</div>
-      <h3 class="h3ic"><span data-icon="beads"></span>الأذكار</h3>
+      <div class="premium-section-head">
+        <div class="premium-head-copy">
+          <span class="premium-kicker">لحظات سكينة</span>
+          <h3 class="h3ic"><span data-icon="beads"></span>الأذكار</h3>
+          <p class="premium-caption">حافظ على أذكارك في يومك</p>
+        </div>
+        <span class="premium-deco premium-deco-azkar" aria-hidden="true">✦</span>
+      </div>
       <div class="chips" id="azkarChips"></div>
     </div>
 
-    <div class="card dhikrcard todaycard" id="dhikrCard" data-cid="dhikr" draggable="false">
+    <div class="card dhikrcard todaycard premium-dhikr" id="dhikrCard" data-cid="dhikr" draggable="false">
       <div class="carddraghandle" title="اسحب لترتيب الكروت">⠿</div>
       <div class="dhikrhead">
-        <h3 class="h3ic"><span data-icon="beads"></span>ذِكر اليوم</h3>
-        <div style="display:flex; gap:4px">
+        <div class="premium-head-copy">
+          <span class="premium-kicker">لحظة حضور</span>
+          <h3 class="h3ic"><span data-icon="beads"></span>ذِكر اليوم</h3>
+        </div>
+        <div class="premium-toolbar">
           <button class="dhikrmenu" id="tasbihBtn" aria-label="المسبحة">📿</button>
           <button class="dhikrmenu" id="dhikrChangeBtn" aria-label="غيّر الذِكر"><span data-icon="refresh"></span></button>
           <button class="dhikrmenu" id="dhikrMenuBtn" aria-label="إدارة الأذكار">⋯</button>
@@ -206,10 +231,13 @@
       </div>
     </div>
 
-    <div class="card wirdcard todaycard" id="wirdCard" data-cid="wird" draggable="false">
+    <div class="card wirdcard todaycard premium-wird" id="wirdCard" data-cid="wird" draggable="false">
       <div class="carddraghandle" title="اسحب لترتيب الكروت">⠿</div>
       <div class="wirdhead">
-        <h3 class="h3ic"><span>📖</span> ورد القرآن</h3>
+        <div class="premium-head-copy">
+          <span class="premium-kicker">رحلتك مع القرآن</span>
+          <h3 class="h3ic"><span>📖</span> ورد القرآن</h3>
+        </div>
         <button class="wirdgear" id="wirdTargetBtn" aria-label="غيّر الهدف">⚙</button>
       </div>
       <div class="wirdcounter">
@@ -224,16 +252,21 @@
       <div class="wirdhint" id="wirdHint">سجّل اللي قرأته النهارده من القرآن</div>
     </div>
 
-    <div class="card deedscard todaycard hidden" id="deedsCard" data-cid="deeds" draggable="false">
+    <div class="card deedscard todaycard premium-deeds hidden" id="deedsCard" data-cid="deeds" draggable="false">
       <div class="carddraghandle" title="اسحب لترتيب الكروت">⠿</div>
+      <div class="premium-kicker">خير يزيد يومك</div>
       <h3 class="h3ic"><span>🌿</span> الأعمال المستحبة النهارده</h3>
       <div id="deedsList"></div>
     </div>
 
-    <div class="card todaycard" id="challengesCard" data-cid="challenges" draggable="false">
+    <div class="card todaycard premium-challenges" id="challengesCard" data-cid="challenges" draggable="false">
       <div class="carddraghandle" title="اسحب لترتيب الكروت">⠿</div>
       <div class="chalhead">
-        <h3 class="h3ic"><span>🏆</span> التحديات</h3>
+        <div class="premium-head-copy">
+          <span class="premium-kicker">إنجاز ورا إنجاز</span>
+          <h3 class="h3ic"><span>🏆</span> التحديات</h3>
+          <p class="premium-caption">تابع التحديات اللي اخترتها</p>
+        </div>
         <button class="chaladd" id="openChallenges">+ تحدي</button>
       </div>
       <div id="challengesList"></div>
@@ -265,10 +298,10 @@
       </div>
     </div>
 
-    <div class="card collapsecard todaycard" id="moodCard" data-cid="mood" draggable="false">
+    <div class="card collapsecard todaycard premium-journal-card premium-mood" id="moodCard" data-cid="mood" draggable="false">
       <div class="carddraghandle" title="اسحب لترتيب الكروت">⠿</div>
       <button class="collapsehead" id="moodHead">
-        <span class="ct"><span data-icon="smile"></span>حالتي النفسية اليوم</span>
+        <span class="ct"><span class="premium-collapse-icon"><span data-icon="smile"></span></span><span class="premium-collapse-copy"><span class="premium-collapse-label">حالتي النفسية اليوم</span><small>مشاعرك مهمة</small></span></span>
         <span class="collapsearrow">›</span>
       </button>
       <div class="collapsebody">
@@ -280,10 +313,10 @@
       </div>
     </div>
 
-    <div class="card collapsecard todaycard" id="sleepCard" data-cid="sleep" draggable="false">
+    <div class="card collapsecard todaycard premium-journal-card premium-sleep" id="sleepCard" data-cid="sleep" draggable="false">
       <div class="carddraghandle" title="اسحب لترتيب الكروت">⠿</div>
       <button class="collapsehead" id="sleepHead">
-        <span class="ct"><span data-icon="bed"></span>النوم</span>
+        <span class="ct"><span class="premium-collapse-icon"><span data-icon="bed"></span></span><span class="premium-collapse-copy"><span class="premium-collapse-label">النوم</span><small>راحتك تبدأ هنا</small></span></span>
         <span class="collapsearrow">›</span>
       </button>
       <div class="collapsebody">
@@ -298,10 +331,10 @@
       </div>
     </div>
 
-    <div class="card collapsecard todaycard" id="learnCard" data-cid="learn" draggable="false">
+    <div class="card collapsecard todaycard premium-journal-card premium-learn" id="learnCard" data-cid="learn" draggable="false">
       <div class="carddraghandle" title="اسحب لترتيب الكروت">⠿</div>
       <button class="collapsehead" id="learnHead">
-        <span class="ct"><span data-icon="book"></span>تعلمت النهارده</span>
+        <span class="ct"><span class="premium-collapse-icon"><span data-icon="book"></span></span><span class="premium-collapse-copy"><span class="premium-collapse-label">تعلمت النهارده</span><small>حاجة جديدة كل يوم</small></span></span>
         <span class="collapsearrow" id="learnArrow">›</span>
       </button>
       <div class="collapsebody" id="learnBody">
@@ -309,10 +342,10 @@
       </div>
     </div>
 
-    <div class="card collapsecard todaycard" id="journalCard" data-cid="journal" draggable="false">
+    <div class="card collapsecard todaycard premium-journal-card premium-journal" id="journalCard" data-cid="journal" draggable="false">
       <div class="carddraghandle" title="اسحب لترتيب الكروت">⠿</div>
       <button class="collapsehead" id="journalHead">
-        <span class="ct"><span data-icon="pencil"></span>يومياتي</span>
+        <span class="ct"><span class="premium-collapse-icon"><span data-icon="pencil"></span></span><span class="premium-collapse-copy"><span class="premium-collapse-label">يومياتي</span><small>مكانك الخاص</small></span></span>
         <span class="collapsearrow" id="journalArrow">›</span>
       </button>
       <div class="collapsebody" id="journalBody">
@@ -325,10 +358,14 @@
       <div id="otdList"></div>
     </div>
 
-    <div class="card todaytaskscard todaycard" id="todayTasksCard" data-cid="tasks" draggable="false">
+    <div class="card todaytaskscard todaycard premium-todaytasks" id="todayTasksCard" data-cid="tasks" draggable="false">
       <div class="carddraghandle" title="اسحب لترتيب الكروت">⠿</div>
       <div class="ttchead">
-        <h3 class="h3ic"><span data-icon="check_square"></span> مهام النهارده</h3>
+        <div class="premium-head-copy">
+          <span class="premium-kicker">أولوياتك اليوم</span>
+          <h3 class="h3ic"><span data-icon="check_square"></span> مهام النهارده</h3>
+          <p class="premium-caption">حافظ على تركيزك وخلّص أولوياتك</p>
+        </div>
         <span id="ttcCount" class="ttccount"></span>
       </div>
       <div id="todayTasksList"></div>
