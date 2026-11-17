@@ -20,7 +20,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
-      - name: Test platform detection, verified APK URL, and PWA fallback
+      - name: Test APK-only Android offer, official release validation, and updates
         run: node --test tests/mobile-install-offer.test.mjs
       - name: Check install markup remains in a single HTML document
         run: |
@@ -28,7 +28,7 @@ jobs:
           import assert from 'node:assert/strict';
           import fs from 'node:fs';
           const html=fs.readFileSync('index.html','utf8');
-          for(const id of ['installBanner','installBtn','installApkBtn','installDismiss','installBannerSub']){
+          for(const id of ['installBanner','installApkBtn','installDismiss','installBannerSub']){
             assert.equal(html.split('id="'+id+'"').length,2,id+' must have exactly one element');
           }
           assert.equal(html.split('<html lang="ar" dir="rtl">').length,2);

@@ -316,3 +316,29 @@ nav.bottom button.on{color:var(--gold)}
 #installBanner #installApkBtn:focus-visible,#installBanner #installBtn:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 @media(max-width:390px){#installBanner{gap:8px;padding:10px}#installBanner .installttl{font-size:12px}#installBanner .installsub{font-size:10px}#installBanner .installactions{gap:5px}#installBanner #installApkBtn:not([hidden]),#installBanner #installBtn{font-size:11px;padding:6px 7px}}
 
+
+/* Installed Android Beta: native APK update prompt. This is not a PWA installer. */
+#appUpdateOv{
+  position:fixed;inset:0;z-index:96;
+  display:flex;align-items:center;justify-content:center;
+  padding:24px 16px calc(24px + var(--yawmi-safe-bottom));
+  background:rgba(25,42,44,.62);
+  -webkit-backdrop-filter:blur(9px);backdrop-filter:blur(9px);
+}
+#appUpdateOv .appupdate-card{
+  width:100%;max-width:390px;padding:25px 20px 20px;text-align:center;
+  border-radius:25px;border:1px solid var(--line);
+  background:var(--card);color:var(--text);
+  box-shadow:0 22px 70px rgba(0,0,0,.25);
+}
+#appUpdateOv .appupdate-icon{
+  width:54px;height:54px;display:grid;place-items:center;margin:0 auto 12px;
+  border-radius:18px;background:var(--gold-soft);font-size:25px;
+}
+#appUpdateOv h2{font-size:18px;line-height:1.5;font-weight:800;margin:0 0 9px}
+#appUpdateOv p{font-size:13px;line-height:1.85;color:var(--muted);margin:0 0 19px}
+#appUpdateOv .appupdate-actions{display:flex;gap:9px;align-items:stretch}
+#appUpdateOv .appupdate-actions button{min-height:45px}
+#appUpdateOv .appupdate-actions button:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
+@media(max-width:355px){#appUpdateOv .appupdate-actions{flex-direction:column}}
+@media(prefers-reduced-transparency:reduce){#appUpdateOv{-webkit-backdrop-filter:none;backdrop-filter:none}}
