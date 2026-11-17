@@ -15,20 +15,19 @@ jobs:
       YAWMI_BETA_KEYSTORE_B64: ${{ secrets.YAWMI_BETA_KEYSTORE_B64 }}
       YAWMI_BETA_KEY_PASSWORD: ${{ secrets.YAWMI_BETA_KEY_PASSWORD }}
       YAWMI_BETA_KEY_ALIAS: ${{ secrets.YAWMI_BETA_KEY_ALIAS }}
-      EXPECTED_CERT_SHA256: "730a84f331a2178819358a8a7e97baa4004c410898717adbe976489c172901d8"
+      EXPECTED_CERT_SHA256: "1d57e58ab6b46eccebdf4ae4e7ee2dd61bcd2674bd6466af74f267d66000001d"
     steps:
-      # The GitHub Pages main branch still hosts the original single-file web app.
-      # Native Capacitor sources exist only on the audited pre-PR14 release
-      # candidate. Pin the EXACT reviewed commit; never build an arbitrary
-      # changing branch or an unreviewed pull request with signing secrets.
-      - name: Checkout pinned, tested pre-PR14 Android source
+      # First v0.4 release baseline: pinned, tested main commit with APK-only UX
+      # and native update bridge. Keep signing inputs private and never build
+      # from a moving branch or unreviewed PR when secrets are present.
+      - name: Checkout pinned, tested v0.4 Android baseline
         uses: actions/checkout@v4
         with:
-          ref: 526909193b4696ecd142d385a9bde7f66b9496e9
+          ref: 66c16c9f608dc8a430624d562658d0c3325989e5
           persist-credentials: false
       - name: Verify checked out audited native source
         run: |
-          test "$(git rev-parse HEAD)" = '526909193b4696ecd142d385a9bde7f66b9496e9'
+          test "$(git rev-parse HEAD)" = '66c16c9f608dc8a430624d562658d0c3325989e5'
           test -f package.json
           test -f android/app/build.gradle
           test -f scripts/build-web.mjs
@@ -84,7 +83,7 @@ jobs:
         run: |
           chmod +x gradlew
           ./gradlew assembleRelease --no-daemon
-      - name: Sign with the original private beta key and verify signature
+      - name: Sign with the permanent new v0.4 beta key and verify certificate
         id: signed
         shell: bash
         run: |
@@ -123,5 +122,5 @@ jobs:
             "$APK" release-android/SHA256SUMS.txt \
             --target "$(git rev-parse HEAD)" \
             --title "Yawmi Android Beta $VERSION" \
-            --notes "Official signed Yawmi Android BETA (in.yawmi.app.beta), built from reviewed pre-PR14 native source commit 526909193b4696ecd142d385a9bde7f66b9496e9. This beta is separate from the GitHub Pages PWA and from a future Play Store production package. Verify SHA256SUMS.txt after downloading. Update any existing Yawmi Beta in place; never uninstall when you have local-only data." \
+            --notes "Official signed Yawmi Android BETA v0.4 NEW SIGNING BASELINE (in.yawmi.app.beta), built from reviewed source commit 66c16c9f608dc8a430624d562658d0c3325989e5. This is a fresh signing identity: older beta APKs signed with another key cannot update in-place; export or sync their data before changing installations. All future v0.4 builds must use this SAME private key to update in place. Verify SHA256SUMS.txt after downloading; never uninstall future versions with local-only data." \
             --latest
