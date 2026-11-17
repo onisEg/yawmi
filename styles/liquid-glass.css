@@ -1,0 +1,165 @@
+/* Yawmi | Light Liquid Glass — isolated beta-only visual layer
+ * Preserve the existing information architecture, DOM IDs, features, data,
+ * font selection, RTL layout and safe-area offsets. Dark mode stays intact.
+ */
+:root[data-theme="light"] {
+  --lg-frost: rgba(255,255,255,.72);
+  --lg-frost-solid: #f9fbff;
+  --lg-edge: rgba(255,255,255,.94);
+  --lg-shadow: 0 11px 34px rgba(55,84,115,.085),0 2px 8px rgba(61,81,105,.05);
+  --lg-ink: #2c3d50;
+  --lg-teal: #3e9b89;
+}
+:root[data-theme="light"] body {
+  background: radial-gradient(ellipse 75% 24% at 96% 3%,rgba(182,223,227,.35),transparent 80%),
+              radial-gradient(ellipse 80% 25% at 4% 40%,rgba(227,213,245,.30),transparent 80%),
+              linear-gradient(155deg,#f8fafc 0%,#eef3f8 65%,#f7f5f1 100%);
+  background-attachment:fixed;
+}
+:root[data-theme="light"] .card {
+  background:var(--lg-frost);
+  border:1px solid var(--lg-edge);
+  box-shadow:var(--lg-shadow),inset 0 1px 0 rgba(255,255,255,.85);
+  -webkit-backdrop-filter:blur(18px) saturate(1.35);
+  backdrop-filter:blur(18px) saturate(1.35);
+}
+:root[data-theme="light"] nav.bottom {
+  background:rgba(250,252,255,.77);
+  border:1px solid rgba(255,255,255,.93);
+  box-shadow:0 16px 38px rgba(62,89,121,.13),inset 0 1px 0 white;
+  -webkit-backdrop-filter:blur(25px) saturate(1.5);
+  backdrop-filter:blur(25px) saturate(1.5);
+}
+:root[data-theme="light"] nav.bottom button.on {
+  color:#287b72;
+  background:rgba(226,244,238,.74);
+}
+:root[data-theme="light"] header.top .iconbtn {
+  background:rgba(255,255,255,.58);
+  border:1px solid rgba(255,255,255,.82);
+  box-shadow:0 3px 10px rgba(57,76,95,.045);
+}
+:root[data-theme="light"] .btn.primary,
+:root[data-theme="light"] .focusbtn.primary {
+  background:linear-gradient(135deg,#377f77,#48a697);
+  color:#fff;
+  box-shadow:0 7px 19px rgba(47,140,127,.22),inset 0 1px 0 rgba(255,255,255,.3);
+}
+:root[data-theme="light"] .btn.ghost,
+:root[data-theme="light"] .focusbtn.secondary,
+:root[data-theme="light"] .fdur {
+  background:rgba(255,255,255,.68);
+  border-color:rgba(255,255,255,.9);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.65);
+}
+:root[data-theme="light"] .fdur.on {
+  background:rgba(215,240,234,.85);
+  border-color:#7db7a8;
+  color:#247a6f;
+}
+:root[data-theme="light"] #focusOv {
+  background:rgba(34,53,72,.26);
+  -webkit-backdrop-filter:blur(6px);
+  backdrop-filter:blur(6px);
+}
+:root[data-theme="light"] #focusModal {
+  background:linear-gradient(160deg,rgba(255,255,255,.96),rgba(244,249,252,.91));
+  border:1px solid rgba(255,255,255,.96);
+  box-shadow:0 -16px 60px rgba(36,65,89,.15),inset 0 1px 0 white;
+  -webkit-backdrop-filter:blur(28px) saturate(1.4);
+  backdrop-filter:blur(28px) saturate(1.4);
+}
+:root[data-theme="light"] #focusModal .focusfg{stroke:#3b9c89}
+:root[data-theme="light"] #focusModal .focusfg.break{stroke:#d59a53}
+:root[data-theme="light"] #focusModal .focusphase{color:#2c8678}
+:root[data-theme="light"] #focusModal .focusphase.break{color:#ad7a3d}
+
+/* Existing focus card location/order retained. Only the internals change. */
+#focusCard .focusglass {
+  position:relative; padding:16px; border-radius:21px;
+  background:linear-gradient(130deg,rgba(166,216,212,.13),rgba(255,255,255,.08));
+  border:1px solid rgba(110,165,153,.15);
+}
+#focusCard .focusglass-head {
+  display:flex; align-items:start; justify-content:space-between; gap:10px;
+}
+#focusCard .focusglass-heading{display:flex; align-items:center; gap:9px; min-width:0}
+#focusCard .focusglass-emblem {
+  display:grid; place-items:center; width:42px; height:42px;
+  flex:none; border-radius:15px; background:rgba(69,160,142,.12); font-size:21px;
+}
+#focusCard .focusglass-state{font-size:12px; font-weight:700; color:var(--teal)}
+#focusCard .focusglass-timer {
+  font-size:32px; line-height:1.3; font-weight:800;
+  font-variant-numeric:tabular-nums; letter-spacing:.4px; color:var(--text);
+  direction:ltr; unicode-bidi:isolate;
+}
+#focusCard .focusglass-meta {color:var(--muted);font-size:12px;margin-top:8px}
+#focusCard .focusglass-task {color:var(--text);font-size:12px;margin-top:5px;overflow-wrap:anywhere}
+#focusCard .focusglass-track {
+  margin-top:13px;height:7px;border-radius:99px;overflow:hidden;
+  background:rgba(110,150,148,.15);
+}
+#focusCard .focusglass-fill {
+  height:100%;width:0;border-radius:inherit;
+  background:linear-gradient(90deg,#48af9b,#81d0c0);
+  transition:width .45s ease;
+}
+#focusCard[data-focus-phase="break"] .focusglass-fill {
+  background:linear-gradient(90deg,#d7a15e,#f0c687);
+}
+#focusCard .focusglass-bottom {
+  display:flex;align-items:center;justify-content:space-between;
+  gap:8px;margin-top:13px;flex-wrap:wrap;
+}
+#focusCard .focusglass-count {font-size:11px;color:var(--muted)}
+#focusCard .focusglass-actions{display:flex;gap:7px;align-items:center}
+#focusCard .focusglass-button {
+  border:1px solid rgba(126,161,150,.22);
+  border-radius:999px;font-family:inherit;font-size:12px;font-weight:700;
+  padding:9px 13px;min-height:37px;cursor:pointer;
+  color:var(--text);background:rgba(255,255,255,.3);
+}
+#focusCard .focusglass-button.primary {
+  background:#398e80;color:#fff;border-color:transparent;
+}
+#focusCard .focusglass-button:focus-visible{outline:3px solid #76b8ac;outline-offset:3px}
+#focusCard .focusglass-state[data-state="paused"]{color:var(--muted)}
+#focusCard[data-focus-phase="break"] .focusglass-state{color:#aa804d}
+:root[data-theme="light"] #focusCard .focusglass {
+  background:linear-gradient(133deg,rgba(249,253,255,.9),rgba(233,247,244,.56) 64%,rgba(248,250,255,.75));
+  border:1px solid rgba(255,255,255,.98);
+  box-shadow:0 10px 30px rgba(70,105,120,.07),inset 0 1px 0 white;
+}
+:root[data-theme="light"] #focusCard .focusglass-emblem {
+  background:linear-gradient(140deg,#def3ee,#f3faf6);
+  box-shadow:inset 0 1px 0 #fff;
+}
+:root[data-theme="light"] #focusCard .focusglass-button.secondary {
+  background:rgba(255,255,255,.83);border-color:white;
+}
+:root[data-theme="light"] #focusCard .focusglass-button.primary{
+  background:linear-gradient(135deg,#36897c,#55b5a4);
+  box-shadow:0 6px 16px rgba(44,133,117,.2);
+}
+@media(max-width:350px){
+  #focusCard .focusglass-timer{font-size:27px}
+  #focusCard .focusglass-button{padding:8px 10px}
+}
+@media(prefers-reduced-motion:reduce){
+  #focusCard .focusglass-fill,
+  :root[data-theme="light"] nav.bottom button.on {transition:none;animation:none}
+}
+@media(prefers-reduced-transparency:reduce){
+  :root[data-theme="light"] .card,
+  :root[data-theme="light"] nav.bottom,
+  :root[data-theme="light"] #focusModal{
+    background:var(--lg-frost-solid);
+    -webkit-backdrop-filter:none;backdrop-filter:none;
+  }
+}
+@supports not (backdrop-filter:blur(2px)){
+  :root[data-theme="light"] .card,
+  :root[data-theme="light"] nav.bottom,
+  :root[data-theme="light"] #focusModal{background:#f9fbff}
+}
