@@ -1,5 +1,8 @@
 # Yawmi v1.0 beta — unified appearance, unchanged user data
 
+Source pinned for signed v1 release: ca77952e8c5b7622933d5c3b88441f68b59d1329.
+Signing workflow uses the existing GitHub environment named YAWMI_BETA_KEYSTORE_B64, which contains the three credentials (not committed to code).
+
 This milestone unifies the Liquid Glass visual language across the existing
 Today, Tasks, Expenses, Notes, Dashboard and Settings tabs. It preserves all
 existing card IDs, layouts, app features, timers, saved data, Supabase schemas,

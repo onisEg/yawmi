@@ -10,24 +10,27 @@ jobs:
   release:
     runs-on: ubuntu-latest
     timeout-minutes: 45
-    environment: android-beta-release
+    environment: YAWMI_BETA_KEYSTORE_B64
+    # The already-configured signing environment has this unusual name;
+    # it is an environment LABEL, never a secret value.
+    # Manual main-only publishing and SHA-pinned code remain enforced.
     env:
       YAWMI_BETA_KEYSTORE_B64: ${{ secrets.YAWMI_BETA_KEYSTORE_B64 }}
       YAWMI_BETA_KEY_PASSWORD: ${{ secrets.YAWMI_BETA_KEY_PASSWORD }}
       YAWMI_BETA_KEY_ALIAS: ${{ secrets.YAWMI_BETA_KEY_ALIAS }}
       EXPECTED_CERT_SHA256: "1d57e58ab6b46eccebdf4ae4e7ee2dd61bcd2674bd6466af74f267d66000001d"
     steps:
-      # First v0.4 release baseline: pinned, tested main commit with APK-only UX
+      # Yawmi v1 release baseline: pinned, tested unified UI on main
       # and native update bridge. Keep signing inputs private and never build
       # from a moving branch or unreviewed PR when secrets are present.
-      - name: Checkout pinned, tested v0.4 Android baseline
+      - name: Checkout pinned, tested v1.0 Android baseline
         uses: actions/checkout@v4
         with:
-          ref: 66c16c9f608dc8a430624d562658d0c3325989e5
+          ref: ca77952e8c5b7622933d5c3b88441f68b59d1329
           persist-credentials: false
       - name: Verify checked out audited native source
         run: |
-          test "$(git rev-parse HEAD)" = '66c16c9f608dc8a430624d562658d0c3325989e5'
+          test "$(git rev-parse HEAD)" = 'ca77952e8c5b7622933d5c3b88441f68b59d1329'
           test -f package.json
           test -f android/app/build.gradle
           test -f scripts/build-web.mjs
@@ -70,20 +73,19 @@ jobs:
           assert content.count('versionName "1.0"')==1
           content=content.replace('applicationId "in.yawmi.app"', 'applicationId "in.yawmi.app.beta"')
           content=content.replace('versionCode 1',f'versionCode {version_code}')
-          content=content.replace('versionName "1.0"',f'versionName "0.4.{version_code}"')
+          content=content.replace('versionName "1.0"',f'versionName "1.0.{version_code}"')
           gradle.write_text(content)
+          # Keep the launcher name يومي. This is v1, not a second app.
           app_name=Path('android/app/src/main/res/values/strings.xml')
-          strings=app_name.read_text()
-          assert '<string name="app_name">يومي</string>' in strings
-          app_name.write_text(strings.replace('<string name="app_name">يومي</string>', '<string name="app_name">يومي Beta</string>'))
-          Path(os.environ['RUNNER_TEMP'],'yawmi-version.txt').write_text(f'0.4.{version_code}')
+          assert '<string name="app_name">يومي</string>' in app_name.read_text()
+          Path(os.environ['RUNNER_TEMP'],'yawmi-version.txt').write_text(f'1.0.{version_code}')
           PY
       - name: Build unsigned candidate
         working-directory: android
         run: |
           chmod +x gradlew
           ./gradlew assembleRelease --no-daemon
-      - name: Sign with the permanent new v0.4 beta key and verify certificate
+      - name: Sign with the permanent new v1.0 beta key and verify certificate
         id: signed
         shell: bash
         run: |
@@ -122,5 +124,5 @@ jobs:
             "$APK" release-android/SHA256SUMS.txt \
             --target "$(git rev-parse HEAD)" \
             --title "Yawmi Android Beta $VERSION" \
-            --notes "Official signed Yawmi Android BETA v0.4 NEW SIGNING BASELINE (in.yawmi.app.beta), built from reviewed source commit 66c16c9f608dc8a430624d562658d0c3325989e5. This is a fresh signing identity: older beta APKs signed with another key cannot update in-place; export or sync their data before changing installations. All future v0.4 builds must use this SAME private key to update in place. Verify SHA256SUMS.txt after downloading; never uninstall future versions with local-only data." \
+            --notes "Official signed Yawmi Android BETA v1.0 PERMANENT SIGNING BASELINE (in.yawmi.app.beta), built from reviewed source commit ca77952e8c5b7622933d5c3b88441f68b59d1329. This is a fresh signing identity: older beta APKs signed with another key cannot update in-place; export or sync their data before changing installations. All future v1.0 builds must use this SAME private key to update in place. Verify SHA256SUMS.txt after downloading; never uninstall future versions with local-only data." \
             --latest
