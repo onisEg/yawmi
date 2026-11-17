@@ -307,3 +307,12 @@ nav.bottom button.on{color:var(--gold)}
 #onbBtns .btn{flex:1}
 #onboardSkip{flex:0 0 auto; font-size:13px; padding-left:14px; padding-right:14px}
 #onboardBox{background:var(--card); border-radius:20px; padding:32px 24px; max-width:360px; width:100%; text-align:center}
+
+/* Mobile install: show native Android APK only when a verified official
+   GitHub release has a downloadable .apk asset; otherwise keep PWA usable. */
+#installBanner .installactions{display:flex;flex-direction:column;align-items:stretch;justify-content:center;gap:6px;flex-shrink:0}
+#installBanner #installApkBtn:not([hidden]){display:inline-flex;align-items:center;justify-content:center;min-height:34px;padding:7px 10px;border-radius:10px;background:var(--teal);color:#fff;text-decoration:none;font-size:12px;font-weight:700;line-height:1.35;font-family:inherit;white-space:nowrap}
+#installBanner #installBtn{min-height:32px;padding:6px 10px;font-size:12px}
+#installBanner #installApkBtn:focus-visible,#installBanner #installBtn:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+@media(max-width:390px){#installBanner{gap:8px;padding:10px}#installBanner .installttl{font-size:12px}#installBanner .installsub{font-size:10px}#installBanner .installactions{gap:5px}#installBanner #installApkBtn:not([hidden]),#installBanner #installBtn{font-size:11px;padding:6px 7px}}
+
