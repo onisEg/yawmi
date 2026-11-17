@@ -132,3 +132,11 @@ test('existing PWA installation action and manual guidance remain',()=>{
  assert.match(source,/id="installApkBtn"/);
  assert.match(source,/id="installDismiss"/);
 });
+
+test('APK discovery state is initialized before the app first renders',()=>{
+ const state=source.indexOf("let verifiedAndroidApkUrl = '';");
+ const init=source.indexOf('/* ================= init ================= */');
+ const boot=source.indexOf('reloadState();',init);
+ assert.ok(state>0 && state<init && init<boot, 'APK state must be initialized before rendering the banner');
+ assert.equal(source.split("let verifiedAndroidApkUrl = '';").length,2);
+});
