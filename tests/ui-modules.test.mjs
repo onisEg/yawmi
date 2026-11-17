@@ -151,3 +151,17 @@ test('classic task/note/component scripts load before legacy inline app and are 
     assert.ok(serviceWorker.includes('./'+asset), 'PWA precache missing '+asset);
   }
 });
+
+test('habits have a premium progress surface without changing stored habit controls', () => {
+  const css=load('styles/today-premium.css');
+  assert.match(html,/class="card todaycard premium-habits" data-cid="habits"/);
+  for(const id of ['habitChips','badHabitWrap','habitProgressTrack','habitProgressText','habitProgressFill']) {
+    assert.ok(html.includes('id="'+id+'"'),'Missing stable habit visual '+id);
+  }
+  assert.match(html,/settings\.habits\.filter\(name => !!rec\.h\[name\]\)\.length/);
+  assert.match(html,/setAttribute\('aria-valuenow', String\(habitPct\)\)/);
+  assert.match(css,/\.premium-habits #habitChips \.chip\.on::before/);
+  assert.match(css,/\.premium-habits \.premium-habit-progress-track/);
+  assert.match(css,/:root\[data-theme="dark"\] #tab-today \.premium-habits/);
+  assert.match(css,/@media\(prefers-reduced-motion:reduce\)/);
+});
