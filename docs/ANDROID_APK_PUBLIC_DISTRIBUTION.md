@@ -12,19 +12,26 @@
 - On app launch (and when reconnecting online), the app reads the latest official GitHub release and validates the signed-release metadata and APK URL. Only a newer `versionCode` for installed `in.yawmi.app.beta` opens the "Update available" dialog.
 - **Update now** opens the verified HTTPS GitHub APK asset in an external Android browser. Android handles download and asks for user confirmation to install. No silent installs or broad install permission.
 - **Later** defers the prompt for the current app session; the app remains usable without Internet.
-- Existing APKs without this new native bridge cannot acquire it merely by visiting the hosted web page. A NEW APK containing this feature must be built, signed with the ORIGINAL Beta key, tested as an in-place update on a real device, and published before update prompts become available to existing native users.
+- Existing APKs without this new native bridge cannot acquire it merely by visiting the hosted web page. A NEW APK containing this feature must be built, signed with the new PERMANENT v0.4 key, tested on a real device, and published before native update prompts work. This signing key differs from earlier betas, so an older beta may need a one-time uninstall AFTER safely exporting/syncing its data.
 
 ## Release/signing requirements
 1. At review time there were **no publicly published GitHub Releases**; do not advertise an APK until there is a real public asset.
-2. Native package `in.yawmi.app.beta`, original certificate SHA-256 `730A84F331A2178819358A8A7E97BAA4004C410898717ADBE976489C172901D8` and strictly increasing `versionCode` are required for updating users in place.
-3. The existing `publish-signed-android-beta.yml` workflow uses the **pinned pre-PR14 native commit** as its audited source. It will NOT include this native update checker until the exact tested source commit is reviewed and intentionally re-pinned. Do not remove the pin or use an unreviewed moving branch with signing secrets.
+2. Native package `in.yawmi.app.beta`, NEW permanent v0.4 certificate SHA-256 `1D57E58AB6B46ECCEBDF4AE4E7EE2DD61BCD2674BD6466AF74F267D66000001D` and strictly increasing `versionCode` are required for updating users in place from the first new signed release onwards.
+3. The `publish-signed-android-beta.yml` workflow uses the **pinned reviewed APK-only main commit** `66c16c9f608dc8a430624d562658d0c3325989e5` with the native update checker. Every future build must intentionally re-pin an audited newer source commit. Never use a moving branch with signing secrets.
 4. Publish a signed `.apk` plus `SHA256SUMS.txt` as the official latest GitHub Release with tag `android-beta-v0.4.VERSION_CODE` (or `android-beta-v0.3.VERSION_CODE`) and identically named asset `Yawmi-Beta-v0.4.VERSION_CODE.apk` (or `Yawmi-Beta-v0.3.VERSION_CODE.apk`).
-5. Back up/export local-only user data; **never uninstall** an existing APK to work around a signature/version problem. Existing installed PWAs and APKs do not share the same local storage. Sign-in/cloud-sync or export/import must be verified before switching.
+5. Old betas signed with a DIFFERENT certificate cannot be updated over the new v0.4 baseline. If you used one, export local-only data or verify cloud sync before a one-time uninstall/reinstall. **From the first new v0.4 release onward, never uninstall to update:** always keep the new signing key and raise `versionCode`. Installed PWAs and APKs do not share the same local storage.
 6. The update UX and publishing are distinct from production Supabase `yawmi_sync` RLS work. No database schema, policies, user rows, storage keys, auth or sync protocols changed here.
 
 ## Verification checklist
 - Node contracts + Playwright browser/mobile + native Gradle compile pass on the final PR SHA.
 - Android website offers only real APK downloads (and never the PWA prompt), including when offline / GitHub API returns 404/rate limits.
-- Native Beta at versionCode 1391 only shows an update when a verified official release has a higher versionCode.
+- New native Beta at versionCode 2000+ only shows an update when a verified official release has a higher versionCode.
 - Native update dialog "Later" is dismissible; "Update now" opens the external browser, not a WebView navigation or silent installation.
 - Confirm signed APK in-place update, data-preservation, offline mode and native focus/reminders on a physical Android device before broad distribution.
+
+## Owner setup for NEW v0.4 release series
+- Download the private PKCS12 signing key and private credential instructions from the current ChatGPT build artifacts; NEVER commit them to GitHub or publish them as a GitHub Release asset.
+- Create GitHub Actions environment `android-beta-release` in repository Settings > Environments.
+- Add exactly three **Environment secrets** from the private instructions: `YAWMI_BETA_KEYSTORE_B64`, `YAWMI_BETA_KEY_PASSWORD`, `YAWMI_BETA_KEY_ALIAS`. Save an offline backup of the .p12 key AND password; losing either prevents future in-place updates.
+- Once CI for the workflow change is green and it is merged to main, use Actions > Publish verified signed Yawmi Android Beta > Run workflow > main.
+- The workflow validates the certificate SHA-256, package ID, versionCode, runs app/data tests, then creates the official latest GitHub Release with APK + SHA256SUMS.txt. The site will only display an APK download when this Release actually exists.
