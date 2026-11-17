@@ -15,9 +15,9 @@
 - Existing APKs without this new native bridge cannot acquire it merely by visiting the hosted web page. A NEW APK containing this feature must be built, signed with the ORIGINAL Beta key, tested as an in-place update on a real device, and published before update prompts become available to existing native users.
 
 ## Release/signing requirements
-1. The repository had **no public GitHub Releases** at the time this branch was prepared; do not advertise an APK until there is a real public asset.
+1. At review time there were **no publicly published GitHub Releases**; do not advertise an APK until there is a real public asset.
 2. Native package `in.yawmi.app.beta`, original certificate SHA-256 `730A84F331A2178819358A8A7E97BAA4004C410898717ADBE976489C172901D8` and strictly increasing `versionCode` are required for updating users in place.
-3. The existing `publish-signed-android-beta.yml` workflow is intentionally pinned to the audited old source commit. It will NOT include this native update checker until the exact tested source commit is reviewed and intentionally re-pinned. Do not remove the pin or use an unreviewed moving branch with signing secrets.
+3. The existing `publish-signed-android-beta.yml` workflow uses the **pinned pre-PR14 native commit** as its audited source. It will NOT include this native update checker until the exact tested source commit is reviewed and intentionally re-pinned. Do not remove the pin or use an unreviewed moving branch with signing secrets.
 4. Publish a signed `.apk` plus `SHA256SUMS.txt` as the official latest GitHub Release with tag `android-beta-v0.4.VERSION_CODE` (or `android-beta-v0.3.VERSION_CODE`) and identically named asset `Yawmi-Beta-v0.4.VERSION_CODE.apk` (or `Yawmi-Beta-v0.3.VERSION_CODE.apk`).
 5. Back up/export local-only user data; **never uninstall** an existing APK to work around a signature/version problem. Existing installed PWAs and APKs do not share the same local storage. Sign-in/cloud-sync or export/import must be verified before switching.
 6. The update UX and publishing are distinct from production Supabase `yawmi_sync` RLS work. No database schema, policies, user rows, storage keys, auth or sync protocols changed here.
