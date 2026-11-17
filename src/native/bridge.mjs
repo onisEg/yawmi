@@ -8,6 +8,7 @@ const managedMax = 11999;
 const focusId = 15001;
 const focusTestId = 15002;
 const FocusLive = registerPlugin('YawmiFocusLive');
+const AppInfo = registerPlugin('YawmiAppInfo');
 const native = Capacitor.isNativePlatform();
 
 function nextDate(day, hhmm) {
@@ -176,6 +177,10 @@ async function show(title, body) {
 }
 const api = {
   isNative: native,
+  // Only Android's actual installed build can answer these; a browser must
+  // never guess its version or try to silently install an APK.
+  getInstalledVersion: () => AppInfo.getInstalledVersion(),
+  openUpdateDownload: ({url}) => AppInfo.openUpdateDownload({url}),
   hasPermission: permissionGranted,
   async requestPermission() {
     try { return (await LocalNotifications.requestPermissions()).display === 'granted'; }
