@@ -23,7 +23,9 @@ Project: `jtldivmllnzktnzgwtsm`, Free organization. At review:
 - Supabase advisor flags leaked password protection disabled. Enable through Auth configuration after separate settings review.
 - There is no Supabase development branch currently connected. A managed staging branch may incur extra charges.
 
-**No customer JSON payloads were read or exported, and no production SQL grants, policies, data, migrations or schema were changed in the review.**
+**Post-audit production action, 2026-11-17:** With owner authorization, applied **only** migration `20261117162946_restrict_rls_auto_enable_api_execution_20261117` revoking API-role EXECUTE on `public.rls_auto_enable()` from `PUBLIC`, `anon` and `authenticated`. Verified `anon_exec=false`, `auth_exec=false`, and the `ensure_rls` event trigger still active. Security Advisor no longer reports either SECURITY DEFINER EXECUTE warning. No user JSON payloads were read, exported, changed, or deleted; the active `yawmi_data` row count and legacy row count were unchanged.
+
+**CRITICAL remaining production risk:** The one legacy `public.yawmi_sync` row and permissive `yawmi_sync_all` policy **remain accessible**. The full legacy permission lockdown is withheld until encrypted backup/restoration, legacy-client compatibility decision, and real Supabase staging acceptance. Auth leaked-password protection warning is still present.
 
 ## What was implemented safely
 
