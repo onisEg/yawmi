@@ -54,6 +54,7 @@
 <link rel="stylesheet" href="./styles/features.css">
 <link rel="stylesheet" href="./styles/components.css">
 <link rel="stylesheet" href="./styles/overlays.css">
+<link rel="stylesheet" href="./styles/liquid-glass.css">
 </head>
 <body>
 
@@ -241,11 +242,22 @@
     <div class="card todaycard" id="focusCard" data-cid="focus" draggable="false">
       <div class="carddraghandle" title="اسحب لترتيب الكروت">⠿</div>
       <h3 class="h3ic"><span>🎯</span> وضع التركيز</h3>
-      <button class="focusopenbtn" id="focusOpenBtn">
-        <span class="fobic">🍅</span>
-        <span class="fobtxt"><b>ابدأ جلسة تركيز</b><small id="focusCardSub">٢٥ دقيقة تركيز · بومودورو</small></span>
-        <span class="fobarrow">←</span>
-      </button>
+      <div class="focus-liquid-shell">
+        <button type="button" class="focusopenbtn" id="focusOpenBtn" aria-label="فتح مؤقت التركيز وإعداداته">
+          <span class="focus-liquid-symbol" aria-hidden="true">🎯</span>
+          <span class="fobtxt">
+            <b id="focusCardTitle">جاهز للتركيز</b>
+            <small id="focusCardSub">تركيز ٢٥ دقيقة · راحة ٥ دقائق</small>
+            <span id="focusMiniTask" class="focus-mini-task" hidden></span>
+          </span>
+          <span class="focus-mini-time" id="focusMiniTime" role="timer" dir="ltr">25:00</span>
+        </button>
+        <div class="focus-mini-track" aria-hidden="true"><span id="focusMiniProgress"></span></div>
+        <div class="focus-mini-footer">
+          <span id="focusMiniStatus" class="focus-mini-status">جاهز تبدأ جلسة جديدة</span>
+          <button type="button" id="focusQuickToggle" class="focus-mini-toggle">ابدأ التركيز</button>
+        </div>
+      </div>
     </div>
 
     <div class="card collapsecard todaycard" id="moodCard" data-cid="mood" draggable="false">
@@ -3731,16 +3743,41 @@ function restoreFocus(){
   } catch(e){ console.warn('focus state restore failed',e); }
 }
 function renderFocusCard(){
-  const sub = $('#focusCardSub');
-  if(!sub) return;
-  const n = getFocusSessions();
-  sub.textContent = n > 0
-    ? `خلّصت ${arNum(n)} ${n===1?'جلسة':n===2?'جلستين':'جلسات'} النهارده 🔥`
-    : '٢٥ دقيقة تركيز · بومودورو';
+  const card=$('#focusCard');
+  if(!card) return;
+  const n=getFocusSessions();
+  const isBreak=focusState.phase==='break';
+  const total=(isBreak?focusState.breakMin:focusState.workMin)*60;
+  const remaining=focusState.running && focusState.endsAt
+    ? remainingFromDeadline(focusState.endsAt)
+    : focusState.remaining;
+  const paused=!focusState.running && remaining<total;
+  const title=isBreak
+    ? (focusState.running?'وقت الراحة ☕':paused?'الراحة متوقفة':'جاهز للراحة ☕')
+    : (focusState.running?'وقت التركيز 🎯':paused?'التركيز متوقف':'جاهز للتركيز');
+  card.dataset.focusPhase=focusState.phase;
+  card.dataset.focusRunning=String(focusState.running);
+  $('#focusCardTitle').textContent=title;
+  $('#focusCardSub').textContent=
+    `تركيز ${arNum(focusState.workMin)} د · راحة ${arNum(focusState.breakMin)} د`+
+    (n>0 ? ` · ${arNum(n)} جلسات اليوم` : '');
+  $('#focusMiniTime').textContent=fmtFocusTime(Math.max(0,remaining));
+  $('#focusMiniStatus').textContent=focusState.running
+    ? (isBreak?'استمتع بالراحة، المؤقت شغال':'ركز على المهمة، المؤقت شغال')
+    : paused ? 'متوقف مؤقتًا · وقتك محفوظ'
+      : (isBreak?'جاهز تبدأ الراحة':'جاهز تبدأ جلسة جديدة');
+  $('#focusQuickToggle').textContent=focusState.running
+    ? 'إيقاف مؤقت' : paused ? 'استكمال' : isBreak ? 'ابدأ الراحة' : 'ابدأ التركيز';
+  $('#focusMiniProgress').style.width=
+    (total>0?Math.min(100,Math.max(0,(1-remaining/total)*100)):0)+'%';
+  const task=$('#focusMiniTask');
+  task.textContent=focusState.taskLabel ? '🎯 '+focusState.taskLabel : '';
+  task.hidden=!focusState.taskLabel;
 }
 function openFocus(taskLabel){
-  if(!focusState.running && taskLabel) focusState.taskLabel=taskLabel;
+  if(!focusState.running && taskLabel){ focusState.taskLabel=taskLabel; persistFocus(); }
   $('#focusTaskLabel').textContent = focusState.taskLabel ? `🎯 ${focusState.taskLabel}` : '';
+  syncFocusDurationButtons();
   tickFocus();
   updateFocusStats();
   $('#focusOv').classList.add('show');
@@ -3748,6 +3785,13 @@ function openFocus(taskLabel){
 function closeFocus(){
   // Closing the sheet does NOT cancel an active focus session.
   $('#focusOv').classList.remove('show');
+}
+function syncFocusDurationButtons(){
+  document.querySelectorAll('.fdur').forEach(b=>{
+    b.classList.toggle('on',
+      Number(b.dataset.work)===focusState.workMin &&
+      Number(b.dataset.break)===focusState.breakMin);
+  });
 }
 function fmtFocusTime(sec){
   const m = Math.floor(sec / 60), s = sec % 60;
@@ -3764,6 +3808,7 @@ function updateFocusUI(){
   phaseEl.textContent = focusState.phase === 'work' ? 'وقت التركيز' : 'وقت الراحة ☕';
   phaseEl.classList.toggle('break', focusState.phase === 'break');
   $('#focusToggle').textContent = focusState.running ? 'إيقاف مؤقت' : (focusState.remaining < total ? 'كمّل' : 'ابدأ');
+  renderFocusCard();
 }
 function updateFocusStats(){
   const n = getFocusSessions();
@@ -3885,7 +3930,11 @@ document.querySelectorAll('.fdur').forEach(b=>{
 });
 const focusOpenBtn = $('#focusOpenBtn');
 if(focusOpenBtn) focusOpenBtn.onclick = ()=> openFocus();
+const focusQuickToggle = $('#focusQuickToggle');
+if(focusQuickToggle) focusQuickToggle.onclick = ()=> focusState.running ? pauseFocus() : startFocus();
 restoreFocus();
+syncFocusDurationButtons();
+updateFocusUI();
 
 // أزرار تبويب نظرة الفرعي (إحصائيات | تقويم)
 document.querySelectorAll('[data-dashseg]').forEach(btn=>{
