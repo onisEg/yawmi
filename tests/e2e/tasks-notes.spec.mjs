@@ -97,3 +97,41 @@ test('liquid focus card mirrors the selected interval, survives closed sheet and
   await expect(page.locator('#focusCardPhase')).toContainText('متوقف مؤقتًا');
   await expect(page.locator('#focusQuickToggle')).toHaveText('كمّل');
 });
+
+
+test('Premium Today uses distinctive real cards without dropping old controls', async ({page}, testInfo) => {
+  await expect(page.locator('#splash')).toBeHidden({timeout:10000});
+  await expect(page.locator('link[href="./styles/today-premium.css"]')).toHaveCount(1);
+  await expect(page.locator('#tab-today')).toHaveClass(/active/);
+  const originalSections = [
+    'hero','score','prayer','habits','azkar','dhikr','wird','deeds',
+    'challenges','focus','mood','sleep','learn','journal','tasks'
+  ];
+  for(const section of originalSections){
+    await expect(page.locator('#tab-today .todaycard[data-cid="'+section+'"]'))
+      .toHaveCount(1);
+  }
+  for(const id of [
+    'beads','prayDetailsBtn','habitChips','azkarChips','dhikrTapZone',
+    'wirdPlus','wirdMinus','wirdTargetBtn','challengesList',
+    'focusCardTime','focusQuickToggle','moodHead','sleepInp',
+    'learnedInp','journalInp','todayTasksList'
+  ]) {
+    await expect(page.locator('#'+id)).toBeAttached();
+  }
+  // These should be separate component designs, not a generic tinted skin.
+  const appearances = await page.evaluate(() => ['score','prayer','azkar'].map(cid =>
+    getComputedStyle(document.querySelector('[data-cid="'+cid+'"]')).backgroundImage));
+  expect(new Set(appearances).size).toBe(3);
+  await page.screenshot({
+    path:'test-results/today-premium-'+testInfo.project.name+'.png',
+    fullPage:true
+  });
+  await page.locator('#journalHead').click();
+  await expect(page.locator('#journalCard')).toHaveClass(/open/);
+  await expect(page.locator('#journalInp')).toBeVisible();
+  await page.locator('nav.bottom button[data-tab="tasks"]').click();
+  await expect(page.locator('#tab-tasks')).toHaveClass(/active/);
+  await page.locator('nav.bottom button[data-tab="today"]').click();
+  await expect(page.locator('#focusCardTime')).toBeVisible();
+});
