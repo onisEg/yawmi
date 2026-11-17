@@ -8629,6 +8629,58 @@ function validateOfficialApkAsset(release){
   }
   return '';
 }
+// Only native Android APK builds can compare a real installed versionCode.
+// A published GitHub release has to use the pinned Beta filename/tag format.
+// This deliberately never touches Supabase or the user's local state.
+function getOfficialBetaUpdate(release, url){
+  if(!url || typeof release?.tag_name !== 'string') return null;
+  const tag = /^android-beta-v(0\.[0-9]+\.[0-9]+)$/.exec(release.tag_name);
+  const file = /^Yawmi-Beta-v(0\.[0-9]+\.([0-9]+))\.apk$/.exec(url.split('/').pop() || '');
+  if(!tag || !file || tag[1] !== file[1]) return null;
+  const versionCode = Number(file[2]);
+  return Number.isSafeInteger(versionCode) && versionCode > 0
+    ? { url, versionCode, versionName:tag[1] } : null;
+}
+async function checkAndroidAppUpdate(){
+  if(!isNativeApp() || !window.YawmiNative?.getInstalledVersion || document.hidden) return;
+  const now = Date.now();
+  if(now - nativeUpdateCheckedAt < 6 * 60 * 60 * 1000) return;
+  nativeUpdateCheckedAt = now;
+  try{
+    const installed = await window.YawmiNative.getInstalledVersion();
+    if(installed?.packageName !== 'in.yawmi.app.beta') return;
+    const currentCode = Number(installed.versionCode);
+    if(!Number.isSafeInteger(currentCode) || currentCode <= 0) return;
+    const response = await fetch('https://api.github.com/repos/onisEg/yawmi/releases/latest', {
+      method:'GET', mode:'cors', cache:'no-store',
+      headers:{Accept:'application/vnd.github+json'}
+    });
+    if(!response.ok) return;
+    const release = await response.json();
+    const latest = getOfficialBetaUpdate(release, validateOfficialApkAsset(release));
+    if(!latest || latest.versionCode <= currentCode || latest.versionCode === nativeUpdateDismissedCode) return;
+    const modal = $('#nativeUpdateOv');
+    $('#nativeUpdateVersion').textContent = 'الإصدار الجديد: ' + latest.versionName;
+    $('#nativeUpdateNow').onclick = async ()=>{
+      try{
+        await window.YawmiNative.openUpdateDownload({url:latest.url});
+        modal.hidden = true;
+      }catch(error){
+        console.warn('Could not open verified APK update',error);
+        showAlert('تعذّر فتح التحميل. جرّب تاني لما يكون فيه اتصال بالإنترنت.',{icon:'📦'});
+      }
+    };
+    $('#nativeUpdateLater').onclick = ()=>{
+      nativeUpdateDismissedCode = latest.versionCode;
+      modal.hidden = true;
+    };
+    modal.hidden = false;
+  }catch(error){
+    // Unsupported older APK, offline mode, rate limit, or native bridge error:
+    // continue opening Yawmi normally. Never erase user data or force update.
+    console.warn('Optional Android update check unavailable',error);
+  }
+}
 async function discoverOfficialAndroidApk(){
   if(!/Android/i.test(navigator.userAgent || '') || isStandalone()) return;
   try{
@@ -8913,6 +8965,8 @@ async function syncNativeReminders(){
 }
 
 window.addEventListener('yawmi-native-ready', async ()=>{
+  // Update check is non-blocking: existing reminders and focus still load.
+  checkAndroidAppUpdate();
   await populateReminders();
   await syncNativeReminders();
   if(focusState.running && focusState.endsAt && focusState.endsAt > Date.now())
@@ -8922,6 +8976,7 @@ document.addEventListener('visibilitychange', ()=>{
   if(isNativeApp() && !document.hidden){
     tickFocus();
     syncNativeReminders();
+    checkAndroidAppUpdate();
   }
 });
 
