@@ -1,0 +1,25 @@
+name: Mobile Android APK offer safety
+
+on:
+  push:
+    branches:
+      - feat/verified-mobile-apk-install-cta
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  mobile-installer-safety:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check install code syntax
+        run: node --check mobile-installer.js
+      - name: Verify APK cannot appear without an official release
+        run: node --test tests/mobile-installer.test.mjs
