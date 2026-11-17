@@ -100,6 +100,7 @@ test('liquid focus card mirrors the selected interval, survives closed sheet and
 
 
 test('Liquid Glass applies across every existing tab without rearranging content', async ({page}, testInfo) => {
+  await expect(page.locator('#splash')).toBeHidden({timeout:10000});
   const tabs=['today','tasks','notes','exp','dash','settings'];
   await expect(page.locator('html')).toHaveAttribute('dir','rtl');
   await expect(page.locator('html')).toHaveAttribute('data-theme','light');
@@ -125,6 +126,7 @@ test('Liquid Glass applies across every existing tab without rearranging content
   // Dark mode keeps identical navigation, cards and content structure.
   await page.evaluate(()=>localStorage.setItem('yawmi_theme','dark'));
   await page.reload();
+  await expect(page.locator('#splash')).toBeHidden({timeout:10000});
   await expect(page.locator('html')).toHaveAttribute('data-theme','dark');
   await page.locator('nav.bottom button[data-tab="settings"]').click();
   await expect(page.locator('#tab-settings .setsection').first()).toBeVisible();
