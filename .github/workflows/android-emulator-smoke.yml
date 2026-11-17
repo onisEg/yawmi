@@ -10,6 +10,7 @@ on:
       - refactor/typescript-strict-task-note-models
       - feat/qa-e2e-sync-live-focus-beta
       - fix/focus-audible-completion-and-legacy-security-plan
+      - feat/liquid-glass-light-focus-beta
 
 concurrency:
   group: yawmi-emulator-${{ github.ref }}
