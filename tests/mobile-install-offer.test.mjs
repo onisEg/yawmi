@@ -18,7 +18,7 @@ function evaluateWith(userAgent,opts={}){
  const ctx={
   URL,
   navigator:{userAgent,standalone:opts.standalone||false},
-  window:{__YAWMI_NATIVE_BUILD:!!opts.native,matchMedia:()=>({matches:!!opts.installed})},
+  window:{__YAWMI_NATIVE_BUILD:!!opts.native,matchMedia:()=>({matches:!!opts.installed}),navigator:{standalone:!!opts.standalone}},
   localStorage:{getItem:()=>opts.dismissed?'1':null},
   fetch:opts.fetch||(()=>Promise.reject(new Error('Offline'))),
   setTimeout:()=>1,
