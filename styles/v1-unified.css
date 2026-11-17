@@ -1,6 +1,6 @@
 /*
  * Yawmi v1.0 — shared Liquid Glass design language across every app tab.
- * Appearance only: no DOM structure, data model, Supabase, routing, timers,
+ * Appearance only: no DOM structure, data model, remote APIs, routing, timers,
  * service-worker behavior, storage keys, or accessibility handlers changed.
  * The premium Today cards and focus panel retain their existing detail.
  */
