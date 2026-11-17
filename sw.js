@@ -1,4 +1,4 @@
-const CACHE = 'yawmi-v188';
+const CACHE = 'yawmi-v189';
 const FONT_CACHE = 'yawmi-fonts-v1';
 const ASSETS = [
   './',
