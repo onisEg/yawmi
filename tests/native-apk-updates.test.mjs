@@ -20,6 +20,7 @@ test('native APK handoff only allows official HTTPS release assets; no silent in
   assert.match(java,/uri\.getQuery\(\) == null/);
   assert.match(java,/uri\.getFragment\(\) == null/);
   assert.match(java,/android-beta-v0/);
+  assert.match(java,/android-beta-v1/);
   assert.doesNotMatch(java,/REQUEST_INSTALL_PACKAGES|PackageInstaller|ACTION_INSTALL_PACKAGE|DownloadManager/);
 });
 test('Android bridge exposes verified native update methods and packages them only in APK',()=>{

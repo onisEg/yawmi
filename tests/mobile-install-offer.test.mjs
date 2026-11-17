@@ -67,6 +67,22 @@ test('published verified official matching APK tag and asset is accepted',()=>{
   assert.equal(item.versionCode,2011);
   assert.equal(item.versionName,'0.4.2011');
 });
+test('v1.0 signed APK is accepted only when release metadata matches the official asset',()=>{
+  const versionCode=2042;
+  const tag='android-beta-v1.0.'+versionCode;
+  const name='Yawmi-Beta-v1.0.'+versionCode+'.apk';
+  const release={
+    draft:false,prerelease:false,tag_name:tag,
+    assets:[{name,state:'uploaded',browser_download_url:'https://github.com/onisEg/yawmi/releases/download/'+tag+'/'+name}]
+  };
+  const {ctx}=browser('Android 16');
+  const item=ctx.validateOfficialAndroidRelease(release);
+  assert.equal(item.versionCode,versionCode);
+  assert.equal(item.versionName,'1.0.'+versionCode);
+  assert.equal(item.url,release.assets[0].browser_download_url);
+  assert.equal(ctx.validateOfficialAndroidRelease({...release,tag_name:'android-beta-v1.0.2043'}),null);
+  assert.equal(ctx.validateOfficialAndroidRelease({...release,assets:[{...release.assets[0],name:'different.apk'}]}),null);
+});
 test('draft, missing, mismatched or unofficial APK assets are rejected',()=>{
   const {ctx}=browser('Android 16');
   for(const release of [
