@@ -8628,7 +8628,7 @@ function validateOfficialApkAsset(release){
 // The release tag and asset must agree on Android's monotonically increasing versionCode.
 function validateOfficialAndroidRelease(release){
   const url = validateOfficialApkAsset(release);
-  const match = /^android-beta-v0\\.(3|4)\\.(\\d+)$/.exec(release && release.tag_name || '');
+  const match = /^android-beta-v0\.(3|4)\.(\d+)$/.exec(release && release.tag_name || '');
   if(!url || !match) return null;
   const versionCode = Number(match[2]);
   if(!Number.isSafeInteger(versionCode) || versionCode < 1 || versionCode > 2100000000) return null;
