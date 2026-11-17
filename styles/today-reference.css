@@ -334,7 +334,7 @@
 #tab-today :is(.concept-mood,.concept-journal) .collapsearrow{
  font-size:16px;
 }
-#tab-today :is(.concept-mood,.concept-journal) .collapsebody{max-height:none!important; margin-top:7px!important}
+#tab-today :is(.concept-mood,.concept-journal).open .collapsebody{margin-top:7px}
 #tab-today .concept-mood{background:linear-gradient(135deg,#fffdf9,#f1f4eb)!important}
 #tab-today .concept-mood .moodrow{gap:1px;margin-bottom:4px}
 #tab-today .concept-mood .mood{
