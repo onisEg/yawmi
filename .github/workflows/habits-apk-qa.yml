@@ -1,0 +1,42 @@
+name: Habits glass and verified APK install regression
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - index.html
+      - styles/**
+      - sw.js
+      - tests/**
+      - .github/workflows/habits-apk-qa.yml
+
+permissions:
+  contents: read
+
+jobs:
+  contracts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: Run strict build and existing user-data regression suite
+        run: npm test
+
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: npx playwright install --with-deps chromium
+      - name: Isolated desktop and mobile-viewport user journeys
+        run: npm run test:e2e
