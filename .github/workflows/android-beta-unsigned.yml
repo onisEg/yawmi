@@ -6,6 +6,7 @@ on:
       - feat/android-updatable-beta-channel
       - refactor/ui-css-tasks-notes-modules
       - refactor/typescript-strict-task-note-models
+      - feat/qa-e2e-sync-live-focus-beta
   workflow_dispatch:
 
 concurrency:

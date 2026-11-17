@@ -32,4 +32,8 @@
     <!-- Permissions -->
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Ongoing focus countdown. On Android 16 eligible notifications may be
+         promoted to a system Live Update; OEMs can choose not to show a pill. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.POST_PROMOTED_NOTIFICATIONS" />
 </manifest>

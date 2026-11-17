@@ -1,3 +1,8 @@
+-- WARNING: DEPRECATED AND INSECURE LEGACY SCRIPT. DO NOT APPLY TO PRODUCTION.
+-- The yawmi_sync_all policy below grants anonymous read/write access to ALL
+-- rows, ignoring the sync_code. It is preserved only as historical documentation.
+-- New clients use public.yawmi_data with auth.uid() RLS. See
+-- docs/SUPABASE_SECURITY_QA_2026-11-17.md before retiring old clients.
 -- ============================================
 -- إعداد قاعدة بيانات "يومي" — الخطوة الأولى: مزامنة بكود جهاز
 -- الصق ده كله في SQL Editor في Supabase واضغط Run

@@ -3802,7 +3802,17 @@ function startFocus(){
   focusState.endsAt=Date.now()+focusState.remaining*1000;
   persistFocus();
   focusState.timer=setInterval(tickFocus,1000);
-  if(window.YawmiNative) window.YawmiNative.scheduleFocus({endsAt:focusState.endsAt,phase:focusState.phase}).catch(console.warn);
+  if(window.YawmiNative) {
+    // Trigger the notification permission prompt only after the user's
+    // explicit Start action. No prompts on page load or passive restore.
+    (async ()=>{
+      const allowed = await window.YawmiNative.hasPermission()
+        || await window.YawmiNative.requestPermission();
+      if(allowed && focusState.running && focusState.endsAt > Date.now()) {
+        await window.YawmiNative.scheduleFocus({endsAt:focusState.endsAt,phase:focusState.phase});
+      }
+    })().catch(e=>console.warn('Native focus countdown unavailable',e));
+  }
   updateFocusUI();
 }
 function pauseFocus(){
@@ -4025,9 +4035,17 @@ function saveNoteEdit(){
   const body = $('#neBody').value.trim();
   if(!t && !body){ closeNoteEdit(); return; }  // فاضية، مانحفظش
   if(neCurrent){
-    neCurrent.t = t; neCurrent.body = body;
-    neCurrent.color = neColorSel; neCurrent.pinned = nePinned;
-    neCurrent.u = Date.now();
+    // Re-resolve by stable id in case a background/cloud reload replaced the
+    // notes array while the editor was open. Avoid silently saving to an
+    // orphaned object that no longer exists in the persisted collection.
+    const current = notes.find(n=> n.id === neCurrent.id);
+    if(!current){
+      toast('الملاحظة اتغيّرت على جهاز تاني — افتحها من جديد');
+      return;
+    }
+    current.t = t; current.body = body;
+    current.color = neColorSel; current.pinned = nePinned;
+    current.u = Date.now();
   } else {
     notes.unshift({ id:'n'+Date.now()+Math.random().toString(36).slice(2,6), t, body, color:neColorSel, pinned:nePinned, u:Date.now() });
   }
@@ -4044,7 +4062,11 @@ $('#nePin').onclick = ()=>{ nePinned = !nePinned; $('#nePin').classList.toggle('
 $('#neDel').onclick = async ()=>{
   if(!neCurrent) return;
   if(!await askConfirm('تمسح الملاحظة دي؟', {danger:true, title:'مسح ملاحظة', okText:'امسح'})) return;
-  const n = neCurrent;
+  const n = notes.find(item => item.id === neCurrent.id);
+  if(!n){
+    toast('الملاحظة اتغيّرت — افتحها من جديد');
+    return;
+  }
   n.del = true; n.u = Date.now();
   saveNotes(); renderNotes(); closeNoteEdit();
   undoToast('اتمسحت الملاحظة', ()=>{ n.del = false; n.u = Date.now(); saveNotes(); renderNotes(); });
