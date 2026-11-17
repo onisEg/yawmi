@@ -150,12 +150,15 @@
         <button id="prayerQuoteBtn" aria-label="جملة تانية"><span data-icon="refresh"></span></button>
       </div>
       <div class="beads" id="beads" style="margin-top:12px"></div>
-      <div id="prayerAlert" class="hidden"></div>
-      <div id="prayerTimer" class="hidden">
-        <span class="ptlabel">الصلاة الجاية</span>
-        <span class="ptname" id="ptName"></span>
-        <span class="ptcount" id="ptCount"></span>
-      </div>
+      <details class="concept-prayer-more" id="prayerDetailsInline">
+        <summary>تنبيهات ومواقيت الصلاة</summary>
+        <div id="prayerAlert" class="hidden"></div>
+        <div id="prayerTimer" class="hidden">
+          <span class="ptlabel">الصلاة الجاية</span>
+          <span class="ptname" id="ptName"></span>
+          <span class="ptcount" id="ptCount"></span>
+        </div>
+      </details>
     </div>
 
     <div class="card todaycard concept-habits" data-cid="habits" draggable="false">
@@ -2840,6 +2843,8 @@ function renderPrayerAlert(rec, times, hasRealTimes, isToday, nowMin){
   }
   el.textContent = msg;
   el.className = 'prayeralert' + (urgent ? ' urgent' : '');
+  // Important near-expiry alerts must never stay hidden behind an accordion.
+  if(urgent && $('#prayerDetailsInline')) $('#prayerDetailsInline').open = true;
 }
 
 // ===== ورد القرآن اليومي =====
