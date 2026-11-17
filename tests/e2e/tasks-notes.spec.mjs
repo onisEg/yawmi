@@ -97,3 +97,52 @@ test('liquid focus card mirrors the selected interval, survives closed sheet and
   await expect(page.locator('#focusCardPhase')).toContainText('متوقف مؤقتًا');
   await expect(page.locator('#focusQuickToggle')).toHaveText('كمّل');
 });
+
+
+test('approved Today concept keeps real Yawmi data and original working controls', async ({page}, testInfo) => {
+  await expect(page.locator('#splash')).toBeHidden({timeout:10000});
+  await expect(page.locator('#tab-today')).toHaveClass(/active/);
+  await expect(page.locator('link[href="./styles/today-reference.css"]')).toHaveCount(1);
+  const cardIds=[
+    'hero','score','prayer','habits','azkar','dhikr','wird','deeds',
+    'challenges','focus','mood','sleep','learn','journal','tasks'
+  ];
+  for(const cid of cardIds) await expect(page.locator('#tab-today .todaycard[data-cid="'+cid+'"]')).toHaveCount(1);
+  for(const id of [
+    'beads','prayDetailsBtn','habitChips','azkarChips','wirdPlus','wirdMinus',
+    'dhikrTapZone','challengesList','focusQuickToggle','focusOpenBtn',
+    'todayTasksList','moodHead','sleepHead','learnHead','journalHead'
+  ]) await expect(page.locator('#'+id)).toBeAttached();
+  const display=await page.locator('#tab-today').evaluate(el=>getComputedStyle(el).display);
+  expect(display).toBe('grid');
+  await expect(page.locator('#prayerDoneCount')).toContainText('من ٥ صلوات');
+  await expect(page.locator('#azkarDoneCount')).toContainText('تم ');
+  const focusTime=await page.locator('#focusCardTime').textContent();
+  expect(focusTime).toMatch(/^\d\d:\d\d$/);
+  await page.screenshot({
+    path:'test-results/today-reference-'+testInfo.project.name+'.png',
+    fullPage:true
+  });
+  // Show the integration uses the same live Focus state and not the preview's fake timer.
+  await page.locator('#focusQuickToggle').click();
+  await expect.poll(async()=>page.evaluate(()=>
+    JSON.parse(localStorage.getItem('yawmi_focus_runtime_v2')||'{}').running)).toBe(true);
+  await page.locator('#focusQuickToggle').click();
+  await expect.poll(async()=>page.evaluate(()=>
+    JSON.parse(localStorage.getItem('yawmi_focus_runtime_v2')||'{}').running)).toBe(false);
+  // Do not change tab IDs, routes, or saved task behavior.
+  await page.locator('nav.bottom button[data-tab="tasks"]').click();
+  await expect(page.locator('#tab-tasks')).toHaveClass(/active/);
+  await page.locator('nav.bottom button[data-tab="today"]').click();
+  await expect(page.locator('#tab-today')).toHaveClass(/active/);
+});
+
+test('custom Today card order is preserved after design migration', async ({page}) => {
+  await page.evaluate(()=>{
+    localStorage.setItem('yawmi_cards_order',JSON.stringify(['focus','hero','prayer','score']));
+  });
+  await page.reload();
+  await expect(page.locator('#splash')).toBeHidden({timeout:10000});
+  const saved=await page.locator('#tab-today > .todaycard').evaluateAll(cards=>cards.slice(0,4).map(card=>card.dataset.cid));
+  expect(saved).toEqual(['focus','hero','prayer','score']);
+});

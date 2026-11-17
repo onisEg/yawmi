@@ -55,6 +55,7 @@
 <link rel="stylesheet" href="./styles/components.css">
 <link rel="stylesheet" href="./styles/overlays.css">
 <link rel="stylesheet" href="./styles/liquid-glass.css">
+<link rel="stylesheet" href="./styles/today-reference.css">
 </head>
 <body>
 
@@ -82,6 +83,7 @@
 <main>
   <!-- ============ اليوم ============ -->
   <section id="tab-today" class="tab active">
+    <div class="concept-today-header"><h1>اليوم</h1></div>
     <div id="greeting" class="hidden"></div>
     <div id="banners" style="padding-top:12px"></div>
     <div class="daynav">
@@ -112,7 +114,7 @@
       <div class="herodots" id="heroDots"></div>
     </div>
 
-    <div class="card scorecard todaycard" data-cid="score" draggable="false">
+    <div class="card scorecard todaycard concept-score" data-cid="score" draggable="false">
       <div class="carddraghandle" title="اسحب لترتيب الكروت">⠿</div>
       <div class="ringwrap">
         <svg width="96" height="96" viewBox="0 0 96 96">
@@ -136,26 +138,30 @@
     </div>
 
 
-    <div class="card todaycard" data-cid="prayer" draggable="false">
+    <div class="card todaycard concept-prayer" data-cid="prayer" draggable="false">
       <div class="carddraghandle" title="اسحب لترتيب الكروت">⠿</div>
       <div style="display:flex; justify-content:space-between; align-items:center">
         <h3 id="prayH3" class="h3ic" style="margin:0"><span data-icon="beads"></span>الصلاة</h3>
-        <button class="linkbtn" id="prayDetailsBtn" style="margin:0">المواعيد والتقدم ›</button>
+        <button class="linkbtn" id="prayDetailsBtn" style="margin:0" aria-label="المواعيد والتقدم">المواعيد ↗</button>
       </div>
+      <div class="concept-prayer-count" id="prayerDoneCount" aria-live="polite">٠ من ٥ صلوات</div>
       <div id="prayerQuoteRow">
         <div id="prayerQuote"></div>
         <button id="prayerQuoteBtn" aria-label="جملة تانية"><span data-icon="refresh"></span></button>
       </div>
       <div class="beads" id="beads" style="margin-top:12px"></div>
-      <div id="prayerAlert" class="hidden"></div>
-      <div id="prayerTimer" class="hidden">
-        <span class="ptlabel">الصلاة الجاية</span>
-        <span class="ptname" id="ptName"></span>
-        <span class="ptcount" id="ptCount"></span>
-      </div>
+      <details class="concept-prayer-more" id="prayerDetailsInline">
+        <summary>تنبيهات ومواقيت الصلاة</summary>
+        <div id="prayerAlert" class="hidden"></div>
+        <div id="prayerTimer" class="hidden">
+          <span class="ptlabel">الصلاة الجاية</span>
+          <span class="ptname" id="ptName"></span>
+          <span class="ptcount" id="ptCount"></span>
+        </div>
+      </details>
     </div>
 
-    <div class="card todaycard" data-cid="habits" draggable="false">
+    <div class="card todaycard concept-habits" data-cid="habits" draggable="false">
       <div class="carddraghandle" title="اسحب لترتيب الكروت">⠿</div>
       <h3 class="h3ic"><span data-icon="check_square"></span>العادات</h3>
       <div class="chips" id="habitChips"></div>
@@ -165,13 +171,14 @@
       </div>
     </div>
 
-    <div class="card todaycard" data-cid="azkar" draggable="false">
+    <div class="card todaycard concept-azkar" data-cid="azkar" draggable="false">
       <div class="carddraghandle" title="اسحب لترتيب الكروت">⠿</div>
       <h3 class="h3ic"><span data-icon="beads"></span>الأذكار</h3>
+      <div class="concept-azkar-status" id="azkarDoneCount" aria-live="polite"></div>
       <div class="chips" id="azkarChips"></div>
     </div>
 
-    <div class="card dhikrcard todaycard" id="dhikrCard" data-cid="dhikr" draggable="false">
+    <div class="card dhikrcard todaycard concept-dhikr" id="dhikrCard" data-cid="dhikr" draggable="false">
       <div class="carddraghandle" title="اسحب لترتيب الكروت">⠿</div>
       <div class="dhikrhead">
         <h3 class="h3ic"><span data-icon="beads"></span>ذِكر اليوم</h3>
@@ -206,7 +213,7 @@
       </div>
     </div>
 
-    <div class="card wirdcard todaycard" id="wirdCard" data-cid="wird" draggable="false">
+    <div class="card wirdcard todaycard concept-wird" id="wirdCard" data-cid="wird" draggable="false">
       <div class="carddraghandle" title="اسحب لترتيب الكروت">⠿</div>
       <div class="wirdhead">
         <h3 class="h3ic"><span>📖</span> ورد القرآن</h3>
@@ -230,7 +237,7 @@
       <div id="deedsList"></div>
     </div>
 
-    <div class="card todaycard" id="challengesCard" data-cid="challenges" draggable="false">
+    <div class="card todaycard concept-challenges" id="challengesCard" data-cid="challenges" draggable="false">
       <div class="carddraghandle" title="اسحب لترتيب الكروت">⠿</div>
       <div class="chalhead">
         <h3 class="h3ic"><span>🏆</span> التحديات</h3>
@@ -265,7 +272,7 @@
       </div>
     </div>
 
-    <div class="card collapsecard todaycard" id="moodCard" data-cid="mood" draggable="false">
+    <div class="card collapsecard todaycard concept-mood" id="moodCard" data-cid="mood" draggable="false">
       <div class="carddraghandle" title="اسحب لترتيب الكروت">⠿</div>
       <button class="collapsehead" id="moodHead">
         <span class="ct"><span data-icon="smile"></span>حالتي النفسية اليوم</span>
@@ -280,7 +287,7 @@
       </div>
     </div>
 
-    <div class="card collapsecard todaycard" id="sleepCard" data-cid="sleep" draggable="false">
+    <div class="card collapsecard todaycard concept-sleep" id="sleepCard" data-cid="sleep" draggable="false">
       <div class="carddraghandle" title="اسحب لترتيب الكروت">⠿</div>
       <button class="collapsehead" id="sleepHead">
         <span class="ct"><span data-icon="bed"></span>النوم</span>
@@ -298,7 +305,7 @@
       </div>
     </div>
 
-    <div class="card collapsecard todaycard" id="learnCard" data-cid="learn" draggable="false">
+    <div class="card collapsecard todaycard concept-learn" id="learnCard" data-cid="learn" draggable="false">
       <div class="carddraghandle" title="اسحب لترتيب الكروت">⠿</div>
       <button class="collapsehead" id="learnHead">
         <span class="ct"><span data-icon="book"></span>تعلمت النهارده</span>
@@ -309,7 +316,7 @@
       </div>
     </div>
 
-    <div class="card collapsecard todaycard" id="journalCard" data-cid="journal" draggable="false">
+    <div class="card collapsecard todaycard concept-journal" id="journalCard" data-cid="journal" draggable="false">
       <div class="carddraghandle" title="اسحب لترتيب الكروت">⠿</div>
       <button class="collapsehead" id="journalHead">
         <span class="ct"><span data-icon="pencil"></span>يومياتي</span>
@@ -325,7 +332,7 @@
       <div id="otdList"></div>
     </div>
 
-    <div class="card todaytaskscard todaycard" id="todayTasksCard" data-cid="tasks" draggable="false">
+    <div class="card todaytaskscard todaycard concept-tasks" id="todayTasksCard" data-cid="tasks" draggable="false">
       <div class="carddraghandle" title="اسحب لترتيب الكروت">⠿</div>
       <div class="ttchead">
         <h3 class="h3ic"><span data-icon="check_square"></span> مهام النهارده</h3>
@@ -2836,6 +2843,8 @@ function renderPrayerAlert(rec, times, hasRealTimes, isToday, nowMin){
   }
   el.textContent = msg;
   el.className = 'prayeralert' + (urgent ? ' urgent' : '');
+  // Important near-expiry alerts must never stay hidden behind an accordion.
+  if(urgent && $('#prayerDetailsInline')) $('#prayerDetailsInline').open = true;
 }
 
 // ===== ورد القرآن اليومي =====
@@ -3147,6 +3156,14 @@ function renderToday(){
   const rec = getDay(viewDate);
   $('#gdate').textContent = fmtDate(viewDate);
   $('#hdate').textContent = fmtHijri(viewDate);
+  // UI-only summaries: actual daily records, no new storage keys or writes.
+  const prayerDone = (rec.p || []).filter(Boolean).length;
+  const prayerSummary = $('#prayerDoneCount');
+  if(prayerSummary) prayerSummary.textContent = arNum(prayerDone) + ' من ٥ صلوات';
+  const azkarDone = (settings.azkar || []).filter(name=>!!(rec.z||{})[name]).length;
+  const azkarSummary = $('#azkarDoneCount');
+  if(azkarSummary) azkarSummary.textContent =
+    'تم ' + arNum(azkarDone) + ' من ' + arNum((settings.azkar||[]).length);
   $('#backToday').classList.toggle('hidden', viewDate === todayISO());
 
   // beads
@@ -4566,11 +4583,18 @@ function applySavedCardsOrder(){
   if(!todayTab) return;
   let saved = [];
   try{ saved = JSON.parse(localStorage.getItem('yawmi_cards_order')) || []; }catch(e){ saved = []; }
-  if(!saved.length) return;
+  // New installs use the approved visual preview flow. Existing card
+  // order preferences are always respected, and the key stays unchanged.
+  if(!saved.length) saved = [
+    'hero','score','prayer','focus','habits','azkar','mood','journal',
+    'wird','tasks','dhikr','challenges','deeds','sleep','learn'
+  ];
   const cards = [...todayTab.querySelectorAll('.todaycard')];
   const cardMap = Object.fromEntries(cards.map(c=>[c.dataset.cid, c]));
   const ordered = saved.map(cid=>cardMap[cid]).filter(Boolean);
-  ordered.forEach(card=>todayTab.appendChild(card));
+  const savedSet = new Set(saved);
+  const remaining = cards.filter(card=>!savedSet.has(card.dataset.cid));
+  [...ordered,...remaining].forEach(card=>todayTab.appendChild(card));
 }
 
 function initTodayCardsDrag(){

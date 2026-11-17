@@ -36,7 +36,7 @@ for (const file of browserModules) {
   console.log('Staged ' + file);
 }
 // Reuse the exact stylesheet order from index.html across Web and Android.
-const styleNames = ['tokens.css', 'layout.css', 'features.css', 'components.css', 'overlays.css', 'liquid-glass.css'];
+const styleNames = ['tokens.css', 'layout.css', 'features.css', 'components.css', 'overlays.css', 'liquid-glass.css', 'today-reference.css'];
 await mkdir(join(webDir, 'styles'), { recursive: true });
 for (const name of styleNames) {
   await copyFile(join(root, 'styles', name), join(webDir, 'styles', name));
