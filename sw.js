@@ -1,4 +1,4 @@
-const CACHE = 'yawmi-v189';
+const CACHE = 'yawmi-v190-liquid-glass';
 const FONT_CACHE = 'yawmi-fonts-v1';
 const ASSETS = [
   './',
@@ -14,7 +14,8 @@ const ASSETS = [
   './styles/layout.css',
   './styles/features.css',
   './styles/components.css',
-  './styles/overlays.css'
+  './styles/overlays.css',
+  './styles/liquid-glass.css'
 ];
 
 self.addEventListener('install', e => {
