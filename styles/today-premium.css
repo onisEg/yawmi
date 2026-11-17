@@ -254,38 +254,91 @@
   border-color:rgba(209,154,79,.5);
 }
 
-/* ─── Habits — selectable two-column accomplishment tiles ─────────── */
-#tab-today .premium-habits{--tp-halo:rgba(117,210,186,.17)}
+/* ─── Habits — daily progress and tactile glass completion tiles ─── */
+#tab-today .premium-habits{--tp-halo:rgba(117,210,186,.22)}
+:root[data-theme="light"] #tab-today .card.todaycard.premium-habits{
+  background:linear-gradient(150deg,rgba(230,248,242,.96) 0%,rgba(255,255,255,.88) 56%,rgba(239,247,251,.85) 100%);
+  border-color:rgba(255,255,255,.96);
+  box-shadow:0 17px 38px rgba(39,112,107,.095),0 3px 10px rgba(53,74,92,.038),inset 0 1px 0 rgba(255,255,255,.95);
+}
+#tab-today .premium-habits .premium-deco-habits{
+  background:linear-gradient(145deg,rgba(174,229,211,.95),rgba(245,255,253,.78));
+  border-color:rgba(255,255,255,.9);
+  box-shadow:0 9px 24px rgba(60,148,117,.13),inset 0 1px 0 #fff;
+}
+#tab-today .premium-habits .premium-habit-progress{
+  padding:13px 14px 12px;margin:1px 0 15px;
+  border-radius:19px;
+  border:1px solid rgba(112,182,163,.20);
+  background:linear-gradient(140deg,rgba(252,255,254,.86),rgba(226,247,240,.78));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.98),0 6px 16px rgba(59,124,104,.055);
+}
+#tab-today .premium-habits .premium-habit-progress-head{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  margin-bottom:10px;color:var(--tp-sub);font-size:12px;font-weight:700;
+}
+#tab-today .premium-habits .premium-habit-progress-head strong{
+  color:var(--tp-teal-deep);font-size:13px;font-weight:800;white-space:nowrap;
+}
+#tab-today .premium-habits .premium-habit-progress-track{
+  height:9px;border-radius:99px;overflow:hidden;
+  background:rgba(97,159,144,.16);
+  box-shadow:inset 0 1px 3px rgba(39,99,92,.08);
+}
+#tab-today .premium-habits #habitProgressFill{
+  display:block;width:0;height:100%;border-radius:inherit;
+  background:linear-gradient(90deg,#39a58c,#83d1a5);
+  box-shadow:0 1px 7px rgba(50,157,128,.25);
+  transition:width .28s ease;
+}
 #tab-today .premium-habits #habitChips{
-  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;
 }
 #tab-today .premium-habits #habitChips .chip{
-  width:100%;min-width:0;min-height:54px;text-align:start;
-  border:1px solid rgba(108,159,148,.19);
-  padding:11px 12px;border-radius:17px;
-  background:linear-gradient(140deg,rgba(251,254,255,.94),rgba(235,248,243,.72));
-  box-shadow:0 5px 13px rgba(66,125,108,.055),inset 0 1px 0 white;
-  display:inline-flex;align-items:center;justify-content:flex-start;gap:8px;
-  color:var(--tp-ink);font-weight:700;font-size:12.5px;
+  width:100%;min-width:0;min-height:62px;text-align:start;
+  display:inline-flex;align-items:center;justify-content:flex-start;gap:10px;
+  padding:12px;border-radius:18px;
+  border:1px solid rgba(119,174,158,.26);
+  background:linear-gradient(150deg,rgba(255,255,255,.97),rgba(237,250,246,.90));
+  box-shadow:0 6px 16px rgba(63,131,108,.075),inset 0 1px 0 rgba(255,255,255,.95);
+  color:var(--tp-ink);font-weight:750;font-size:12.5px;line-height:1.55;
   white-space:normal;overflow-wrap:anywhere;
+  transition:background .18s,border-color .18s,box-shadow .18s,transform .18s;
 }
 #tab-today .premium-habits #habitChips .chip:not(.chipadd)::before{
-  content:"";width:17px;height:17px;border:1.5px solid rgba(95,163,148,.53);
-  border-radius:6px;background:rgba(255,255,255,.7);flex:none;
+  content:"";width:23px;height:23px;flex:0 0 23px;
+  border:1.5px solid rgba(92,151,133,.58);
+  border-radius:8px;background:rgba(255,255,255,.88);
+  box-shadow:inset 0 1px 2px rgba(50,112,92,.055);
 }
 #tab-today .premium-habits #habitChips .chip.on{
-  border-color:rgba(67,169,137,.48);color:#247969;
-  background:linear-gradient(132deg,rgba(212,243,227,.94),rgba(238,254,249,.97));
+  color:#216a58;border-color:rgba(60,157,126,.5);
+  background:linear-gradient(135deg,rgba(198,239,221,.96),rgba(232,251,241,.96));
+  box-shadow:0 7px 17px rgba(51,138,105,.12),inset 0 1px 0 rgba(255,255,255,.8);
 }
 #tab-today .premium-habits #habitChips .chip.on::before{
-  content:"✓";color:#fff;border-color:#4da78c;background:#4da78c;
-  font-size:12px;text-align:center;line-height:15px;font-weight:900;
+  content:"✓";font-size:14px;line-height:21px;text-align:center;font-weight:900;
+  color:#fff;border-color:#399e80;background:linear-gradient(145deg,#4bb698,#23836b);
+  box-shadow:0 3px 9px rgba(51,145,112,.22);
 }
+@media(hover:hover) and (pointer:fine){
+  #tab-today .premium-habits #habitChips .chip:hover{
+    transform:translateY(-2px);
+    border-color:rgba(61,155,128,.49);
+    box-shadow:0 9px 20px rgba(43,115,92,.13),inset 0 1px 0 rgba(255,255,255,.85);
+  }
+}
+#tab-today .premium-habits #habitChips .chip:active{transform:scale(.985)}
 #tab-today .premium-habits #badHabitWrap{
-  background:rgba(243,249,247,.77);border-radius:19px;
-  padding:0 12px 12px;margin-top:15px;border:1px solid rgba(113,169,159,.14);
+  background:linear-gradient(135deg,rgba(250,253,250,.8),rgba(235,247,241,.77));
+  border-radius:20px;padding:0 12px 12px;margin-top:16px;
+  border:1px solid rgba(113,169,159,.22);
 }
 #tab-today .premium-habits #badHabitWrap .h3ic{font-size:13px;margin-bottom:10px}
+#tab-today .premium-habits #badHabitWrap .bhcard2{
+  background:rgba(255,255,255,.76);border:1px solid rgba(111,171,150,.23);
+  border-radius:17px;box-shadow:0 5px 15px rgba(60,113,100,.06);
+}
 
 /* ─── Azkar — airy horizontal badges, distinct from habits ────────── */
 #tab-today .premium-azkar{
@@ -617,6 +670,39 @@
 }
 :root[data-theme="dark"] #tab-today .premium-todaytasks .ttctxt{color:var(--text)}
 
+/* Habits keep their own contrasting glass surface in dark mode. */
+:root[data-theme="dark"] #tab-today .card.todaycard.premium-habits{
+  background:linear-gradient(145deg,rgba(42,59,51,.97),rgba(42,41,39,.95));
+  border-color:rgba(142,207,174,.17);
+}
+:root[data-theme="dark"] #tab-today .premium-habits .premium-deco-habits{
+  background:rgba(62,104,82,.55);border-color:rgba(164,224,193,.19);
+  box-shadow:0 8px 18px rgba(0,0,0,.13);
+}
+:root[data-theme="dark"] #tab-today .premium-habits .premium-habit-progress{
+  background:rgba(46,72,58,.67);border-color:rgba(141,204,175,.19);
+  box-shadow:inset 0 1px 0 rgba(239,255,244,.05);
+}
+:root[data-theme="dark"] #tab-today .premium-habits .premium-habit-progress-head strong{color:#a6e5c7}
+:root[data-theme="dark"] #tab-today .premium-habits .premium-habit-progress-track{background:rgba(12,39,29,.52)}
+:root[data-theme="dark"] #tab-today .premium-habits #habitChips .chip{
+  background:rgba(58,76,63,.86);border-color:rgba(145,195,165,.22);color:#f1eae0;
+  box-shadow:inset 0 1px 0 rgba(251,255,249,.035),0 5px 12px rgba(0,0,0,.12);
+}
+:root[data-theme="dark"] #tab-today .premium-habits #habitChips .chip:not(.chipadd)::before{
+  background:rgba(26,43,34,.8);border-color:rgba(157,208,177,.5);
+}
+:root[data-theme="dark"] #tab-today .premium-habits #habitChips .chip.on{
+  background:linear-gradient(135deg,rgba(38,102,77,.86),rgba(49,88,70,.9));
+  color:#d1f5e0;border-color:rgba(123,213,166,.58);
+}
+:root[data-theme="dark"] #tab-today .premium-habits #badHabitWrap{
+  background:rgba(46,69,55,.45);border-color:rgba(144,191,157,.17);
+}
+:root[data-theme="dark"] #tab-today .premium-habits #badHabitWrap .bhcard2{
+  background:rgba(60,68,56,.84);border-color:rgba(160,198,166,.16);
+}
+
 /* ─── Responsive / progressive enhancement ────────────────────────── */
 @media(max-width:370px){
   #tab-today .premium-prayer .premium-section-head{gap:6px}
@@ -651,11 +737,17 @@
 #tab-today .premium-habits #habitChips .chip.chipadd {
   grid-column:1 / -1;
   justify-content:center;
-  min-height:43px;
-  background:rgba(229,247,240,.54);
+  min-height:50px;
+  color:var(--tp-teal-deep);
+  background:rgba(229,247,240,.62);
   border-style:dashed;
   border-color:rgba(90,164,144,.35);
 }
 #tab-today .premium-journal-card:not(.filled):not(.open) .collapsehead .collapsearrow::before {
   content:none;
+}
+
+@media(prefers-reduced-motion:reduce){
+  #tab-today .premium-habits #habitProgressFill,
+  #tab-today .premium-habits #habitChips .chip{transition:none;transform:none}
 }
