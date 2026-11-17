@@ -58,6 +58,6 @@ test('the install selector is web-only and both assets are PWA cached',()=>{
 test('APK install choice warns that PWA local data are not transferred',()=>{
  assert.match(source,/بيانات الموقع المحفوظة/);
  assert.match(source,/مش بتتنقل تلقائيًا/);
- assert.match(source,/تحديث/);
+ assert.match(source,/حدّثها/);
  assert.doesNotMatch(source,/service_role|SUPABASE_KEY|sb_secret_/);
 });
