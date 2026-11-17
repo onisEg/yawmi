@@ -6,6 +6,7 @@ import { LocalNotifications } from '@capacitor/local-notifications';
 const managedMin = 11000;
 const managedMax = 11999;
 const focusId = 15001;
+const focusTestId = 15002;
 const FocusLive = registerPlugin('YawmiFocusLive');
 const native = Capacitor.isNativePlatform();
 
@@ -157,6 +158,14 @@ async function completeFocus({ phase }) {
   }
 }
 
+async function testFocusSound(phase='work') {
+  if(!native || !(await permissionGranted())) return false;
+  await configureFocusSounds();
+  await LocalNotifications.schedule({ notifications:[
+    { ...completionPayload(phase), id:focusTestId }
+  ] });
+  return true;
+}
 async function show(title, body) {
   if (!native || !(await permissionGranted())) return false;
   await LocalNotifications.schedule({ notifications: [{
@@ -175,6 +184,7 @@ const api = {
   syncReminders,
   scheduleFocus,
   completeFocus,
+  testFocusSound,
   async cancelFocus() {
     await Promise.allSettled([cancelIds([focusId]), FocusLive.hide()]);
   },
