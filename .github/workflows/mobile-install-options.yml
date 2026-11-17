@@ -31,5 +31,5 @@ jobs:
           for(const id of ['installBanner','installBtn','installApkBtn','installDismiss','installBannerSub']){
             assert.equal(html.split('id="'+id+'"').length,2,id+' must have exactly one element');
           }
-          assert.equal((html.match(/<html\b/g)||[]).length,1);
+          assert.equal(html.split('<html lang="ar" dir="rtl">').length,2);
           JS
