@@ -62,3 +62,20 @@ test('native bridge is bundled only for app builds and never loaded from web sou
   assert.match(staged,/native-bridge\.js/);
   assert.match(staged,/__YAWMI_NATIVE_BUILD=true/);
 });
+
+
+test('Android update plugin reports real installed version and opens only official release in browser',()=>{
+  const java=readFileSync(join(root,'android/app/src/main/java/in/yawmi/app/YawmiAppInfoPlugin.java'),'utf8');
+  const main=readFileSync(join(root,'android/app/src/main/java/in/yawmi/app/MainActivity.java'),'utf8');
+  assert.match(main,/registerPlugin\(YawmiAppInfoPlugin\.class\)/);
+  assert.match(java,/@CapacitorPlugin\(name = "YawmiAppInfo"\)/);
+  assert.match(java,/getPackageInfo\(packageName, 0\)/);
+  assert.match(java,/getLongVersionCode\(\)/);
+  assert.match(java,/public void openUpdateDownload\(PluginCall call\)/);
+  assert.match(java,/Intent\.ACTION_VIEW/);
+  assert.match(java,/github\.com/);
+  assert.doesNotMatch(java,/REQUEST_INSTALL_PACKAGES|INSTALL_PACKAGES|DELETE_PACKAGES/);
+  assert.match(native,/registerPlugin\('YawmiAppInfo'\)/);
+  assert.match(native,/getInstalledVersion: \(\) => AppInfo\.getInstalledVersion\(\)/);
+  assert.match(native,/openUpdateDownload: \(\{url\}\) => AppInfo\.openUpdateDownload\(\{url\}\)/);
+});
