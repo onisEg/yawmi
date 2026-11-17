@@ -1,4 +1,4 @@
-const CACHE = 'yawmi-v191-today-premium-beta';
+const CACHE = 'yawmi-v192-habits-apk-download';
 const FONT_CACHE = 'yawmi-fonts-v1';
 const ASSETS = [
   './',

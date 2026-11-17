@@ -13,7 +13,8 @@ function evaluateWith(userAgent,opts={}){
  const elements={
   '#installBanner':{classList:{add(){},remove(){}},hidden:true},
   '#installApkBtn':{href:'',hidden:true},
-  '#installBannerSub':{textContent:''}
+  '#installBannerSub':{textContent:''},
+  '#installAppBtn':{textContent:''}
  };
  const ctx={
   URL,
@@ -25,7 +26,9 @@ function evaluateWith(userAgent,opts={}){
   clearTimeout:()=>{},
   mobileInstallTimer:null,
   verifiedAndroidApkUrl:'',
-  $:id=>elements[id]
+  $:id=>elements[id],
+  isStandalone:()=>false,
+  document:{querySelectorAll:()=>[]}
  };
  vm.createContext(ctx);
  vm.runInContext(functions,ctx);
@@ -79,6 +82,47 @@ test('valid official API response enables APK link only on Android',async()=>{
  await ctx.discoverOfficialAndroidApk();
  assert.equal(elements['#installApkBtn'].href,good.assets[0].browser_download_url);
  assert.equal(elements['#installApkBtn'].hidden,false);
+ assert.match(elements['#installAppBtn'].textContent,/APK/);
+});
+function evaluatePrimaryInstall(userAgent,url){
+ const navigations=[];
+ let webPrompts=0;
+ const ctx={
+  navigator:{userAgent},
+  window:{location:{assign:target=>navigations.push(target)}},
+  verifiedAndroidApkUrl:url,
+  deferredInstallPrompt:{prompt:()=>{webPrompts++;},userChoice:Promise.resolve({outcome:'dismissed'})},
+  detectPlatform:()=>/Android/i.test(userAgent)?'android':/iPhone/i.test(userAgent)?'ios':'desktop',
+  $:()=>({classList:{add(){}}}),
+  toast:()=>{},
+  showInstallGuide:()=>{}
+ };
+ vm.createContext(ctx);
+ vm.runInContext(extracted('async function doInstall(){','function showInstallGuide(){'),ctx);
+ return {ctx,navigations,getWebPrompts:()=>webPrompts};
+}
+test('Android primary install action starts the verified APK download instead of PWA',async()=>{
+ const a=evaluatePrimaryInstall('Mozilla/5.0 (Linux; Android 16)',good.assets[0].browser_download_url);
+ await a.ctx.doInstall();
+ assert.deepEqual(a.navigations,[good.assets[0].browser_download_url]);
+ assert.equal(a.getWebPrompts(),0);
+});
+test('without a published APK the primary action still allows the PWA flow',async()=>{
+ const a=evaluatePrimaryInstall('Mozilla/5.0 (Linux; Android 16)','');
+ await a.ctx.doInstall();
+ assert.deepEqual(a.navigations,[]);
+ assert.equal(a.getWebPrompts(),1);
+});
+test('non-Android platforms never navigate to an APK',async()=>{
+ const a=evaluatePrimaryInstall('Mozilla/5.0 (iPhone)',good.assets[0].browser_download_url);
+ await a.ctx.doInstall();
+ assert.deepEqual(a.navigations,[]);
+ assert.equal(a.getWebPrompts(),1);
+});
+test('the explicit web installation button remains PWA-only and APK link is direct',()=>{
+ assert.match(source,/\$\('#installBtn'\)\.onclick = \(\)=> doInstallWeb\(\)/);
+ assert.match(source,/<a id="installApkBtn" href="#" hidden rel="noopener noreferrer"/);
+ assert.doesNotMatch(source,/<a id="installApkBtn"[^>]*target="_blank"/);
 });
 test('existing PWA installation action and manual guidance remain',()=>{
  assert.match(source,/async function doInstall\(\)/);
@@ -87,4 +131,12 @@ test('existing PWA installation action and manual guidance remain',()=>{
  assert.match(source,/id="installBtn"/);
  assert.match(source,/id="installApkBtn"/);
  assert.match(source,/id="installDismiss"/);
+});
+
+test('APK discovery state is initialized before the app first renders',()=>{
+ const state=source.indexOf("let verifiedAndroidApkUrl = '';");
+ const init=source.indexOf('/* ================= init ================= */');
+ const boot=source.indexOf('reloadState();',init);
+ assert.ok(state>0 && state<init && init<boot, 'APK state must be initialized before rendering the banner');
+ assert.equal(source.split("let verifiedAndroidApkUrl = '';").length,2);
 });

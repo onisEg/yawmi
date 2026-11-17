@@ -141,7 +141,7 @@ test('classic task/note/component scripts load before legacy inline app and are 
     ...['tokens','layout','features','components','overlays','liquid-glass','today-premium'].map(n=>'styles/'+n+'.css')
   ];
   const serviceWorker=load('sw.js');
-  assert.match(serviceWorker,/yawmi-v191-today-premium-beta/);
+  assert.match(serviceWorker,/yawmi-v192-habits-apk-download/);
   for(const asset of assets) {
     assert.ok(html.includes('./'+asset), 'HTML missing '+asset);
     if(asset.endsWith('.js')) {
@@ -150,4 +150,18 @@ test('classic task/note/component scripts load before legacy inline app and are 
     assert.ok(existsSync(join(root,'dist',asset)), 'Android missing '+asset);
     assert.ok(serviceWorker.includes('./'+asset), 'PWA precache missing '+asset);
   }
+});
+
+test('habits have a premium progress surface without changing stored habit controls', () => {
+  const css=load('styles/today-premium.css');
+  assert.match(html,/class="card todaycard premium-habits" data-cid="habits"/);
+  for(const id of ['habitChips','badHabitWrap','habitProgressTrack','habitProgressText','habitProgressFill']) {
+    assert.ok(html.includes('id="'+id+'"'),'Missing stable habit visual '+id);
+  }
+  assert.match(html,/settings\.habits\.filter\(name => !!rec\.h\[name\]\)\.length/);
+  assert.match(html,/setAttribute\('aria-valuenow', String\(habitPct\)\)/);
+  assert.match(css,/\.premium-habits #habitChips \.chip\.on::before/);
+  assert.match(css,/\.premium-habits \.premium-habit-progress-track/);
+  assert.match(css,/:root\[data-theme="dark"\] #tab-today \.premium-habits/);
+  assert.match(css,/@media\(prefers-reduced-motion:reduce\)/);
 });
