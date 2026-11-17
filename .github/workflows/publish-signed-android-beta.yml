@@ -1,0 +1,113 @@
+name: Publish verified signed Yawmi Android Beta
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    environment: android-beta-release
+    env:
+      YAWMI_BETA_KEYSTORE_B64: ${{ secrets.YAWMI_BETA_KEYSTORE_B64 }}
+      YAWMI_BETA_KEY_PASSWORD: ${{ secrets.YAWMI_BETA_KEY_PASSWORD }}
+      YAWMI_BETA_KEY_ALIAS: ${{ secrets.YAWMI_BETA_KEY_ALIAS }}
+      EXPECTED_CERT_SHA256: "730a84f331a2178819358a8a7e97baa4004c410898717adbe976489c172901d8"
+    steps:
+      - uses: actions/checkout@v4
+      - name: Require main branch and private signing configuration
+        run: |
+          test "$GITHUB_REF" = 'refs/heads/main'
+          test -n "$YAWMI_BETA_KEYSTORE_B64"
+          test -n "$YAWMI_BETA_KEY_PASSWORD"
+          test -n "$YAWMI_BETA_KEY_ALIAS"
+          test -f package.json
+          test -f android/app/build.gradle
+          test -f scripts/build-web.mjs
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: Run Yawmi user-data and app contract tests
+        run: npm test
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: android-actions/setup-android@v4
+      - name: Install Android SDK packages
+        run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+      - name: Stage native assets and plugins
+        run: npx cap sync android
+      - name: Enforce fixed beta package and increasing build number
+        run: |
+          python3 - <<'PY'
+          import os
+          from pathlib import Path
+          gradle=Path("android/app/build.gradle")
+          content=gradle.read_text()
+          version_code=2000+int(os.environ['GITHUB_RUN_NUMBER'])
+          assert 1391 < version_code < 2100000000
+          assert content.count('applicationId "in.yawmi.app"')==1
+          assert content.count('versionCode 1')==1
+          assert content.count('versionName "1.0"')==1
+          content=content.replace('applicationId "in.yawmi.app"', 'applicationId "in.yawmi.app.beta"')
+          content=content.replace('versionCode 1',f'versionCode {version_code}')
+          content=content.replace('versionName "1.0"',f'versionName "0.4.{version_code}"')
+          gradle.write_text(content)
+          app_name=Path('android/app/src/main/res/values/strings.xml')
+          strings=app_name.read_text()
+          assert '<string name="app_name">يومي</string>' in strings
+          app_name.write_text(strings.replace('<string name="app_name">يومي</string>', '<string name="app_name">يومي Beta</string>'))
+          Path(os.environ['RUNNER_TEMP'],'yawmi-version.txt').write_text(f'0.4.{version_code}')
+          PY
+      - name: Build unsigned candidate
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleRelease --no-daemon
+      - name: Sign with the original private beta key and verify signature
+        id: signed
+        shell: bash
+        run: |
+          set -euo pipefail
+          umask 077
+          KEY="$RUNNER_TEMP/yawmi-beta-signing-private.p12"
+          trap 'rm -f "$KEY"' EXIT
+          printf '%s' "$YAWMI_BETA_KEYSTORE_B64" | base64 --decode > "$KEY"
+          test -s "$KEY"
+          VERSION="$(cat "$RUNNER_TEMP/yawmi-version.txt")"
+          mkdir -p release-android
+          APK="release-android/Yawmi-Beta-v$VERSION.apk"
+          APKSIGNER="$ANDROID_HOME/build-tools/36.0.0/apksigner"
+          "$APKSIGNER" sign \
+            --ks "$KEY" \
+            --ks-type PKCS12 \
+            --ks-key-alias "$YAWMI_BETA_KEY_ALIAS" \
+            --ks-pass env:YAWMI_BETA_KEY_PASSWORD \
+            --key-pass env:YAWMI_BETA_KEY_PASSWORD \
+            --out "$APK" android/app/build/outputs/apk/release/app-release-unsigned.apk
+          "$APKSIGNER" verify --verbose --print-certs --min-sdk-version 24 "$APK" > "$RUNNER_TEMP/apk-cert-check.txt"
+          grep -F -q "Signer #1 certificate SHA-256 digest: $EXPECTED_CERT_SHA256" "$RUNNER_TEMP/apk-cert-check.txt"
+          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "$APK" | grep -F -q "package: name='in.yawmi.app.beta'"
+          (cd release-android && sha256sum "Yawmi-Beta-v$VERSION.apk" > SHA256SUMS.txt)
+          echo "apk=$APK" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+      - name: Publish publicly downloadable signed APK on official GitHub Releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          VERSION="${{ steps.signed.outputs.version }}"
+          APK="${{ steps.signed.outputs.apk }}"
+          gh release create "android-beta-v$VERSION" \
+            "$APK" release-android/SHA256SUMS.txt \
+            --target "$GITHUB_SHA" \
+            --title "Yawmi Android Beta $VERSION" \
+            --notes "Official signed Yawmi Android beta (in.yawmi.app.beta). This release has been verified against the established Beta certificate. Verify SHA256SUMS.txt after downloading. Update the Beta in place without uninstalling it, especially if you have local-only data." \
+            --latest
