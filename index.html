@@ -8634,6 +8634,8 @@ function validateOfficialAndroidRelease(release){
   if(!Number.isSafeInteger(versionCode) || versionCode < 1 || versionCode > 2100000000) return null;
   const expectedName = 'Yawmi-Beta-v0.' + match[1] + '.' + match[2] + '.apk';
   if(!new URL(url).pathname.endsWith('/' + expectedName)) return null;
+  if(!release.assets.some(asset => asset && asset.state === 'uploaded' &&
+      asset.name === expectedName && asset.browser_download_url === url)) return null;
   return {url, versionCode, versionName:'0.' + match[1] + '.' + match[2]};
 }
 async function discoverOfficialAndroidApk(){
