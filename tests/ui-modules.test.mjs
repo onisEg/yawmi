@@ -141,7 +141,7 @@ test('classic task/note/component scripts load before legacy inline app and are 
     ...['tokens','layout','features','components','overlays','liquid-glass','today-premium'].map(n=>'styles/'+n+'.css')
   ];
   const serviceWorker=load('sw.js');
-  assert.match(serviceWorker,/yawmi-v192-habits-apk-download/);
+  assert.match(serviceWorker,/yawmi-v193-apk-only-native-updates/);
   for(const asset of assets) {
     assert.ok(html.includes('./'+asset), 'HTML missing '+asset);
     if(asset.endsWith('.js')) {

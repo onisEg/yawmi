@@ -721,7 +721,7 @@
     <div class="setsection">
       <button class="setsechead" data-sec="app"><span class="ssic">🔔</span><span class="sstitle">التطبيق والتذكيرات</span><span class="sschev">›</span></button>
       <div class="setsecbody hidden" id="sec-app">
-        <button class="btn ghost" id="installAppBtn" style="width:100%">📲 ثبّت يومي على موبايلك</button>
+        <button class="btn ghost" id="installAppBtn" style="width:100%">⬇️ تنزيل تطبيق يومي (APK)</button>
         <button class="btn ghost" id="replayTourBtn" style="width:100%; margin-top:8px">🔄 اعرض جولة التعريف تاني</button>
 
         <label style="margin-top:18px">🔔 التذكيرات</label>
@@ -1215,17 +1215,30 @@
   })();
 </script>
 
-<div id="installBanner" class="hidden" role="region" aria-label="خيارات تثبيت يومي">
+<div id="installBanner" class="hidden" role="region" aria-label="تحميل تطبيق يومي لأندرويد">
   <span data-icon="download" class="installicon" aria-hidden="true"></span>
   <div class="installtxt">
     <div class="installttl">خلّي يومي على موبايلك 📲</div>
-    <div class="installsub" id="installBannerSub">ثبّت نسخة الويب أو حمّل تطبيق أندرويد الرسمي عند توفره</div>
+    <div class="installsub" id="installBannerSub">النسخة الرسمية للأندرويد بصيغة APK</div>
   </div>
   <div class="installactions">
     <a id="installApkBtn" href="#" hidden rel="noopener noreferrer" aria-label="تنزيل ملف تطبيق يومي APK مباشرة">⬇️ تنزيل التطبيق (APK)</a>
-    <button id="installBtn" type="button">تثبيت الويب</button>
   </div>
   <button id="installDismiss" type="button" aria-label="إغلاق خيارات التثبيت">✕</button>
+</div>
+
+<div id="nativeUpdateOv" hidden role="dialog" aria-modal="true" aria-labelledby="nativeUpdateTitle" aria-describedby="nativeUpdateDescription">
+  <div class="native-update-sheet">
+    <div class="native-update-icon" aria-hidden="true">📦</div>
+    <h2 id="nativeUpdateTitle">تحديث جديد لتطبيق يومي</h2>
+    <p id="nativeUpdateDescription">فيه إصدار أحدث جاهز للتنزيل. نزّله وثبّته فوق النسخة الحالية من غير ما تمسح التطبيق.</p>
+    <p id="nativeUpdateVersion" class="native-update-version"></p>
+    <div class="native-update-actions">
+      <button id="nativeUpdateNow" class="btn primary" type="button">⬇️ حدّث الآن</button>
+      <button id="nativeUpdateLater" class="btn ghost" type="button">بعدَين</button>
+    </div>
+    <p class="native-update-note">هيفتح رابط GitHub الرسمي في المتصفح، وبعد التحميل أندرويد هيطلب موافقتك على التثبيت.</p>
+  </div>
 </div>
 
 <div id="oblDetailOv">
@@ -6881,7 +6894,7 @@ function populateSettings(){
   $('#setName').value = settings.name || '';
   // زرار التثبيت — نخفيه لو التطبيق متثبّت بالفعل
   const instBtn = $('#installAppBtn');
-  if(instBtn) instBtn.classList.toggle('hidden', isStandalone());
+  if(instBtn) instBtn.classList.toggle('hidden', isStandalone() || detectPlatform() !== 'android');
   if(typeof populateReminders === 'function') populateReminders();
   // لو فيه اسم، نعرض "أهلاً فلان" مع قلم؛ ولا نعرض خانة الكتابة
   const nm = (settings.name || '').trim();
@@ -7993,7 +8006,7 @@ function updateNotifDot(){
   const arr = loadNotifs();
   const hasUnread = arr.some(n => !n.read);
   // نعتبر إشعار التثبيت غير مقروء لو ظاهر
-  const installPending = !isStandalone() && !localStorage.getItem('yawmi_install_notif_hide') && !localStorage.getItem('yawmi_install_notif_seen');
+  const installPending = !!verifiedAndroidApkUrl && canOfferMobileInstall() && !localStorage.getItem('yawmi_install_notif_hide') && !localStorage.getItem('yawmi_install_notif_seen');
   const dot = $('#notifDot');
   if(dot) dot.classList.toggle('hidden', !(hasUnread || installPending));
 }
@@ -8003,14 +8016,14 @@ function renderNotifs(){
   const arr = loadNotifs();
   list.innerHTML = '';
   // إشعار التثبيت المثبّت فوق (لو التطبيق مش متثبّت)
-  if(!isStandalone() && !localStorage.getItem('yawmi_install_notif_hide')){
+  if(verifiedAndroidApkUrl && canOfferMobileInstall() && !localStorage.getItem('yawmi_install_notif_hide')){
     const inst = document.createElement('div');
     inst.className = 'notifitem installnotif';
     inst.innerHTML = `
       <span class="notificon">📲</span>
       <div class="notifinfo">
-        <div class="notiftitle">ثبّت يومي على موبايلك</div>
-        <button class="installnotifbtn">${verifiedAndroidApkUrl ? 'تنزيل APK' : 'تثبيت يومي'}</button>
+        <div class="notiftitle">نزّل تطبيق يومي للأندرويد</div>
+        <button class="installnotifbtn">⬇️ تنزيل APK</button>
       </div>
       <button class="notifhide" aria-label="إخفاء">✕</button>`;
     inst.querySelector('.installnotifbtn').onclick = (e)=>{ e.stopPropagation(); doInstall(); };
@@ -8018,7 +8031,7 @@ function renderNotifs(){
     inst.onclick = ()=> doInstall();
     list.appendChild(inst);
   }
-  if(!arr.length && (isStandalone() || localStorage.getItem('yawmi_install_notif_hide'))){
+  if(!arr.length && (!verifiedAndroidApkUrl || !canOfferMobileInstall() || localStorage.getItem('yawmi_install_notif_hide'))){
     list.innerHTML = '<div class="empty-big"><span class="ico">🔔</span><div class="ttl">مفيش إشعارات</div><div class="desc">هنا هتلاقي المناسبات والأحداث المهمة</div></div>';
     return;
   }
@@ -8058,10 +8071,10 @@ function renderBanners(){
   const wrap = $('#banners');
   wrap.innerHTML = '';
   // بانر التثبيت فوق (لو التطبيق مش متثبّت والمستخدم مقفلوش)
-  if(!isStandalone() && !localStorage.getItem('yawmi_install_banner_hide')){
+  if(verifiedAndroidApkUrl && canOfferMobileInstall() && !localStorage.getItem('yawmi_install_banner_hide')){
     const ib = document.createElement('div');
     ib.className = 'banner installbanner';
-    ib.innerHTML = `<span class="ibicon">📲</span><span style="flex:1">ثبّت يومي على موبايلك</span><button class="ibinstall">${verifiedAndroidApkUrl ? 'تنزيل APK' : 'تثبيت يومي'}</button><button class="bx" aria-label="إخفاء">✕</button>`;
+    ib.innerHTML = `<span class="ibicon">📲</span><span style="flex:1">حمّل يومي للأندرويد (APK)</span><button class="ibinstall">⬇️ تنزيل APK</button><button class="bx" aria-label="إخفاء">✕</button>`;
     ib.querySelector('.ibinstall').onclick = (e)=>{ e.stopPropagation(); doInstall(); };
     ib.querySelector('.bx').onclick = (e)=>{ e.stopPropagation(); localStorage.setItem('yawmi_install_banner_hide','1'); renderBanners(); };
     ib.onclick = ()=> doInstall();
@@ -8352,6 +8365,8 @@ applyTheme(localStorage.getItem('yawmi_theme') || 'light');
 // The first render happens immediately below. The APK availability state
 // must exist before renderBanners()/renderNotifs() read it.
 let verifiedAndroidApkUrl = '';
+let nativeUpdateCheckedAt = 0;
+let nativeUpdateDismissedCode = 0;
 
 /* ================= init ================= */
 // الرسمة الأساسية الأول — قبل أي دالة ممكن ترمي error فتوقف الرسم
@@ -8581,14 +8596,12 @@ setTimeout(()=>{
   }
 }, 6000);
 window.addEventListener('online', ()=>{ if(isLoggedIn()) syncFull(true); });
-// Web/PWA install + optional official Android APK (never an unsigned APK).
-// Do not show dead download links: the APK action stays hidden until an
-// actual downloadable asset is returned by this repository's GitHub Releases.
-let deferredInstallPrompt = null;
+// APK-only download UX. Keep the service worker for existing offline users,
+// but never expose a PWA install CTA or silently substitute a PWA for an APK.
 let mobileInstallTimer = null;
 function canOfferMobileInstall(){
   const ua = navigator.userAgent || '';
-  const mobile = /Android|iPhone|iPad|iPod/i.test(ua);
+  const mobile = /Android/i.test(ua);
   const native = !!window.__YAWMI_NATIVE_BUILD ||
     !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
   const installed = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) ||
@@ -8596,10 +8609,10 @@ function canOfferMobileInstall(){
   return mobile && !native && !installed && !localStorage.getItem('yawmi_install_dismissed');
 }
 function showMobileInstallOffer(){
-  if(!canOfferMobileInstall()) return;
+  if(!verifiedAndroidApkUrl || !canOfferMobileInstall()) return;
   if(mobileInstallTimer) clearTimeout(mobileInstallTimer);
   mobileInstallTimer = setTimeout(()=>{
-    if(canOfferMobileInstall()) $('#installBanner').classList.remove('hidden');
+    if(verifiedAndroidApkUrl && canOfferMobileInstall()) $('#installBanner').classList.remove('hidden');
   }, 1800);
 }
 function validateOfficialApkAsset(release){
@@ -8616,8 +8629,60 @@ function validateOfficialApkAsset(release){
   }
   return '';
 }
+// Only native Android APK builds can compare a real installed versionCode.
+// A published GitHub release has to use the pinned Beta filename/tag format.
+// This deliberately never touches Supabase or the user's local state.
+function getOfficialBetaUpdate(release, url){
+  if(!url || typeof release?.tag_name !== 'string') return null;
+  const tag = /^android-beta-v(0\.[0-9]+\.[0-9]+)$/.exec(release.tag_name);
+  const file = /^Yawmi-Beta-v(0\.[0-9]+\.([0-9]+))\.apk$/.exec(url.split('/').pop() || '');
+  if(!tag || !file || tag[1] !== file[1]) return null;
+  const versionCode = Number(file[2]);
+  return Number.isSafeInteger(versionCode) && versionCode > 0
+    ? { url, versionCode, versionName:tag[1] } : null;
+}
+async function checkAndroidAppUpdate(){
+  if(!isNativeApp() || !window.YawmiNative?.getInstalledVersion || document.hidden) return;
+  const now = Date.now();
+  if(now - nativeUpdateCheckedAt < 6 * 60 * 60 * 1000) return;
+  nativeUpdateCheckedAt = now;
+  try{
+    const installed = await window.YawmiNative.getInstalledVersion();
+    if(installed?.packageName !== 'in.yawmi.app.beta') return;
+    const currentCode = Number(installed.versionCode);
+    if(!Number.isSafeInteger(currentCode) || currentCode <= 0) return;
+    const response = await fetch('https://api.github.com/repos/onisEg/yawmi/releases/latest', {
+      method:'GET', mode:'cors', cache:'no-store',
+      headers:{Accept:'application/vnd.github+json'}
+    });
+    if(!response.ok) return;
+    const release = await response.json();
+    const latest = getOfficialBetaUpdate(release, validateOfficialApkAsset(release));
+    if(!latest || latest.versionCode <= currentCode || latest.versionCode === nativeUpdateDismissedCode) return;
+    const modal = $('#nativeUpdateOv');
+    $('#nativeUpdateVersion').textContent = 'الإصدار الجديد: ' + latest.versionName;
+    $('#nativeUpdateNow').onclick = async ()=>{
+      try{
+        await window.YawmiNative.openUpdateDownload({url:latest.url});
+        modal.hidden = true;
+      }catch(error){
+        console.warn('Could not open verified APK update',error);
+        showAlert('تعذّر فتح التحميل. جرّب تاني لما يكون فيه اتصال بالإنترنت.',{icon:'📦'});
+      }
+    };
+    $('#nativeUpdateLater').onclick = ()=>{
+      nativeUpdateDismissedCode = latest.versionCode;
+      modal.hidden = true;
+    };
+    modal.hidden = false;
+  }catch(error){
+    // Unsupported older APK, offline mode, rate limit, or native bridge error:
+    // continue opening Yawmi normally. Never erase user data or force update.
+    console.warn('Optional Android update check unavailable',error);
+  }
+}
 async function discoverOfficialAndroidApk(){
-  if(!/Android/i.test(navigator.userAgent || '') || !canOfferMobileInstall()) return;
+  if(!/Android/i.test(navigator.userAgent || '') || isStandalone()) return;
   try{
     const res = await fetch('https://api.github.com/repos/onisEg/yawmi/releases/latest', {
       method:'GET', mode:'cors', cache:'no-store', headers:{Accept:'application/vnd.github+json'}
@@ -8629,30 +8694,27 @@ async function discoverOfficialAndroidApk(){
     const btn = $('#installApkBtn');
     btn.href = url;
     btn.hidden = false;
-    $('#installBannerSub').textContent = 'نزّل APK مباشرة على أندرويد، أو اختار تثبيت نسخة الويب';
-    const settingsInstall = $('#installAppBtn');
-    if(settingsInstall && !isStandalone()) settingsInstall.textContent = '⬇️ تنزيل تطبيق يومي (APK)';
-    document.querySelectorAll('.ibinstall,.installnotifbtn').forEach(el=>{el.textContent='تنزيل APK';});
+    $('#installBannerSub').textContent = 'حمّل ملف APK الرسمي مباشرة وثبّته من التنزيلات';
     showMobileInstallOffer();
+    renderBanners();
+    updateNotifDot();
   }catch(_){
-    // Offline / rate limits: the PWA installation remains available.
+    // Offline / rate limits: do not show a broken APK link or offer PWA instead.
   }
 }
-window.addEventListener('beforeinstallprompt', (e)=>{
+window.addEventListener('beforeinstallprompt', e => {
+  // Do not display Android's site-level PWA prompt. Existing PWA installs
+  // still work offline; new users get an APK only when released.
   e.preventDefault();
-  deferredInstallPrompt = e;
-  showMobileInstallOffer();
 });
-$('#installBtn').onclick = ()=> doInstallWeb();
 $('#installDismiss').onclick = ()=>{
   $('#installBanner').classList.add('hidden');
   localStorage.setItem('yawmi_install_dismissed', '1');
   if(mobileInstallTimer) clearTimeout(mobileInstallTimer);
 };
 window.addEventListener('appinstalled', ()=>{ $('#installBanner').classList.add('hidden'); toast('اتثبّت التطبيق ✓'); });
-// Display on mobile even when Safari or Chrome does not emit beforeinstallprompt.
-if(canOfferMobileInstall()){
-  showMobileInstallOffer();
+// Only surface installation once a real public APK asset exists.
+if(/Android/i.test(navigator.userAgent || '') && !isStandalone()){
   discoverOfficialAndroidApk();
 }
 
@@ -8903,6 +8965,8 @@ async function syncNativeReminders(){
 }
 
 window.addEventListener('yawmi-native-ready', async ()=>{
+  // Update check is non-blocking: existing reminders and focus still load.
+  checkAndroidAppUpdate();
   await populateReminders();
   await syncNativeReminders();
   if(focusState.running && focusState.endsAt && focusState.endsAt > Date.now())
@@ -8912,6 +8976,7 @@ document.addEventListener('visibilitychange', ()=>{
   if(isNativeApp() && !document.hidden){
     tickFocus();
     syncNativeReminders();
+    checkAndroidAppUpdate();
   }
 });
 
@@ -8935,27 +9000,15 @@ if($('#testNotifBtn')){
 }
 
 async function doInstall(){
-  // Mobile Android "download/install app" entry points open the *real*
-  // verified GitHub Release APK, not the browser PWA prompt.
-  if(detectPlatform() === 'android' && verifiedAndroidApkUrl){
+  if(detectPlatform() === 'android' && !isStandalone() && verifiedAndroidApkUrl){
+    // GitHub's published APK asset serves a file download, not a PWA prompt.
     window.location.assign(verifiedAndroidApkUrl);
     return;
   }
-  return doInstallWeb();
-}
-async function doInstallWeb(){
-  // Explicit "install web" remains PWA, even when an APK is available.
-  // لو فيه prompt جاهز (كروم/أندرويد)، نستخدمه
-  if(deferredInstallPrompt){
-    deferredInstallPrompt.prompt();
-    const { outcome } = await deferredInstallPrompt.userChoice;
-    deferredInstallPrompt = null;
-    $('#installBanner').classList.add('hidden');
-    if(outcome === 'accepted') toast('اتثبّت التطبيق ✓');
-    return;
-  }
-  // مفيش prompt → نعرض تعليمات حسب الجهاز
-  showInstallGuide();
+  showAlert(detectPlatform() !== 'android'
+    ? 'ملف APK مخصص لأجهزة أندرويد. الموقع يفضل شغّال من المتصفح على الأجهزة الأخرى.'
+    : 'نسخة أندرويد APK مش منشورة للتحميل حاليًا. أول ما ننشرها رسميًا هيظهر رابط التنزيل هنا.',
+    {icon:'📦'});
 }
 function showInstallGuide(){
   if(isStandalone()){

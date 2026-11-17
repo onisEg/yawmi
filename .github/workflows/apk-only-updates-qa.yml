@@ -1,0 +1,54 @@
+name: APK-only website and native update safety
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - index.html
+      - src/native/**
+      - android/**
+      - styles/**
+      - sw.js
+      - tests/**
+      - .github/workflows/apk-only-updates-qa.yml
+
+permissions:
+  contents: read
+
+jobs:
+  web-contracts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: TypeScript, user data and APK-only update contract tests
+        run: npm test
+
+  android-unsigned:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+      - uses: android-actions/setup-android@v4
+      - run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+      - name: Check new Android plugin compiles without signing or publishing
+        run: |
+          npm run build
+          npx cap sync android
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleRelease --no-daemon
