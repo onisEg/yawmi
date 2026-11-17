@@ -78,7 +78,7 @@ jobs:
           # Keep the launcher name يومي. This is v1, not a second app.
           app_name=Path('android/app/src/main/res/values/strings.xml')
           assert '<string name="app_name">يومي</string>' in app_name.read_text()
-          Path(os.environ['RUNNER_TEMP'],'yawmi-version.txt').write_text(f'0.4.{version_code}')
+          Path(os.environ['RUNNER_TEMP'],'yawmi-version.txt').write_text(f'1.0.{version_code}')
           PY
       - name: Build unsigned candidate
         working-directory: android
