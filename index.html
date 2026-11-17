@@ -993,6 +993,10 @@
       <button class="fdur" data-work="15" data-break="3">١٥ / ٣</button>
     </div>
     <div class="focusstats" id="focusStats"></div>
+    <div id="focusAlertTestRow" style="display:none; gap:6px; margin-top:12px">
+      <button class="btn" id="focusTestWorkBtn" style="flex:1; font-size:12px">🔔 جرّب صوت التركيز</button>
+      <button class="btn" id="focusTestBreakBtn" style="flex:1; font-size:12px">☕ جرّب صوت الراحة</button>
+    </div>
   </div>
 </div>
 
@@ -3788,10 +3792,13 @@ function tickFocus(){
       persistFocus();
       if(wasWork){addFocusSession();updateFocusStats();renderFocusCard();}
       if(navigator.vibrate) navigator.vibrate([100,50,100]);
-      // Native OS notification was scheduled at the deadline; don't send a duplicate.
+      // Use a HIGH-importance audible notification independent of Live Update.
+      // Never cancel the scheduled alert when JS reaches zero before Android.
       if(!isNativeApp()) showLocalNotif(wasWork?'🎉 خلّصت جلسة تركيز!':'⏰ خلّصت الراحة',
         wasWork?'وقت راحة قصيرة، تستاهل 👏':'يلا نكمّل تركيز 💪');
-      if(window.YawmiNative) window.YawmiNative.cancelFocus().catch(console.warn);
+      if(window.YawmiNative) window.YawmiNative.completeFocus({
+        phase: wasWork ? 'work' : 'break'
+      }).catch(console.warn);
     }
   }
   updateFocusUI();
@@ -3835,6 +3842,30 @@ $('#focusClose').onclick = closeFocus;
 $('#focusOv').onclick = e=>{ if(e.target.id==='focusOv') closeFocus(); };
 $('#focusToggle').onclick = ()=>{ focusState.running ? pauseFocus() : startFocus(); };
 $('#focusReset').onclick = resetFocus;
+// Test both independent audible channels without starting or stopping the timer.
+function showNativeFocusSoundButtons() {
+  if(window.YawmiNative){
+    const row=$('#focusAlertTestRow');
+    if(row) row.style.display='flex';
+  }
+}
+async function tryFocusSound(phase) {
+  if(!window.YawmiNative) return;
+  try {
+    const allowed=await window.YawmiNative.hasPermission()
+      || await window.YawmiNative.requestPermission();
+    if(!allowed){ toast('اسمح بإشعارات يومي من إعدادات الموبايل'); return; }
+    await window.YawmiNative.testFocusSound(phase);
+    toast('اترسل تنبيه التجربة — لو مفيش صوت، راجع إعدادات صوت إشعارات يومي');
+  } catch(e) {
+    console.warn('Focus test sound failed',e);
+    toast('مش قادر أشغّل صوت التنبيه — راجع إذن الإشعارات');
+  }
+}
+$('#focusTestWorkBtn').onclick=()=>tryFocusSound('work');
+$('#focusTestBreakBtn').onclick=()=>tryFocusSound('break');
+window.addEventListener('yawmi-native-ready',showNativeFocusSoundButtons);
+showNativeFocusSoundButtons();
 $('#focusSkip').onclick = ()=>{
   // تخطّي المرحلة الحالية
   pauseFocus();
