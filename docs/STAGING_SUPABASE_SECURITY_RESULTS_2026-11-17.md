@@ -17,7 +17,7 @@
 7. Created an intentionally permissive `yawmi_sync_all` legacy fixture with ONE **fake** row in staging, reproduced the anonymous visibility vulnerability, then applied the **exact prepared** `docs/manual-sql/close-legacy-sync-after-backup.sql` migration to staging.
 8. Verified the legacy policy is gone; `anon` and `authenticated` have no SELECT/UPDATE access; the SECURITY DEFINER helper's direct EXECUTE grant is revoked; both `yawmi_data` rows and the one legacy fake row remained intact.
 9. Used staging PostgreSQL's HTTP extension to make **real anonymous PostgREST GET requests** to `/rest/v1/yawmi_data` and `/rest/v1/yawmi_sync`: private user-data response was empty and legacy access was denied with HTTP 401/403.
-10. Re-ran the staging security advisor. A no-policy INFO for `yawmi_sync` is expected because privileges have been revoked. A mutable search_path warning for staging `yawmi_touch` and leaked-password protection warning remain for separate hardening.
+10. Re-ran the staging security advisor. A no-policy INFO for `yawmi_sync` is expected because privileges have been revoked. Staging `public.yawmi_touch()` was subsequently hardened using `ALTER FUNCTION ... SET search_path = pg_catalog`, clearing the mutable-search-path warning. The remaining advisor items are the expected no-policy INFO for the locked legacy table and the Auth leaked-password protection WARN.
 
 ## Verified result summary
 
