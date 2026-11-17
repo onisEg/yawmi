@@ -1,0 +1,34 @@
+name: Legacy SQL bootstrap safety gate
+
+on:
+  push:
+    branches:
+      - fix/main-disable-unsafe-legacy-sql
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  reject-legacy-bootstrap:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Ensure deprecated SQL fails closed and cannot recreate open policies
+        shell: bash
+        run: |
+          node --input-type=module <<'JS'
+          import {readFileSync} from 'node:fs';
+          import assert from 'node:assert/strict';
+          const sql=readFileSync('supabase-setup.sql','utf8');
+          assert.match(sql,/DO \$legacy_sync_disabled\$[\s\S]*RAISE EXCEPTION/);
+          assert.doesNotMatch(sql,/^\s*create\s+policy\b/im);
+          assert.doesNotMatch(sql,/^\s*create\s+table\b/im);
+          assert.doesNotMatch(sql,/^\s*(?:insert|update|delete|grant)\s+/im);
+          const auth=readFileSync('supabase-auth-setup.sql','utf8');
+          assert.match(auth,/auth\.uid\(\)\s*=\s*user_id/);
+          console.log('PASS: insecure bootstrap cannot be rerun; current auth setup unchanged');
+          JS
