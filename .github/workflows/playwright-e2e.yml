@@ -6,6 +6,7 @@ on:
       - fix/focus-audible-completion-and-legacy-security-plan
       - design/light-liquid-glass-beta
       - design/today-premium-component-redesign
+      - release/pre14-main-security-candidate
       - release/beta-pre14-stable-security-qa
   workflow_dispatch:
 permissions:
