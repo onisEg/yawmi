@@ -1,0 +1,55 @@
+name: APK-only download and native app update QA
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'index.html'
+      - 'src/native/**'
+      - 'android/app/src/main/java/in/yawmi/app/**'
+      - 'styles/overlays.css'
+      - 'sw.js'
+      - 'tests/**'
+      - '.github/workflows/native-apk-updates-qa.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  native-compile:
+    runs-on: ubuntu-latest
+    timeout-minutes: 28
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: Contract, build and app-data regression suite
+        run: npm test
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: android-actions/setup-android@v4
+      - run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+      - name: Stage native assets and compile Android bridge
+        run: |
+          npx cap sync android
+          chmod +x android/gradlew
+          cd android
+          ./gradlew :app:compileDebugJavaWithJavac --no-daemon
+
+  browser-qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 22
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: npx playwright install --with-deps chromium
+      - name: Existing isolated browser and mobile journeys
+        run: npm run test:e2e
