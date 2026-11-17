@@ -25,7 +25,7 @@
 #yawmiMobileInstaller .ymi-apk{
   display:inline-flex;align-items:center;justify-content:center;text-decoration:none;
   flex:1 1 130px;min-height:43px;padding:9px 10px;border-radius:12px;
-  font:700 13px/1.4 inherit;cursor:pointer;border:1px solid var(--gold,#9e7220);
+  font-size:13px;font-weight:700;line-height:1.4;font-family:inherit;cursor:pointer;border:1px solid var(--gold,#9e7220);
 }
 #yawmiMobileInstaller .ymi-pwa{background:var(--gold,#9e7220);color:#fff}
 #yawmiMobileInstaller .ymi-apk{background:var(--card2,#f7f3e8);color:var(--text,#222)}
