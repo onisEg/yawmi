@@ -173,6 +173,15 @@
         </div>
         <span class="premium-deco premium-deco-habits" aria-hidden="true">✳</span>
       </div>
+      <div class="premium-habit-progress">
+        <div class="premium-habit-progress-head">
+          <span>إنجاز عادات النهارده</span>
+          <strong id="habitProgressText">٠ من ٠</strong>
+        </div>
+        <div id="habitProgressTrack" class="premium-habit-progress-track" role="progressbar" aria-label="نسبة إنجاز العادات" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+          <span id="habitProgressFill"></span>
+        </div>
+      </div>
       <div class="chips" id="habitChips"></div>
       <div id="badHabitWrap" class="hidden">
         <h3 class="h3ic" style="margin-top:18px; padding-top:14px; border-top:1px solid var(--line)"><span data-icon="ban"></span>عادات تحت السيطرة</h3>
@@ -1213,7 +1222,7 @@
     <div class="installsub" id="installBannerSub">ثبّت نسخة الويب أو حمّل تطبيق أندرويد الرسمي عند توفره</div>
   </div>
   <div class="installactions">
-    <a id="installApkBtn" href="#" hidden target="_blank" rel="noopener noreferrer" aria-label="تحميل النسخة الرسمية من تطبيق يومي APK">تحميل APK</a>
+    <a id="installApkBtn" href="#" hidden rel="noopener noreferrer" aria-label="تنزيل ملف تطبيق يومي APK مباشرة">⬇️ تنزيل التطبيق (APK)</a>
     <button id="installBtn" type="button">تثبيت الويب</button>
   </div>
   <button id="installDismiss" type="button" aria-label="إغلاق خيارات التثبيت">✕</button>
@@ -3225,6 +3234,14 @@ function renderToday(){
   // habits
   const chips = $('#habitChips');
   renderChipList(chips, settings.habits, rec.h, 'h', 'عادة');
+  // Read-only presentation: completion is calculated from today's existing
+  // habit record; no storage, sync, or habit behaviour is changed.
+  const habitTotal = settings.habits.length;
+  const habitDone = settings.habits.filter(name => !!rec.h[name]).length;
+  const habitPct = habitTotal ? Math.round(habitDone * 100 / habitTotal) : 0;
+  $('#habitProgressText').textContent = `${arNum(habitDone)} من ${arNum(habitTotal)}`;
+  $('#habitProgressFill').style.width = `${habitPct}%`;
+  $('#habitProgressTrack').setAttribute('aria-valuenow', String(habitPct));
 
   // azkar
   const azChips = $('#azkarChips');
@@ -7993,7 +8010,7 @@ function renderNotifs(){
       <span class="notificon">📲</span>
       <div class="notifinfo">
         <div class="notiftitle">ثبّت يومي على موبايلك</div>
-        <button class="installnotifbtn">Install App</button>
+        <button class="installnotifbtn">${verifiedAndroidApkUrl ? 'تنزيل APK' : 'تثبيت يومي'}</button>
       </div>
       <button class="notifhide" aria-label="إخفاء">✕</button>`;
     inst.querySelector('.installnotifbtn').onclick = (e)=>{ e.stopPropagation(); doInstall(); };
@@ -8044,7 +8061,7 @@ function renderBanners(){
   if(!isStandalone() && !localStorage.getItem('yawmi_install_banner_hide')){
     const ib = document.createElement('div');
     ib.className = 'banner installbanner';
-    ib.innerHTML = `<span class="ibicon">📲</span><span style="flex:1">ثبّت يومي على موبايلك</span><button class="ibinstall">Install App</button><button class="bx" aria-label="إخفاء">✕</button>`;
+    ib.innerHTML = `<span class="ibicon">📲</span><span style="flex:1">ثبّت يومي على موبايلك</span><button class="ibinstall">${verifiedAndroidApkUrl ? 'تنزيل APK' : 'تثبيت يومي'}</button><button class="bx" aria-label="إخفاء">✕</button>`;
     ib.querySelector('.ibinstall').onclick = (e)=>{ e.stopPropagation(); doInstall(); };
     ib.querySelector('.bx').onclick = (e)=>{ e.stopPropagation(); localStorage.setItem('yawmi_install_banner_hide','1'); renderBanners(); };
     ib.onclick = ()=> doInstall();
@@ -8609,7 +8626,10 @@ async function discoverOfficialAndroidApk(){
     const btn = $('#installApkBtn');
     btn.href = url;
     btn.hidden = false;
-    $('#installBannerSub').textContent = 'حمّل النسخة الرسمية من GitHub أو ثبّت نسخة الويب بدون APK';
+    $('#installBannerSub').textContent = 'نزّل APK مباشرة على أندرويد، أو اختار تثبيت نسخة الويب';
+    const settingsInstall = $('#installAppBtn');
+    if(settingsInstall && !isStandalone()) settingsInstall.textContent = '⬇️ تنزيل تطبيق يومي (APK)';
+    document.querySelectorAll('.ibinstall,.installnotifbtn').forEach(el=>{el.textContent='تنزيل APK';});
     showMobileInstallOffer();
   }catch(_){
     // Offline / rate limits: the PWA installation remains available.
@@ -8620,7 +8640,7 @@ window.addEventListener('beforeinstallprompt', (e)=>{
   deferredInstallPrompt = e;
   showMobileInstallOffer();
 });
-$('#installBtn').onclick = ()=> doInstall();
+$('#installBtn').onclick = ()=> doInstallWeb();
 $('#installDismiss').onclick = ()=>{
   $('#installBanner').classList.add('hidden');
   localStorage.setItem('yawmi_install_dismissed', '1');
@@ -8912,6 +8932,16 @@ if($('#testNotifBtn')){
 }
 
 async function doInstall(){
+  // Mobile Android "download/install app" entry points open the *real*
+  // verified GitHub Release APK, not the browser PWA prompt.
+  if(detectPlatform() === 'android' && verifiedAndroidApkUrl){
+    window.location.assign(verifiedAndroidApkUrl);
+    return;
+  }
+  return doInstallWeb();
+}
+async function doInstallWeb(){
+  // Explicit "install web" remains PWA, even when an APK is available.
   // لو فيه prompt جاهز (كروم/أندرويد)، نستخدمه
   if(deferredInstallPrompt){
     deferredInstallPrompt.prompt();
