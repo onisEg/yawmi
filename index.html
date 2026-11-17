@@ -8349,6 +8349,10 @@ $('#themeBtn').onclick = ()=>{
 };
 applyTheme(localStorage.getItem('yawmi_theme') || 'light');
 
+// The first render happens immediately below. The APK availability state
+// must exist before renderBanners()/renderNotifs() read it.
+let verifiedAndroidApkUrl = '';
+
 /* ================= init ================= */
 // الرسمة الأساسية الأول — قبل أي دالة ممكن ترمي error فتوقف الرسم
 // (ده يمنع ظهور صفحة ناقصة بعد الريفريش لو أي دالة تحت رمت استثناء)
@@ -8581,7 +8585,6 @@ window.addEventListener('online', ()=>{ if(isLoggedIn()) syncFull(true); });
 // Do not show dead download links: the APK action stays hidden until an
 // actual downloadable asset is returned by this repository's GitHub Releases.
 let deferredInstallPrompt = null;
-let verifiedAndroidApkUrl = '';
 let mobileInstallTimer = null;
 function canOfferMobileInstall(){
   const ua = navigator.userAgent || '';
