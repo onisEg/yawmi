@@ -1,0 +1,35 @@
+name: Google sign-in QA
+on:
+  push:
+    branches: [qa/google-oauth-return]
+permissions:
+  contents: read
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: android-actions/setup-android@v4
+      - run: npm ci && npm test && npx cap sync android
+      - run: cd android && chmod +x gradlew && ./gradlew assembleDebug
+  provider:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check Google authorization without signing in
+        run: |
+          python - <<'PY'
+          import requests
+          from urllib.parse import urlparse
+          r=requests.get('https://jtldivmllnzktnzgwtsm.supabase.co/auth/v1/authorize', params={'provider':'google','redirect_to':'in.yawmi.app.v1://auth/callback'},allow_redirects=False,timeout=15)
+          host=urlparse(r.headers.get('Location','')).hostname
+          print('HTTP',r.status_code,'Google authorization screen:',host=='accounts.google.com')
+          if host!='accounts.google.com':
+              print('Provider disabled:', 'not enabled' in r.text.lower())
+          PY
