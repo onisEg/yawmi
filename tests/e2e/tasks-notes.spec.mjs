@@ -135,3 +135,16 @@ test('Premium Today uses distinctive real cards without dropping old controls', 
   await page.locator('nav.bottom button[data-tab="today"]').click();
   await expect(page.locator('#focusCardTime')).toBeVisible();
 });
+
+test('homepage download icon opens the Android preview APK at 320px', async ({page}) => {
+  await page.setViewportSize({width: 320, height: 720});
+  const link = page.getByRole('link', {name: 'تحميل يومي لأندرويد (نسخة تجريبية)'});
+  await expect(link.locator('svg')).toBeVisible();
+  await expect(link).toBeInViewport();
+  const apk = 'https://github.com/onisEg/yawmi/releases/download/yawmi-v1.0.0-preview.30001/Yawmi-v1.0.0-preview.30001.apk';
+  await expect(link).toHaveAttribute('href', apk);
+  await page.route(apk, route => route.fulfill({status: 204}));
+  const request = page.waitForRequest(apk);
+  await link.click();
+  await request;
+});
