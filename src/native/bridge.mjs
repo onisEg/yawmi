@@ -8,6 +8,7 @@ const managedMax = 11999;
 const focusId = 15001;
 const focusTestId = 15002;
 const FocusLive = registerPlugin('YawmiFocusLive');
+const GoogleLogin = registerPlugin('YawmiGoogleLogin');
 const Updates = registerPlugin('YawmiUpdates');
 const native = Capacitor.isNativePlatform();
 
@@ -177,6 +178,8 @@ async function show(title, body) {
 }
 const api = {
   isNative: native,
+  openGoogleLogin: url => GoogleLogin.open({url}),
+  takeGoogleCallback: () => GoogleLogin.takeCallback(),
   async getInstalledAppInfo() {
     return native ? Updates.getInstalledVersion() : null;
   },
@@ -204,6 +207,8 @@ const api = {
 };
 if (native) {
   window.YawmiNative = api;
+  GoogleLogin.addListener('callback', () => window.dispatchEvent(new Event('yawmi-google-callback')))
+    .then(() => window.dispatchEvent(new Event('yawmi-google-callback')));
   window.dispatchEvent(new Event('yawmi-native-ready'));
   api.setSystemBarsTheme(document.documentElement.getAttribute('data-theme')).catch(console.warn);
 }

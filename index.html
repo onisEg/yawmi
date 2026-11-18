@@ -1343,6 +1343,7 @@ function initSupabase(){
   sb = window._createSupabaseClient(SUPABASE_URL, SUPABASE_KEY, {
     auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
   });
+  setTimeout(finishGoogleLogin, 0);
   sb.auth.onAuthStateChange((event, session)=>{
     currentUser = session ? session.user : null;
     // نحفظ علامة إن فيه جلسة متوقّعة عشان الـ UI يعرف بسرعة بعد الريفريش
@@ -1800,14 +1801,58 @@ async function authSignIn(email, password){
   if(error) return {error: authErrArabic(error.message)};
   return {ok:true};
 }
+// Google sign-in in the APK uses the system browser and returns a one-time PKCE code.
+function googlePkceClient(){
+  // Persist only the verifier across Android process restarts. The main client owns the session.
+  return window._createSupabaseClient(SUPABASE_URL, SUPABASE_KEY, {auth:{
+    storageKey:'yawmi-google-oauth', flowType:'pkce', autoRefreshToken:false,
+    detectSessionInUrl:false, persistSession:true,
+    storage:{
+      getItem:key=>key.endsWith('-code-verifier') ? localStorage.getItem(key) : null,
+      setItem:(key,value)=>{ if(key.endsWith('-code-verifier')) localStorage.setItem(key,value); },
+      removeItem:key=>{ if(key.endsWith('-code-verifier')) localStorage.removeItem(key); }
+    }
+  }});
+}
+let nativeGoogleClient;
+function nativeGoogleAuth(){
+  if(!nativeGoogleClient) nativeGoogleClient = googlePkceClient();
+  return nativeGoogleClient.auth;
+}
+async function finishGoogleLogin(){
+  if(!sb || !window.YawmiNative?.takeGoogleCallback) return;
+  try{
+    const {code, cancelled} = await window.YawmiNative.takeGoogleCallback();
+    if(cancelled){ toast('تسجيل الدخول بجوجل ما اكتملش'); return; }
+    if(!code) return;
+    const {data,error} = await nativeGoogleAuth().exchangeCodeForSession(code);
+    if(error || !data.session) throw new Error();
+    const result = await sb.auth.setSession({
+      access_token:data.session.access_token, refresh_token:data.session.refresh_token
+    });
+    if(result.error) throw result.error;
+    closeAuth();
+    toast('أهلاً بيك ✓');
+  }catch(_){ toast('تعذّر إكمال تسجيل الدخول بجوجل، جرّب تاني'); }
+}
+window.addEventListener('yawmi-google-callback', finishGoogleLogin);
 async function authGoogle(){
-  if(!sb) return {error:'لسه بيحمّل'};
-  const { error } = await sb.auth.signInWithOAuth({
-    provider: 'google',
-    options: { redirectTo: location.href.split('#')[0] }
-  });
-  if(error) return {error: authErrArabic(error.message)};
-  return {ok:true};
+  if(!sb) initSupabase();
+  if(!sb) return {error:'اتأكد من الاتصال بالنت وجرّب تاني'};
+  try{
+    if(isNativeApp()){
+      if(!window.YawmiNative?.openGoogleLogin) return {error:'استنى لحظة وجرّب تاني'};
+      const {data,error} = await nativeGoogleAuth().signInWithOAuth({provider:'google',
+        options:{redirectTo:'in.yawmi.app.v1://auth/callback',skipBrowserRedirect:true}});
+      if(error) throw error;
+      await window.YawmiNative.openGoogleLogin(data.url);
+    }else{
+      const {error} = await sb.auth.signInWithOAuth({provider:'google',
+        options:{redirectTo:location.origin + location.pathname}});
+      if(error) throw error;
+    }
+    return {ok:true};
+  }catch(error){ return {error:authErrArabic(error.message)}; }
 }
 async function authSignOut(){
   if(!sb) return;
