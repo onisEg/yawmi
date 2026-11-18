@@ -8,6 +8,7 @@ public class MainActivity extends BridgeActivity {
     public void onCreate(Bundle savedInstanceState) {
         registerPlugin(FocusLivePlugin.class);
         registerPlugin(YawmiUpdatesPlugin.class);
+        registerPlugin(GoogleLoginPlugin.class);
         super.onCreate(savedInstanceState);
     }
 }
