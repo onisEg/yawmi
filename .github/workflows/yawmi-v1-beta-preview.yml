@@ -3,13 +3,13 @@ name: Build signed Yawmi v1 separate-install preview
 on:
   push:
     branches:
-      - release/yawmi-v1-unified-liquid-glass-beta
+      - qa/google-oauth-return
     paths:
       - .github/workflows/yawmi-v1-beta-preview.yml
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   v1-preview:
@@ -27,13 +27,13 @@ jobs:
       - name: Checkout audited v1 visual source (immutable commit)
         uses: actions/checkout@v4
         with:
-          ref: a4457ecab0ec6f31cce933f5e953095382e92edf
+          ref: 70aa165fcbc7d55aa844e95a3f942cfbbd70b1c8
           persist-credentials: false
       - name: Verify source identity
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD)" = a4457ecab0ec6f31cce933f5e953095382e92edf
+          test "$(git rev-parse HEAD)" = 70aa165fcbc7d55aa844e95a3f942cfbbd70b1c8
           test -f styles/liquid-glass.css
           test -f docs/YAWMI_V1_BETA_HANDOFF.md
       - uses: actions/setup-node@v4
@@ -117,16 +117,3 @@ jobs:
             yawmi-v1-release/SHA256SUMS.txt
           retention-days: 14
           if-no-files-found: error
-      - name: Publish optional v1 prerelease APK (not latest production)
-        shell: bash
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          CODE="${{ steps.signed.outputs.code }}"
-          gh release create "yawmi-v1.0.0-preview.$CODE" \
-            "${{ steps.signed.outputs.apk }}" yawmi-v1-release/SHA256SUMS.txt \
-            --target "$(git rev-parse HEAD)" \
-            --title "Yawmi v1.0.0 • Separate-install preview" \
-            --notes "Visual beta preview with unified Liquid Glass. Android package in.yawmi.app.v1 installs alongside older beta/PWA; it does NOT replace or erase them. Signing identity differs from pre-v1 beta; verify account sync or export local-only data before switching. Not Google Play production. Current in-app updater targets the older beta channel; v1 update-channel support is pending." \
-            --prerelease
