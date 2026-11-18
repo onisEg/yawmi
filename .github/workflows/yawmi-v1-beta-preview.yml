@@ -1,0 +1,132 @@
+name: Build signed Yawmi v1 separate-install preview
+
+on:
+  push:
+    branches:
+      - release/yawmi-v1-unified-liquid-glass-beta
+    paths:
+      - .github/workflows/yawmi-v1-beta-preview.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  v1-preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    # Existing credential environment currently holds the three signing secrets.
+    # Do not migrate, reveal, or duplicate those secrets in source control.
+    environment: YAWMI_BETA_KEYSTORE_B64
+    env:
+      YAWMI_BETA_KEYSTORE_B64: ${{ secrets.YAWMI_BETA_KEYSTORE_B64 }}
+      YAWMI_BETA_KEY_PASSWORD: ${{ secrets.YAWMI_BETA_KEY_PASSWORD }}
+      YAWMI_BETA_KEY_ALIAS: ${{ secrets.YAWMI_BETA_KEY_ALIAS }}
+      EXPECTED_CERT_SHA256: '1d57e58ab6b46eccebdf4ae4e7ee2dd61bcd2674bd6466af74f267d66000001d'
+    steps:
+      - name: Checkout audited v1 visual source (immutable commit)
+        uses: actions/checkout@v4
+        with:
+          ref: a4457ecab0ec6f31cce933f5e953095382e92edf
+          persist-credentials: false
+      - name: Verify source identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = a4457ecab0ec6f31cce933f5e953095382e92edf
+          test -f styles/liquid-glass.css
+          test -f docs/YAWMI_V1_BETA_HANDOFF.md
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: Full app and user-data regression tests
+        run: npm test
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: android-actions/setup-android@v4
+      - name: Install Android 36 build tools
+        run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+      - name: Copy current beta app to native Android project
+        run: npx cap sync android
+      - name: Brand v1 as an independent install (keep old app untouched)
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import os
+          gradle=Path('android/app/build.gradle')
+          text=gradle.read_text()
+          version_code=30000+int(os.environ['GITHUB_RUN_NUMBER'])
+          assert 30000 < version_code < 2100000000
+          for old in ['applicationId "in.yawmi.app"','versionCode 1','versionName "1.0"']:
+              assert text.count(old)==1, f'Unexpected Android baseline: {old}'
+          text=text.replace('applicationId "in.yawmi.app"', 'applicationId "in.yawmi.app.v1"')
+          text=text.replace('versionCode 1',f'versionCode {version_code}')
+          text=text.replace('versionName "1.0"', 'versionName "1.0.0"')
+          gradle.write_text(text)
+          strings=Path('android/app/src/main/res/values/strings.xml')
+          content=strings.read_text()
+          assert '<string name="app_name">يومي</string>' in content
+          strings.write_text(content.replace('<string name="app_name">يومي</string>', '<string name="app_name">يومي v1</string>'))
+          Path(os.environ['RUNNER_TEMP'],'version-code.txt').write_text(str(version_code))
+          PY
+      - name: Build unsigned release candidate
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleRelease --no-daemon
+      - name: Sign v1 with permanent verified Yawmi beta key
+        id: signed
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$YAWMI_BETA_KEYSTORE_B64" || { echo 'Signing keystore secret is missing from environment'; exit 1; }
+          test -n "$YAWMI_BETA_KEY_PASSWORD" || { echo 'Signing password secret is missing from environment'; exit 1; }
+          test -n "$YAWMI_BETA_KEY_ALIAS" || { echo 'Signing alias secret is missing from environment'; exit 1; }
+          umask 077
+          KEY="$RUNNER_TEMP/yawmi-v1-private.p12"
+          trap 'rm -f "$KEY"' EXIT
+          printf '%s' "$YAWMI_BETA_KEYSTORE_B64" | base64 --decode > "$KEY"
+          test -s "$KEY"
+          CODE="$(cat "$RUNNER_TEMP/version-code.txt")"
+          mkdir -p yawmi-v1-release
+          APK="yawmi-v1-release/Yawmi-v1.0.0-preview.$CODE.apk"
+          APKSIGNER="$ANDROID_HOME/build-tools/36.0.0/apksigner"
+          "$APKSIGNER" sign --ks "$KEY" --ks-type PKCS12 \
+            --ks-key-alias "$YAWMI_BETA_KEY_ALIAS" \
+            --ks-pass env:YAWMI_BETA_KEY_PASSWORD \
+            --key-pass env:YAWMI_BETA_KEY_PASSWORD \
+            --out "$APK" android/app/build/outputs/apk/release/app-release-unsigned.apk
+          "$APKSIGNER" verify --verbose --print-certs --min-sdk-version 24 "$APK" > "$RUNNER_TEMP/yawmi-v1-cert.txt"
+          grep -F -q "Signer #1 certificate SHA-256 digest: $EXPECTED_CERT_SHA256" "$RUNNER_TEMP/yawmi-v1-cert.txt"
+          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "$APK" | grep -F -q "package: name='in.yawmi.app.v1'"
+          (cd yawmi-v1-release && sha256sum "Yawmi-v1.0.0-preview.$CODE.apk" > SHA256SUMS.txt)
+          echo "apk=$APK" >> "$GITHUB_OUTPUT"
+          echo "code=$CODE" >> "$GITHUB_OUTPUT"
+      - name: Upload signed preview APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: yawmi-v1-signed-preview
+          path: |
+            ${{ steps.signed.outputs.apk }}
+            yawmi-v1-release/SHA256SUMS.txt
+          retention-days: 14
+          if-no-files-found: error
+      - name: Publish optional v1 prerelease APK (not latest production)
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          CODE="${{ steps.signed.outputs.code }}"
+          gh release create "yawmi-v1.0.0-preview.$CODE" \
+            "${{ steps.signed.outputs.apk }}" yawmi-v1-release/SHA256SUMS.txt \
+            --target "$(git rev-parse HEAD)" \
+            --title "Yawmi v1.0.0 • Separate-install preview" \
+            --notes "Visual beta preview with unified Liquid Glass. Android package in.yawmi.app.v1 installs alongside older beta/PWA; it does NOT replace or erase them. Signing identity differs from pre-v1 beta; verify account sync or export local-only data before switching. Not Google Play production. Current in-app updater targets the older beta channel; v1 update-channel support is pending." \
+            --prerelease
