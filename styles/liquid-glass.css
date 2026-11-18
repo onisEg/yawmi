@@ -163,3 +163,313 @@
   :root[data-theme="light"] nav.bottom,
   :root[data-theme="light"] #focusModal{background:#f9fbff}
 }
+
+
+/* ======================================================================
+   YAWMI LIQUID GLASS — COMPLETE APP SKIN (Phase 2, beta only)
+   CSS-only. No HTML, storage, routes, data attributes, or logic changes.
+   Every pre-existing app section retains its content/order/functionality.
+   Keep semantic priority/error/paid states distinguishable.
+   ====================================================================== */
+
+/* The original color semantics remain: warm gold = milestones/highlights,
+   sea glass teal = actions/success, red = warnings/overdue. */
+:root[data-theme="light"]{
+  --bg:#f4f8fb;
+  --card:rgba(255,255,255,.83);
+  --card2:rgba(237,245,247,.86);
+  --line:rgba(115,148,157,.19);
+  --text:#27384b;
+  --muted:#5c7080;
+  --faint:#788a96;
+  --gold:#987039;
+  --gold-soft:rgba(240,215,170,.36);
+  --teal:#2e8e7b;
+  --red:#bd5550;
+  --nav-glass:rgba(248,252,255,.78);
+  --nav-glass-border:rgba(255,255,255,.93);
+  --lg-frost:rgba(255,255,255,.73);
+  --lg-frost-solid:#f9fbff;
+  --lg-frost-inset:rgba(248,252,255,.62);
+  --lg-frost-edge:rgba(255,255,255,.94);
+  --lg-frost-shadow:0 10px 29px rgba(52,86,115,.075),0 2px 8px rgba(62,87,102,.04);
+  --lg-frost-strong:rgba(253,255,255,.95);
+  --lg-focus-ring:rgba(46,142,123,.26);
+}
+:root[data-theme="dark"]{
+  --lg-frost:rgba(40,37,38,.79);
+  --lg-frost-solid:#282529;
+  --lg-frost-inset:rgba(52,44,43,.67);
+  --lg-frost-edge:rgba(255,223,198,.13);
+  --lg-frost-shadow:0 14px 35px rgba(0,0,0,.15),inset 0 1px 0 rgba(255,255,255,.05);
+  --lg-frost-strong:rgba(43,38,38,.96);
+  --lg-focus-ring:rgba(107,191,158,.34);
+}
+/* Shared visual language, without changing page layout or typography. */
+:root[data-theme="light"] :is(.card,.goalcard,.setsection,.stat),
+:root[data-theme="dark"] :is(.card,.goalcard,.setsection,.stat){
+  border:1px solid var(--lg-frost-edge);
+  background:var(--lg-frost);
+  box-shadow:var(--lg-frost-shadow);
+  -webkit-backdrop-filter:blur(14px) saturate(1.24);
+  backdrop-filter:blur(14px) saturate(1.24);
+}
+:root[data-theme="light"] :is(.goalcard,.setsection,.stat),
+:root[data-theme="dark"] :is(.goalcard,.setsection,.stat){
+  border-radius:20px;
+}
+:root[data-theme="light"] header.top .brand{
+  color:#866236;
+  text-shadow:0 1px 0 rgba(255,255,255,.85);
+}
+:root[data-theme="dark"] body{
+  background:
+    radial-gradient(ellipse 75% 23% at 100% 0%,rgba(77,118,111,.15),transparent 78%),
+    radial-gradient(ellipse 65% 35% at 0% 48%,rgba(113,88,124,.1),transparent 78%),
+    var(--bg);
+}
+:root[data-theme="dark"] nav.bottom{
+  background:rgba(43,37,35,.83);
+  border-color:var(--lg-frost-edge);
+  box-shadow:0 12px 30px rgba(0,0,0,.23),inset 0 1px 0 rgba(255,255,255,.06);
+}
+:root[data-theme="dark"] nav.bottom button.on{
+  background:rgba(232,154,68,.13);
+}
+:root[data-theme="dark"] header.top .iconbtn{
+  border:1px solid var(--lg-frost-edge);
+  background:var(--lg-frost-inset);
+}
+:root[data-theme="light"] :is(.daynav .navb,.monthnav .navb,.calnav,.notesaddbtn,.tabordbtn,.datebtn,.fsbtn,.wirdgear),
+:root[data-theme="dark"] :is(.daynav .navb,.monthnav .navb,.calnav,.notesaddbtn,.tabordbtn,.datebtn,.fsbtn,.wirdgear){
+  background:var(--lg-frost-inset);
+  border-color:var(--lg-frost-edge);
+  box-shadow:0 3px 11px rgba(62,92,115,.055),inset 0 1px 0 rgba(255,255,255,.09);
+}
+:root[data-theme="light"] :is(.herocard,.journeycard,.streakbanner,.nextaction,.banner),
+:root[data-theme="dark"] :is(.herocard,.journeycard,.streakbanner,.nextaction,.banner){
+  border-color:var(--lg-frost-edge);
+  box-shadow:var(--lg-frost-shadow);
+}
+:root[data-theme="light"] .herocard{
+  background:linear-gradient(132deg,rgba(255,252,245,.86),rgba(230,248,246,.7),rgba(252,253,255,.78));
+}
+:root[data-theme="light"] :is(.journeycard,.nextaction){
+  background:linear-gradient(120deg,rgba(250,253,255,.88),rgba(226,245,240,.57));
+}
+:root[data-theme="light"] .streakbanner{
+  background:linear-gradient(115deg,rgba(255,248,229,.77),rgba(249,234,226,.5));
+}
+:root[data-theme="dark"] .herocard{
+  background:linear-gradient(130deg,rgba(87,64,39,.38),rgba(45,58,57,.55));
+}
+:root[data-theme="light"] :is(.jrnstat,.hdstat,.hdwday,.scorecard .streakbadge,.beadbonus,.ottl,.tabord,.cdd-card),
+:root[data-theme="dark"] :is(.jrnstat,.hdstat,.hdwday,.scorecard .streakbadge,.beadbonus,.ottl,.tabord,.cdd-card){
+  background:var(--lg-frost-inset);
+  border-color:var(--lg-frost-edge);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.1);
+}
+:root[data-theme="light"] :is(.segtabs,.segwrap,.quicktabs,.focusdurpick,.histctrl),
+:root[data-theme="dark"] :is(.segtabs,.segwrap,.quicktabs,.focusdurpick,.histctrl){
+  background:var(--lg-frost-inset);
+  border-color:var(--lg-frost-edge);
+}
+:root[data-theme="light"] :is(.segtab.on,.segbtn.on,.quicktab.on,.fsbtn.on,.odrecbtn.on),
+:root[data-theme="dark"] :is(.segtab.on,.segbtn.on,.quicktab.on,.fsbtn.on,.odrecbtn.on){
+  background:var(--lg-frost-strong);
+  color:var(--teal);
+  border-color:rgba(81,153,137,.26);
+  box-shadow:0 4px 12px rgba(53,105,102,.06),inset 0 1px 0 rgba(255,255,255,.21);
+}
+:root[data-theme="light"] :is(.chip,.ppopt,.tabord,.projpickitem,.projtask,.projrow),
+:root[data-theme="dark"] :is(.chip,.ppopt,.tabord,.projpickitem,.projtask,.projrow){
+  background:var(--lg-frost-inset);
+  border-color:var(--lg-frost-edge);
+}
+:root[data-theme="light"] :is(.chip.on,.ppopt.cur,.datebtn.has),
+:root[data-theme="dark"] :is(.chip.on,.ppopt.cur,.datebtn.has){
+  background:var(--gold-soft);
+  border-color:rgba(177,139,83,.48);
+}
+:root[data-theme="light"] :is(.titem,.eitem,.oitem:not(.late):not(.oduesoon):not(.opaid),.mqitem,.ttcitem,.sres,.obldrow,.paidhead),
+:root[data-theme="dark"] :is(.titem,.eitem,.oitem:not(.late):not(.oduesoon):not(.opaid),.mqitem,.ttcitem,.sres,.obldrow,.paidhead){
+  background:var(--lg-frost-inset);
+  border-color:var(--lg-frost-edge);
+  box-shadow:0 3px 13px rgba(65,99,113,.045),inset 0 1px 0 rgba(255,255,255,.07);
+}
+:root[data-theme="light"] :is(.titem,.eitem,.oitem,.projrow,.mqitem,.ttcitem),
+:root[data-theme="dark"] :is(.titem,.eitem,.oitem,.projrow,.mqitem,.ttcitem){
+  border-radius:17px;
+}
+:root[data-theme="light"] :is(.tasksearchwrap,.expsearchwrap,.notessearchwrap,.searchwrap),
+:root[data-theme="dark"] :is(.tasksearchwrap,.expsearchwrap,.notessearchwrap,.searchwrap){
+  background:var(--lg-frost-inset);
+  border-color:var(--lg-frost-edge);
+  box-shadow:0 4px 12px rgba(53,77,97,.04),inset 0 1px 0 rgba(255,255,255,.1);
+}
+:root[data-theme="light"] :is(.notecard,.notecard.pinned),
+:root[data-theme="dark"] :is(.notecard,.notecard.pinned){
+  /* Keep the existing user-selected note color/background, including inline styles. */
+  border-color:var(--lg-frost-edge);
+  box-shadow:var(--lg-frost-shadow);
+  -webkit-backdrop-filter:blur(8px);
+  backdrop-filter:blur(8px);
+}
+:root[data-theme="light"] :is(.notessection,.noteshead,.notesgrid),
+:root[data-theme="dark"] :is(.notessection,.noteshead,.notesgrid){ color:var(--text); }
+:root[data-theme="light"] :is(.stat .num,.exptotal .num,.jrnstat .jrnnum,.histstats .m),
+:root[data-theme="dark"] :is(.stat .num,.exptotal .num,.jrnstat .jrnnum,.histstats .m){
+  color:var(--teal);
+}
+:root[data-theme="light"] :is(.calcell:not(.empty):not(.today):not(.selected),.pmcell:not(.future),.hdheatcell),
+:root[data-theme="dark"] :is(.calcell:not(.empty):not(.today):not(.selected),.pmcell:not(.future),.hdheatcell){
+  background:var(--lg-frost-inset);
+  border-color:var(--lg-frost-edge);
+}
+:root[data-theme="light"] .calcell.today{
+  background:rgba(232,248,242,.94);
+  border-color:#72b9a9;
+}
+:root[data-theme="light"] .calcell.selected{
+  background:linear-gradient(145deg,#e4f5ee,#cce9e0);
+  border-color:#5baf9b;
+}
+:root[data-theme="light"] .calcell.selected .caldaynum{color:#205f57}
+:root[data-theme="light"] :is(.histrow.today,.caldaydetail .cdd-card,.qbadge,.groupmotiv){
+  background:rgba(231,246,241,.78);
+}
+:root[data-theme="light"] .histrow.today{border-right-color:var(--teal)}
+:root[data-theme="light"] :is(.mood.on,.obltypecard.on,.taskrepeat.on){
+  background:rgba(224,245,239,.87);
+  border-color:rgba(83,155,139,.5);
+}
+/* Priority quadrants retain red, amber, blue, green identification. */
+:root[data-theme="light"] .matrixquad.q1{background:linear-gradient(153deg,rgba(250,224,225,.75),rgba(255,255,255,.75));border-color:rgba(196,94,105,.37)}
+:root[data-theme="light"] .matrixquad.q2{background:linear-gradient(153deg,rgba(252,239,208,.81),rgba(255,255,255,.76));border-color:rgba(197,150,71,.37)}
+:root[data-theme="light"] .matrixquad.q3{background:linear-gradient(153deg,rgba(219,236,251,.79),rgba(255,255,255,.77));border-color:rgba(81,142,188,.32)}
+:root[data-theme="light"] .matrixquad.q4{background:linear-gradient(153deg,rgba(219,245,235,.77),rgba(255,255,255,.76));border-color:rgba(70,153,121,.32)}
+:root[data-theme="dark"] .matrixquad{box-shadow:inset 0 1px 0 rgba(255,255,255,.08)}
+/* Keep urgent, late and paid obligation categories visually distinguishable. */
+:root[data-theme="light"] .oitem.late{border-color:rgba(198,84,80,.42)}
+:root[data-theme="light"] .oitem.oduesoon{border-color:rgba(200,150,65,.45)}
+:root[data-theme="light"] .oitem.opaid{border-color:rgba(72,155,128,.4)}
+
+/* All existing slide-up sheets and confirmation/auth screens get one glass
+   treatment while retaining their original visibility and animation rules. */
+:root[data-theme="light"] :is(
+  #authModal,#changePassModal,#quickSheet,#oblDetailSheet,#challengeDetailModal,
+  #habitDetailModal,#noteEditSheet,#tasbihModal,#dhikrManageModal,
+  #taskDetailSheet,#challengeSheet,#notifSheet,#bhModal,#pickerbox,
+  .pickerbox,#installGuideSheet,#dlgBox,#onboardBox,#lockScreen .lockcard
+){
+  background:linear-gradient(158deg,rgba(255,255,255,.97),rgba(241,248,250,.93));
+  border-color:rgba(255,255,255,.95);
+  box-shadow:0 -15px 55px rgba(38,67,88,.17),inset 0 1px 0 white;
+  -webkit-backdrop-filter:blur(26px) saturate(1.4);
+  backdrop-filter:blur(26px) saturate(1.4);
+}
+:root[data-theme="dark"] :is(
+  #authModal,#changePassModal,#quickSheet,#oblDetailSheet,#challengeDetailModal,
+  #habitDetailModal,#noteEditSheet,#tasbihModal,#dhikrManageModal,
+  #taskDetailSheet,#challengeSheet,#notifSheet,#bhModal,.pickerbox,
+  #installGuideSheet,#dlgBox,#onboardBox
+){
+  background:var(--lg-frost-strong);
+  border-color:var(--lg-frost-edge);
+  box-shadow:0 -14px 49px rgba(0,0,0,.35);
+  -webkit-backdrop-filter:blur(20px) saturate(1.2);
+  backdrop-filter:blur(20px) saturate(1.2);
+}
+:root[data-theme="light"] :is(
+  #authOverlay,#changePassOv,#quickOv,#oblDetailOv,#challengeDetailOv,#habitDetailOv,
+  #noteEditOv,#tasbihOv,#dhikrManageOv,#taskDetailOv,#challengeOv,#notifOv,
+  #bhOverlay,#pickerOv,#installGuideOv,#dlgOv,#onboardOverlay
+){
+  background:rgba(32,53,71,.32);
+}
+:root[data-theme="light"] :is(.focusbtn.secondary,.btn.ghost,.quicktab,.odrecbtn,.fsbtn,.addproj),
+:root[data-theme="dark"] :is(.focusbtn.secondary,.btn.ghost,.quicktab,.odrecbtn,.fsbtn,.addproj){
+  background:var(--lg-frost-inset);
+  border-color:var(--lg-frost-edge);
+}
+:root[data-theme="light"] :is(.addbtn,.notesaddbtn,.btn.primary,.focusbtn.primary){
+  background:linear-gradient(130deg,#317e73,#50ad9d);
+  color:white;
+  box-shadow:0 7px 19px rgba(43,123,112,.19),inset 0 1px 0 rgba(255,255,255,.25);
+}
+/* Global form polish; type-specific controls keep their sizing and value. */
+:root[data-theme="light"] :is(
+  input[type="text"],input[type="number"],input[type="date"],
+  input[type="datetime-local"],input[type="email"],input[type="password"],
+  input[type="tel"],input[type="time"],textarea,select
+){
+  background-color:rgba(255,255,255,.76);
+  border-color:rgba(118,151,160,.29);
+  color:var(--text);
+  box-shadow:inset 0 1px 3px rgba(77,101,116,.035);
+}
+:root[data-theme="light"] :is(.tasksearchwrap input,.expsearchwrap input,.datebtn input[type=date]){
+  background:transparent;
+  box-shadow:none;
+}
+:root[data-theme="light"] :is(
+  input[type="text"],input[type="number"],input[type="date"],
+  input[type="datetime-local"],input[type="email"],input[type="password"],
+  input[type="tel"],input[type="time"],textarea,select
+):focus{
+  border-color:var(--teal);
+  outline:2px solid var(--lg-focus-ring);
+  outline-offset:1px;
+}
+:root[data-theme="light"] :is(.btn,.addbtn,.segtab,.segbtn,.quicktab,.chip,.mood,.navb),
+:root[data-theme="dark"] :is(.btn,.addbtn,.segtab,.segbtn,.quicktab,.chip,.mood,.navb){
+  transition:background-color .18s ease,border-color .18s ease,box-shadow .18s ease,transform .14s ease;
+}
+:root :is(button,input,textarea,select,[role="button"]):focus-visible{
+  outline:2px solid var(--teal);
+  outline-offset:3px;
+}
+/* Decorative glass should not override important existing card intent states. */
+:root[data-theme="light"] :is(#toast,#installBanner,#syncStrip){
+  background:rgba(255,255,255,.94);
+  border-color:rgba(255,255,255,.95);
+  box-shadow:var(--lg-frost-shadow);
+  -webkit-backdrop-filter:blur(16px);
+  backdrop-filter:blur(16px);
+}
+/* Accessibility and low-powered Android fallbacks. */
+@media(prefers-reduced-transparency:reduce){
+  :root[data-theme="light"] :is(
+    .card,.goalcard,.setsection,.stat,.notecard,
+    #authModal,#changePassModal,#quickSheet,#oblDetailSheet,#challengeDetailModal,
+    #habitDetailModal,#noteEditSheet,#tasbihModal,#dhikrManageModal,
+    #taskDetailSheet,#challengeSheet,#notifSheet,#bhModal,.pickerbox,
+    #installGuideSheet,#dlgBox,#onboardBox
+  ){background:var(--lg-frost-solid);-webkit-backdrop-filter:none;backdrop-filter:none}
+}
+@media(prefers-reduced-motion:reduce){
+  :root :is(.btn,.addbtn,.segtab,.segbtn,.quicktab,.chip,.mood,.navb){
+    transition:none;animation:none;
+  }
+}
+@supports not (backdrop-filter:blur(2px)){
+  :root[data-theme="light"] :is(
+    .card,.goalcard,.setsection,.stat,.notecard,
+    #authModal,#changePassModal,#quickSheet,#oblDetailSheet,#challengeDetailModal,
+    #habitDetailModal,#noteEditSheet,#tasbihModal,#dhikrManageModal,
+    #taskDetailSheet,#challengeSheet,#notifSheet,#bhModal,.pickerbox,
+    #installGuideSheet,#dlgBox,#onboardBox
+  ){background:#f9fbff}
+}
+/* Increased legibility if Android accessibility asks for more contrast. */
+@media(prefers-contrast:more){
+  :root[data-theme="light"]{
+    --line:rgba(56,90,101,.5);
+    --muted:#415767;
+    --faint:#566a77;
+    --lg-frost-edge:rgba(75,106,116,.48);
+  }
+  :root[data-theme="light"] :is(.card,.goalcard,.setsection,.stat,.notecard){
+    -webkit-backdrop-filter:none;backdrop-filter:none;background:#fff;
+  }
+}
